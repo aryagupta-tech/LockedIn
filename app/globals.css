@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  border-color: #433426;
+}
+
+html,
+body {
+  background: #0b0907;
+  color: #f6f1e8;
+}
+
+body {
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(circle at 12% 10%, rgba(214, 179, 106, 0.18), transparent 28%),
+    radial-gradient(circle at 85% 4%, rgba(132, 101, 49, 0.2), transparent 32%),
+    linear-gradient(165deg, #0b0907 0%, #120d09 55%, #0f0b08 100%);
+}
+
+::selection {
+  background: rgba(214, 179, 106, 0.35);
+  color: #fff8ea;
+}
+
+.grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(214, 179, 106, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(214, 179, 106, 0.08) 1px, transparent 1px);
+  background-size: 50px 50px;
+  mask-image: radial-gradient(circle at center, black 35%, transparent 85%);
+  opacity: 0.35;
+}
+
+.section-shell {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+.glass {
+  background: rgba(20, 15, 12, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(214, 179, 106, 0.22);
+}
+
+.neon-text {
+  color: #e3c98e;
+  text-shadow: 0 0 22px rgba(214, 179, 106, 0.25);
+}
+
+.marquee-track {
+  width: max-content;
+  display: flex;
+  gap: 1rem;
+  animation: marquee 36s linear infinite;
+}
+
+.marquee-wrapper:hover .marquee-track {
+  animation-play-state: paused;
+}
