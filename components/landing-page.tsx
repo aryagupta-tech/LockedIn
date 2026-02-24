@@ -1,24 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
   Briefcase,
   CalendarCheck2,
-  Crown,
   Code2,
-  EyeOff,
   Github,
   Lock,
   ShieldCheck,
   Sparkles,
-
   UploadCloud,
   Users2
 } from "lucide-react";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +32,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
 const gateSteps = [
   "Connect GitHub + LeetCode/Codeforces",
@@ -43,15 +39,6 @@ const gateSteps = [
   "AI + human benchmark scoring",
   "Pass and unlock instant access"
 ];
-
-const leaderboard = [
-  ["Cohort 07-A", "Systems Engineering", 97, "2h ago"],
-  ["Cohort 04-C", "Product Design", 95, "4h ago"],
-  ["Cohort 09-B", "AI Engineering", 96, "6h ago"],
-  ["Cohort 06-D", "Frontend Architecture", 94, "8h ago"],
-  ["Cohort 03-A", "Founder Track", 93, "10h ago"],
-  ["Cohort 08-E", "Creator Systems", 92, "12h ago"]
-] as const;
 
 const waitlistSchema = z.object({
   name: z.string().min(2, "Please enter your full name"),
@@ -90,9 +77,11 @@ export function LandingPage() {
       setIsScoring(false);
       return;
     }
+
     const timer = setTimeout(() => {
       setScoreProgress((prev) => Math.min(prev + 8, 94));
     }, 180);
+
     return () => clearTimeout(timer);
   }, [isScoring, scoreProgress]);
 
@@ -102,14 +91,8 @@ export function LandingPage() {
     reset();
   };
 
-  const eligibleText = useMemo(
-    () =>
-      "Thresholds: 1,000+ GitHub contributions (last 2 years) OR Codeforces ≥2100 OR LeetCode 2,000+ OR strong AI resume score.",
-    []
-  );
-
   return (
-    <main className="relative overflow-x-hidden bg-bg text-zinc-50">
+    <main className="relative overflow-x-hidden text-zinc-50">
       <Navbar />
       <Hero />
 
@@ -121,28 +104,34 @@ export function LandingPage() {
           transition={{ duration: 0.45 }}
           className="mb-10 max-w-3xl"
         >
-          <Badge className="mb-4">The Gate</Badge>
-          <h2 className="font-[var(--font-geist)] text-3xl font-semibold tracking-tight sm:text-5xl">
-            Getting in is deliberately hard. That&apos;s the point.
+          <Badge className="mb-4">How It Works</Badge>
+          <h2 className="font-[var(--font-geist)] text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+            A focused entry flow for serious builders.
           </h2>
-          <p className="mt-4 text-zinc-400">{eligibleText}</p>
+          <p className="mt-4 text-zinc-300">
+            Thresholds: 1,000+ GitHub contributions (last 2 years) OR Codeforces 2100+ OR LeetCode
+            2,000+ OR a strong AI resume score.
+          </p>
         </motion.div>
 
-        <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {gateSteps.map((step, i) => (
-            <Card key={step} className="min-w-[260px] snap-start sm:min-w-0">
+            <Card
+              key={step}
+              className="border-white/20 bg-[linear-gradient(180deg,rgba(30,30,38,0.55),rgba(17,17,23,0.7))]"
+            >
               <CardHeader>
-                <Badge variant="muted" className="w-fit">{`0${i + 1}`}</Badge>
-                <CardTitle className="mt-3 text-lg">{step}</CardTitle>
+                <Badge variant="muted" className="w-fit border-white/20 bg-white/5 text-zinc-200">{`0${i + 1}`}</Badge>
+                <CardTitle className="mt-3 text-lg text-white">{step}</CardTitle>
               </CardHeader>
             </Card>
           ))}
         </div>
 
-        <Card className="mt-8 border-neon/25 bg-[linear-gradient(180deg,rgba(28,21,14,0.9),rgba(18,13,9,0.92))]">
+        <Card className="mt-8 border-white/20 bg-[linear-gradient(180deg,rgba(32,36,58,0.55),rgba(19,20,32,0.75))]">
           <CardHeader>
-            <CardTitle className="text-2xl">Try the Gate</CardTitle>
-            <CardDescription>Mock the full review flow in under a minute.</CardDescription>
+            <CardTitle className="text-2xl text-white">Try the Gate</CardTitle>
+            <CardDescription className="text-zinc-300">Mock the full review flow in under a minute.</CardDescription>
           </CardHeader>
           <CardContent>
             <Dialog>
@@ -205,39 +194,11 @@ export function LandingPage() {
         </Card>
       </section>
 
-      <section id="leaderboard" className="section-shell py-20">
-        <div className="mb-8 flex items-end justify-between gap-4">
-          <div>
-            <Badge className="mb-4">Leaderboard</Badge>
-            <h3 className="font-[var(--font-geist)] text-3xl font-semibold sm:text-4xl">
-              Newly Locked In This Week
-            </h3>
-            <p className="mt-3 text-sm text-zinc-400">
-              Identity remains hidden until members choose to go public.
-            </p>
-          </div>
-        </div>
-        <div className="marquee-wrapper overflow-hidden">
-          <div className="marquee-track">
-            {[...leaderboard, ...leaderboard].map(([cohort, field, score, time], idx) => (
-              <Card key={`${cohort}-${idx}`} className="min-w-[270px] bg-[linear-gradient(180deg,rgba(27,20,13,0.9),rgba(16,12,9,0.92))]">
-                <CardHeader>
-                  <CardTitle className="text-lg">{cohort}</CardTitle>
-                  <CardDescription>{field}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex items-center justify-between text-sm">
-                  <Badge>Score {score}</Badge>
-                  <span className="text-zinc-400">{time}</span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="section-shell py-20">
         <Badge className="mb-4">Inside LockedIn</Badge>
-        <h3 className="font-[var(--font-geist)] text-3xl font-semibold sm:text-4xl">What happens after you get in</h3>
+        <h3 className="font-[var(--font-geist)] text-3xl font-semibold text-white sm:text-4xl">
+          What happens after you get in
+        </h3>
         <div className="mt-10 grid gap-4 md:grid-cols-2">
           <FeatureCard
             icon={Code2}
@@ -264,43 +225,41 @@ export function LandingPage() {
 
       <section className="section-shell py-20">
         <Badge className="mb-4">Inner Circle</Badge>
-        <h3 className="font-[var(--font-geist)] text-3xl font-semibold sm:text-4xl">Elite club protocol</h3>
+        <h3 className="font-[var(--font-geist)] text-3xl font-semibold text-white sm:text-4xl">Elite club protocol</h3>
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
-          <Card>
+          <Card className="border-white/20 bg-[linear-gradient(180deg,rgba(35,48,78,0.5),rgba(20,23,39,0.7))]">
             <CardHeader>
               <div className="mb-2 w-fit rounded-lg border border-neon/30 bg-neon/10 p-2 text-neon">
                 <ShieldCheck className="h-5 w-5" />
               </div>
-              <CardTitle className="text-xl">Verified operators only</CardTitle>
+              <CardTitle className="text-xl text-white">Verified operators only</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-zinc-400">
-                Every profile is benchmarked before entry. No pass, no access.
-              </p>
+              <p className="text-zinc-300">Every profile is benchmarked before entry. No pass, no access.</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-white/20 bg-[linear-gradient(180deg,rgba(35,48,78,0.5),rgba(20,23,39,0.7))]">
             <CardHeader>
               <div className="mb-2 w-fit rounded-lg border border-neon/30 bg-neon/10 p-2 text-neon">
-                <EyeOff className="h-5 w-5" />
+                <Lock className="h-5 w-5" />
               </div>
-              <CardTitle className="text-xl">Privacy by default</CardTitle>
+              <CardTitle className="text-xl text-white">Privacy by default</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-zinc-400">
+              <p className="text-zinc-300">
                 New members stay private until they choose visibility and discoverability.
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-white/20 bg-[linear-gradient(180deg,rgba(35,48,78,0.5),rgba(20,23,39,0.7))]">
             <CardHeader>
               <div className="mb-2 w-fit rounded-lg border border-neon/30 bg-neon/10 p-2 text-neon">
-                <Crown className="h-5 w-5" />
+                <Sparkles className="h-5 w-5" />
               </div>
-              <CardTitle className="text-xl">Signal is status</CardTitle>
+              <CardTitle className="text-xl text-white">Signal is status</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-zinc-400">
+              <p className="text-zinc-300">
                 Reputation is earned by shipping, mentoring, and building with consistency.
               </p>
             </CardContent>
@@ -309,11 +268,11 @@ export function LandingPage() {
       </section>
 
       <section id="apply" className="section-shell py-24">
-        <Card className="border-neon/25 bg-radial-noise">
+        <Card className="border-white/20 bg-[radial-gradient(circle_at_top_right,rgba(116,135,255,0.25),transparent_45%),linear-gradient(180deg,rgba(29,34,56,0.7),rgba(18,20,32,0.82))]">
           <CardHeader>
             <Badge>Apply</Badge>
-            <CardTitle className="mt-3 text-3xl sm:text-4xl">Ready to prove you&apos;re locked in?</CardTitle>
-            <CardDescription className="mt-2 text-base">
+            <CardTitle className="mt-3 text-3xl text-white sm:text-4xl">Ready to prove you&apos;re locked in?</CardTitle>
+            <CardDescription className="mt-2 text-base text-zinc-300">
               Zero spam. Ever. First 500 get lifetime Founder badge.
             </CardDescription>
           </CardHeader>
@@ -375,25 +334,18 @@ export function LandingPage() {
 
 function Navbar() {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-[#584226]/60 glass">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[rgba(10,12,22,0.75)] backdrop-blur-xl">
       <div className="section-shell flex h-16 items-center justify-between">
-        <a href="#" className="flex items-center gap-2 font-[var(--font-geist)] text-lg font-semibold">
-          <Lock className="h-4 w-4 text-neon" /> LockedIn
+        <a href="#" className="flex items-center gap-2 font-[var(--font-geist)] text-lg font-semibold text-white">
+          <BrandMark /> LockedIn
         </a>
-        <nav className="hidden items-center gap-6 text-sm text-[#c4b8a6] md:flex">
-          <a href="#how" className="hover:text-neon">How it Works</a>{" "}
-          <a href="#leaderboard" className="hover:text-neon">Leaderboard</a>{" "}
-          <a href="#" className="hover:text-neon">For Companies</a>{" "}
-          <a href="#" className="hover:text-neon">Blog</a>
+        <nav className="hidden items-center gap-6 text-sm text-zinc-300 md:flex">
+          <a href="#how" className="hover:text-white">How it Works</a>
+          <a href="#apply" className="hover:text-white">Apply</a>
         </nav>
-        <div className="flex items-center gap-2">
-          <Button asChild size="sm" className="hidden sm:inline-flex">
-            <a href="#apply">Apply Now</a>
-          </Button>
-          <Button variant="ghost" asChild size="sm">
-            <a href="#">Already Locked In? Sign in</a>
-          </Button>
-        </div>
+        <Button asChild size="sm" className="hidden sm:inline-flex">
+          <a href="#apply">Apply Now</a>
+        </Button>
       </div>
     </header>
   );
@@ -402,65 +354,38 @@ function Navbar() {
 function Hero() {
   return (
     <section className="relative flex min-h-screen items-center pt-20">
-      <div className="grid-bg" />
+      <div className="hero-aurora" />
       <div className="section-shell relative z-10 py-20">
         <motion.div
           initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mx-auto max-w-5xl text-center"
+          className="mx-auto max-w-4xl text-center"
         >
-          <Badge className="mb-6">
-            <Sparkles className="mr-1 h-3 w-3" /> Only the locked-in get in.
+          <Badge className="mb-6 border-white/20 bg-white/10 text-zinc-100">
+            <Sparkles className="mr-1 h-3 w-3" /> Curated network for high-signal builders
           </Badge>
-          <h1 className="font-[var(--font-geist)] text-4xl font-semibold leading-tight tracking-wide sm:text-6xl lg:text-7xl">
-            Not everyone gets in.
+          <h1 className="font-[var(--font-geist)] text-4xl font-semibold leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl">
+            Build with people who
             <br />
-            <span className="neon-text">LockedIn is for the obsessed.</span>
+            actually ship.
           </h1>
-          <p className="mx-auto mt-6 max-w-3xl text-base text-[#d3c8b7] sm:text-xl">
-            The private social network where only the highest-signal builders, coders, designers &amp;
-            creators are allowed in.
+          <p className="mx-auto mt-6 max-w-3xl text-base text-zinc-200 sm:text-xl">
+            LockedIn is a private professional network where quality matters more than noise.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg">
               <a href="#apply">
-                Get Locked In <ArrowRight className="ml-2 h-4 w-4" />
+                Apply for Access <ArrowRight className="ml-2 h-4 w-4" />
               </a>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <a href="#how">See the Gate</a>
+              <a href="#how">See the Process</a>
             </Button>
           </div>
-
-          <div className="mt-12 rounded-2xl border border-[#584226]/80 bg-[#18110d]/80 px-4 py-3 text-sm text-[#d3c8b7]">
-            Already 1,247 locked-in members • Backed by builders from Google, Figma, Vercel, OpenAI
-          </div>
         </motion.div>
-
-        <div className="pointer-events-none absolute left-4 top-24 hidden space-y-3 lg:block">
-          <FloatingBadge text="Newly Locked In: Confidential Profile" delay={0} />
-          <FloatingBadge text="Newly Locked In: Identity Hidden" delay={0.6} />
-        </div>
-        <div className="pointer-events-none absolute right-4 top-40 hidden space-y-3 lg:block">
-          <FloatingBadge text="Newly Locked In: Private Cohort Access" delay={0.3} />
-          <FloatingBadge text="Newly Locked In: Verified Builder" delay={0.9} />
-        </div>
       </div>
     </section>
-  );
-}
-
-function FloatingBadge({ text, delay }: { text: string; delay: number }) {
-  return (
-    <motion.div
-      initial={false}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay }}
-      className="animate-float rounded-full border border-neon/30 bg-[#1a140f]/85 px-4 py-2 text-xs text-[#f0d7a4]"
-    >
-      {text}
-    </motion.div>
   );
 }
 
@@ -474,15 +399,15 @@ function FeatureCard({
   desc: string;
 }) {
   return (
-    <Card>
+    <Card className="border-white/20 bg-[linear-gradient(180deg,rgba(39,45,72,0.5),rgba(20,23,38,0.72))]">
       <CardHeader>
         <div className="mb-4 w-fit rounded-lg border border-neon/40 bg-neon/10 p-2 text-neon">
           <Icon className="h-5 w-5" />
         </div>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="text-white">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-zinc-400">{desc}</p>
+        <p className="text-zinc-300">{desc}</p>
       </CardContent>
     </Card>
   );
@@ -492,19 +417,30 @@ function Footer() {
   const links = ["Privacy", "Terms", "Careers", "Contact", "X"];
 
   return (
-    <footer className="border-t border-[#584226]/70 py-10">
-      <div className="section-shell flex flex-col items-start justify-between gap-4 text-sm text-zinc-400 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2 text-zinc-200">
-          <Lock className="h-4 w-4 text-neon" /> LockedIn
+    <footer className="border-t border-white/10 py-10">
+      <div className="section-shell flex flex-col items-start justify-between gap-4 text-sm text-zinc-300 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2 text-zinc-100">
+          <BrandMark /> LockedIn
         </div>
         <div className="flex flex-wrap items-center gap-4">
           {links.map((link) => (
-            <a key={link} href="#" className={cn("transition-colors hover:text-neon")}>
+            <a key={link} href="#" className="transition-colors hover:text-white">
               {link}
             </a>
           ))}
         </div>
       </div>
     </footer>
+  );
+}
+
+function BrandMark() {
+  return (
+    <span className="relative inline-flex h-5 w-5 items-center justify-center">
+      <span className="absolute inset-0 rounded-[8px] bg-gradient-to-br from-[#8fd6ff] via-[#7f8dff] to-[#f3c680] opacity-85 blur-[0.5px]" />
+      <span className="absolute inset-[1.5px] rounded-[7px] bg-[#090f1d]" />
+      <span className="absolute h-2.5 w-2.5 rounded-full bg-gradient-to-br from-[#a5e0ff] to-[#ffd086]" />
+      <span className="absolute h-3.5 w-3.5 rounded-full border border-white/25" />
+    </span>
   );
 }

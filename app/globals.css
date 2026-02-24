@@ -7,13 +7,13 @@
 }
 
 * {
-  border-color: #433426;
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 html,
 body {
-  background: #0b0907;
-  color: #f6f1e8;
+  background: #060916;
+  color: #f4f7ff;
 }
 
 body {
@@ -21,28 +21,29 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   background-image:
-    radial-gradient(circle at 12% 10%, rgba(214, 179, 106, 0.18), transparent 28%),
-    radial-gradient(circle at 85% 4%, rgba(132, 101, 49, 0.2), transparent 32%),
-    linear-gradient(165deg, #0b0907 0%, #120d09 55%, #0f0b08 100%);
+    radial-gradient(circle at 10% 8%, rgba(82, 108, 255, 0.24), transparent 32%),
+    radial-gradient(circle at 85% 2%, rgba(0, 189, 255, 0.18), transparent 36%),
+    radial-gradient(circle at 50% 95%, rgba(245, 189, 86, 0.14), transparent 42%),
+    linear-gradient(160deg, #070913 0%, #090d1e 48%, #050811 100%);
 }
 
 ::selection {
-  background: rgba(214, 179, 106, 0.35);
-  color: #fff8ea;
-}
-
-.grid-bg {
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(rgba(214, 179, 106, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(214, 179, 106, 0.08) 1px, transparent 1px);
-  background-size: 50px 50px;
-  mask-image: radial-gradient(circle at center, black 35%, transparent 85%);
-  opacity: 0.35;
+  background: rgba(96, 165, 250, 0.35);
+  color: #ffffff;
 }
 
 .section-shell {
   @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+.hero-aurora {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 24% 30%, rgba(120, 123, 255, 0.26), transparent 36%),
+    radial-gradient(circle at 74% 24%, rgba(78, 213, 255, 0.22), transparent 34%),
+    radial-gradient(circle at 50% 74%, rgba(255, 183, 80, 0.14), transparent 40%);
+  filter: blur(8px);
 }
 
 .glass {
@@ -54,15 +55,4 @@ body {
 .neon-text {
   color: #e3c98e;
   text-shadow: 0 0 22px rgba(214, 179, 106, 0.25);
-}
-
-.marquee-track {
-  width: max-content;
-  display: flex;
-  gap: 1rem;
-  animation: marquee 36s linear infinite;
-}
-
-.marquee-wrapper:hover .marquee-track {
-  animation-play-state: paused;
 }
