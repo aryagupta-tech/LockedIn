@@ -565,24 +565,6 @@ function Hero() {
             </Button>
           </motion.div>
 
-          {/* Social proof numbers */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="mx-auto mt-16 flex max-w-md items-center justify-center gap-8 sm:gap-12"
-          >
-            {[
-              { value: "2.4K+", label: "Waitlist" },
-              { value: "94%", label: "Pass rate" },
-              { value: "<24h", label: "Review time" }
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-xl font-bold text-white sm:text-2xl">{stat.value}</div>
-                <div className="mt-0.5 text-xs text-zinc-500">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
         </motion.div>
       </div>
     </section>
