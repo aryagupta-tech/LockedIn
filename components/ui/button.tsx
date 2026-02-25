@@ -4,20 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold ring-offset-bg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/70 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
         default:
-          "bg-gradient-to-br from-[#e3c98e] to-[#c59a52] px-5 py-2.5 text-[#1f1508] hover:brightness-105 shadow-neon",
-        ghost: "text-zinc-200 hover:bg-zinc-900/70",
+          "bg-gradient-to-r from-[#e3c98e] via-[#d4a85c] to-[#c49450] text-[#1a1005] shadow-neon hover:shadow-neon-lg hover:brightness-110 active:scale-[0.98]",
+        ghost: "text-zinc-300 hover:bg-white/5 hover:text-white",
         outline:
-          "border border-[#6a532f] bg-transparent px-5 py-2.5 text-zinc-100 hover:border-neon/70 hover:bg-[#21180f]/60 hover:text-[#f0d7a4]"
+          "border border-white/10 bg-white/[0.03] text-zinc-200 hover:border-neon/30 hover:bg-neon/[0.06] hover:text-neon-light active:scale-[0.98]"
       },
       size: {
-        default: "h-11",
-        sm: "h-9 px-3",
-        lg: "h-12 px-6 text-base"
+        default: "h-11 px-5",
+        sm: "h-9 px-4 text-xs",
+        lg: "h-12 px-7 text-base"
       }
     },
     defaultVariants: {

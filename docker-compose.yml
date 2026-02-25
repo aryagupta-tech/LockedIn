@@ -1,0 +1,21 @@
+services:
+  cursor-dev:
+    image: node:20
+    container_name: lockedin
+    working_dir: /workspace
+    init: true
+    stdin_open: true
+    tty: true
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: "1"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - .:/workspace
+      - node_modules:/workspace/node_modules
+    command: bash -lc "npm install && npm run dev"
+
+volumes:
+  node_modules:
