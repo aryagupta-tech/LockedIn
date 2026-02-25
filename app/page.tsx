@@ -5,7 +5,7 @@ const jsonLd = {
   "@type": "WebSite",
   name: "LockedIn",
   alternateName: "LockedIn Social",
-  url: "https://joinlockedin.social",
+  url: "https://nuvra.online",
   description: "Only the locked-in get in.",
   publisher: {
     "@type": "Organization",
@@ -14,7 +14,7 @@ const jsonLd = {
   potentialAction: {
     "@type": "JoinAction",
     name: "Apply to LockedIn",
-    target: "https://joinlockedin.social/#apply"
+    target: "https://nuvra.online/#apply"
   }
 };
 

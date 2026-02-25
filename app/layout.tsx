@@ -10,7 +10,7 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://joinlockedin.social"),
+  metadataBase: new URL("https://nuvra.online"),
   title: "LockedIn | Only the locked-in get in.",
   description:
     "LockedIn is the exclusive social network for elite coders, designers, creators, and builders.",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     title: "LockedIn",
     description:
       "The private social network where only the highest-signal builders are allowed in.",
-    url: "https://joinlockedin.social",
+    url: "https://nuvra.online",
     siteName: "LockedIn",
     type: "website"
   },

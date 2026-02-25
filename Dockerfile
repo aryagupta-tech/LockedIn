@@ -7,21 +7,25 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npx prisma generate && npm run build
+ENV NODE_ENV=production
+RUN npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/next.config.ts ./next.config.ts
+
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/lib/generated ./lib/generated
-COPY --from=deps /app/node_modules ./node_modules
-RUN mkdir -p /app/prisma && chown -R nextjs:nodejs /app/prisma
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
+
 USER nextjs
 EXPOSE 3000
-CMD sh -c "npx prisma migrate deploy && npm run start"
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "server.js"]
