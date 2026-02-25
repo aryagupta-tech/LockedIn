@@ -42,11 +42,24 @@ const gateSteps = [
   { label: "Unlock instant access", icon: CheckCircle2, desc: "Welcome to the inner circle" }
 ];
 
+const interestOptions = [
+  { value: "salary-sharing", label: "Anonymous salary / offer sharing" },
+  { value: "project-collab", label: "Private project collabs & co-founder matching" },
+  { value: "weekly-digest", label: "Curated weekly digest of what top devs ship" },
+  { value: "job-board", label: "Vetted, high-signal job board" },
+  { value: "private-communities", label: "Private communities by skill" },
+] as const;
+
 const waitlistSchema = z.object({
   name: z.string().min(2, "Please enter your full name"),
   email: z.string().email("Please enter a valid email"),
   role: z.enum(["Developer", "Designer", "Creator", "Founder", "Other"]),
-  github: z.string().optional()
+  github: z.string().optional(),
+  interest: z.enum(
+    ["salary-sharing", "project-collab", "weekly-digest", "job-board", "private-communities"],
+    { required_error: "Pick what excites you most" }
+  ),
+  feedback: z.string().max(500).optional(),
 });
 
 type WaitlistData = z.infer<typeof waitlistSchema>;
@@ -88,6 +101,7 @@ export function LandingPage() {
   const [uploadName, setUploadName] = useState<string | null>(null);
   const [isScoring, setIsScoring] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
 
   const {
     register,
@@ -97,7 +111,7 @@ export function LandingPage() {
     formState: { errors, isSubmitting, isSubmitSuccessful }
   } = useForm<WaitlistData>({
     resolver: zodResolver(waitlistSchema),
-    defaultValues: { name: "", email: "", role: undefined, github: "" }
+    defaultValues: { name: "", email: "", role: undefined, github: "", interest: undefined, feedback: "" }
   });
 
   useEffect(() => {
@@ -114,6 +128,7 @@ export function LandingPage() {
 
   const onSubmit = async (data: WaitlistData) => {
     setSubmitError(null);
+    setWaitlistPosition(null);
     try {
       const res = await fetch("/api/apply", {
         method: "POST",
@@ -125,6 +140,7 @@ export function LandingPage() {
         setSubmitError(json.error || "Something went wrong.");
         return;
       }
+      setWaitlistPosition(json.position);
       reset();
     } catch {
       setSubmitError("Network error. Please try again.");
@@ -400,6 +416,38 @@ export function LandingPage() {
                     <Input id="github" placeholder="octocat" {...register("github")} />
                   </div>
                   <div className="sm:col-span-2">
+                    <Label>What would you want most from LockedIn?</Label>
+                    <Controller
+                      control={control}
+                      name="interest"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pick what excites you most" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {interestOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.interest && <p className="mt-1.5 text-xs text-red-400/90">{errors.interest.message}</p>}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="feedback">Anything else you&apos;d want? (optional)</Label>
+                    <textarea
+                      id="feedback"
+                      placeholder="Tell us what would make LockedIn a must-have for you..."
+                      {...register("feedback")}
+                      rows={3}
+                      className="flex w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 transition-all duration-200 focus-visible:outline-none focus-visible:border-neon/40 focus-visible:ring-1 focus-visible:ring-neon/30 focus-visible:bg-white/[0.05] resize-none"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
                     <Button type="submit" className="w-full" disabled={isSubmitting}>
                       {isSubmitting ? (
                         <span className="flex items-center gap-2">
@@ -411,10 +459,14 @@ export function LandingPage() {
                       )}
                     </Button>
                     <p className="mt-2 text-center text-xs text-zinc-500">AI will review in &lt;24h</p>
-                    {isSubmitSuccessful && (
-                      <p className="mt-3 flex items-center justify-center gap-1.5 text-sm text-neon">
-                        <CheckCircle2 className="h-4 w-4" /> Application received. We&apos;ll be in touch.
-                      </p>
+                    {isSubmitSuccessful && waitlistPosition && (
+                      <div className="mt-4 rounded-xl border border-neon/20 bg-neon/[0.06] p-4 text-center">
+                        <p className="flex items-center justify-center gap-1.5 text-sm font-medium text-neon">
+                          <CheckCircle2 className="h-4 w-4" /> You&apos;re in the waitlist!
+                        </p>
+                        <p className="mt-1 text-lg font-bold text-white">Position #{waitlistPosition}</p>
+                        <p className="mt-1 text-xs text-zinc-500">First 500 get lifetime Founder badge.</p>
+                      </div>
                     )}
                     {submitError && (
                       <p className="mt-3 text-center text-sm text-red-400/90">{submitError}</p>
