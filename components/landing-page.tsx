@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, useInView } from "framer-motion";
 import {
   ArrowRight,
@@ -17,8 +16,6 @@ import {
   Users2,
   Zap
 } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,10 +27,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const gateSteps = [
   { label: "Connect GitHub + LeetCode", icon: Github, desc: "Link your coding profiles" },
@@ -41,28 +35,6 @@ const gateSteps = [
   { label: "AI + human benchmark", icon: Zap, desc: "Multi-signal scoring" },
   { label: "Unlock instant access", icon: CheckCircle2, desc: "Welcome to the inner circle" }
 ];
-
-const interestOptions = [
-  { value: "salary-sharing", label: "Anonymous salary / offer sharing" },
-  { value: "project-collab", label: "Private project collabs & co-founder matching" },
-  { value: "weekly-digest", label: "Curated weekly digest of what top devs ship" },
-  { value: "job-board", label: "Vetted, high-signal job board" },
-  { value: "private-communities", label: "Private communities by skill" },
-] as const;
-
-const waitlistSchema = z.object({
-  name: z.string().min(2, "Please enter your full name"),
-  email: z.string().email("Please enter a valid email"),
-  role: z.enum(["Developer", "Designer", "Creator", "Founder", "Other"]),
-  github: z.string().optional(),
-  interest: z.enum(
-    ["salary-sharing", "project-collab", "weekly-digest", "job-board", "private-communities"],
-    { required_error: "Pick what excites you most" }
-  ),
-  feedback: z.string().max(500).optional(),
-});
-
-type WaitlistData = z.infer<typeof waitlistSchema>;
 
 const stagger = {
   hidden: {},
@@ -100,20 +72,6 @@ export function LandingPage() {
   const [connected, setConnected] = useState(false);
   const [uploadName, setUploadName] = useState<string | null>(null);
   const [isScoring, setIsScoring] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors, isSubmitting, isSubmitSuccessful }
-  } = useForm<WaitlistData>({
-    resolver: zodResolver(waitlistSchema),
-    defaultValues: { name: "", email: "", role: undefined, github: "", interest: undefined, feedback: "" }
-  });
-
   useEffect(() => {
     if (!isScoring) return;
     if (scoreProgress >= 94) {
@@ -125,27 +83,6 @@ export function LandingPage() {
     }, 180);
     return () => clearTimeout(timer);
   }, [isScoring, scoreProgress]);
-
-  const onSubmit = async (data: WaitlistData) => {
-    setSubmitError(null);
-    setWaitlistPosition(null);
-    try {
-      const res = await fetch("/api/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setSubmitError(json.error || "Something went wrong.");
-        return;
-      }
-      setWaitlistPosition(json.position);
-      reset();
-    } catch {
-      setSubmitError("Network error. Please try again.");
-    }
-  };
 
   return (
     <main className="relative overflow-x-hidden text-zinc-100">
@@ -359,126 +296,6 @@ export function LandingPage() {
         </AnimatedSection>
       </section>
 
-      {/* --- Apply --- */}
-      <div className="section-divider" />
-      <section id="apply" className="section-shell py-28">
-        <AnimatedSection>
-          <motion.div variants={fadeUp}>
-            <Card className="animated-border relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(100,120,255,0.12),transparent_50%)]" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(214,179,106,0.06),transparent_50%)]" />
-              <CardHeader className="relative pb-2">
-                <Badge>Apply</Badge>
-                <CardTitle className="mt-4 text-3xl text-white sm:text-4xl">
-                  Ready to prove you&apos;re
-                  <span className="text-gradient-gold"> locked in?</span>
-                </CardTitle>
-                <CardDescription className="mt-2 text-base text-zinc-400">
-                  Zero spam. Ever. First 500 get lifetime Founder badge.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="relative pt-6">
-                <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="name">Name</Label>
-                    <Input id="name" placeholder="Alex Morgan" {...register("name")} />
-                    {errors.name && <p className="mt-1.5 text-xs text-red-400/90">{errors.name.message}</p>}
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" placeholder="alex@domain.com" {...register("email")} />
-                    {errors.email && <p className="mt-1.5 text-xs text-red-400/90">{errors.email.message}</p>}
-                  </div>
-                  <div>
-                    <Label>I&apos;m primarily a...</Label>
-                    <Controller
-                      control={control}
-                      name="role"
-                      render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Developer">Developer</SelectItem>
-                            <SelectItem value="Designer">Designer</SelectItem>
-                            <SelectItem value="Creator">Creator</SelectItem>
-                            <SelectItem value="Founder">Founder</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.role && <p className="mt-1.5 text-xs text-red-400/90">Choose your primary role</p>}
-                  </div>
-                  <div>
-                    <Label htmlFor="github">GitHub username (optional)</Label>
-                    <Input id="github" placeholder="octocat" {...register("github")} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label>What would you want most from LockedIn?</Label>
-                    <Controller
-                      control={control}
-                      name="interest"
-                      render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pick what excites you most" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {interestOptions.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.interest && <p className="mt-1.5 text-xs text-red-400/90">{errors.interest.message}</p>}
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="feedback">Anything else you&apos;d want? (optional)</Label>
-                    <textarea
-                      id="feedback"
-                      placeholder="Tell us what would make LockedIn a must-have for you..."
-                      {...register("feedback")}
-                      rows={3}
-                      className="flex w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 transition-all duration-200 focus-visible:outline-none focus-visible:border-neon/40 focus-visible:ring-1 focus-visible:ring-neon/30 focus-visible:bg-white/[0.05] resize-none"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <span className="flex items-center gap-2">
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                          Submitting...
-                        </span>
-                      ) : (
-                        <>Submit Application <ArrowRight className="ml-2 h-4 w-4" /></>
-                      )}
-                    </Button>
-                    <p className="mt-2 text-center text-xs text-zinc-500">AI will review in &lt;24h</p>
-                    {isSubmitSuccessful && waitlistPosition && (
-                      <div className="mt-4 rounded-xl border border-neon/20 bg-neon/[0.06] p-4 text-center">
-                        <p className="flex items-center justify-center gap-1.5 text-sm font-medium text-neon">
-                          <CheckCircle2 className="h-4 w-4" /> You&apos;re in the waitlist!
-                        </p>
-                        <p className="mt-1 text-lg font-bold text-white">Position #{waitlistPosition}</p>
-                        <p className="mt-1 text-xs text-zinc-500">First 500 get lifetime Founder badge.</p>
-                      </div>
-                    )}
-                    {submitError && (
-                      <p className="mt-3 text-center text-sm text-red-400/90">{submitError}</p>
-                    )}
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </AnimatedSection>
-      </section>
-
       <Footer />
     </main>
   );
@@ -509,11 +326,7 @@ function Navbar() {
         </a>
         <nav className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
           <a href="#how" className="transition-colors hover:text-white">How it Works</a>
-          <a href="#apply" className="transition-colors hover:text-white">Apply</a>
         </nav>
-        <Button asChild size="sm">
-          <a href="#apply">Apply Now</a>
-        </Button>
       </div>
     </header>
   );
@@ -555,11 +368,6 @@ function Hero() {
             transition={{ duration: 0.6, delay: 0.35, ease: "easeOut" }}
             className="mt-10 flex flex-wrap items-center justify-center gap-4"
           >
-            <Button asChild size="lg">
-              <a href="#apply">
-                Apply for Access <ArrowRight className="ml-2 h-4 w-4" />
-              </a>
-            </Button>
             <Button variant="outline" size="lg" asChild>
               <a href="#how">See the Process</a>
             </Button>

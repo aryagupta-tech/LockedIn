@@ -12,9 +12,9 @@ const jsonLd = {
     name: "LockedIn"
   },
   potentialAction: {
-    "@type": "JoinAction",
-    name: "Apply to LockedIn",
-    target: "https://localhost:3000/#apply"
+    "@type": "ViewAction",
+    name: "Visit LockedIn",
+    target: "http://localhost:3000"
   }
 };
 
