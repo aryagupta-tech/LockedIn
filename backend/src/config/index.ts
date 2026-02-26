@@ -43,6 +43,11 @@ export type Config = z.infer<typeof schema>;
 
 let _config: Config | null = null;
 
+/** Reset cached config — only for tests. */
+export function resetConfig(): void {
+  _config = null;
+}
+
 export function loadConfig(): Config {
   if (_config) return _config;
 

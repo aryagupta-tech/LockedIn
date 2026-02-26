@@ -1,20 +1,21 @@
 import Fastify, { type FastifyInstance } from "fastify";
 
+// Set env vars BEFORE any imports that read them (Prisma reads DATABASE_URL at import time)
+process.env.NODE_ENV = "test";
+process.env.JWT_SECRET = "test-secret-that-is-at-least-32-characters-long-for-jwt";
+process.env.ENCRYPTION_KEY = "abcdefghijklmnopqrstuvwxyz123456";
+process.env.DATABASE_URL =
+  process.env.TEST_DATABASE_URL ||
+  "postgresql://lockedin:lockedin@localhost:5432/lockedin";
+process.env.REDIS_URL = process.env.TEST_REDIS_URL || "redis://localhost:6379";
+
 /**
  * Build a minimal Fastify instance for integration testing.
- * Uses the real database (set TEST_DATABASE_URL) — run
- * `prisma migrate deploy` against your test DB before tests.
+ * Requires PostgreSQL and Redis to be running.
  */
 export async function buildTestApp(): Promise<FastifyInstance> {
-  // Override config for tests
-  process.env.NODE_ENV = "test";
-  process.env.JWT_SECRET = "test-secret-that-is-at-least-32chars";
-  process.env.ENCRYPTION_KEY = "test-encryption-key-32bytes!!!!";
-  process.env.DATABASE_URL =
-    process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || "";
-  process.env.REDIS_URL = process.env.TEST_REDIS_URL || "redis://localhost:6379";
-
-  const { loadConfig } = await import("../src/config");
+  const { loadConfig, resetConfig } = await import("../src/config");
+  resetConfig();
   const config = loadConfig();
 
   const app = Fastify({ logger: false });
@@ -27,9 +28,6 @@ export async function buildTestApp(): Promise<FastifyInstance> {
   await app.register(dbPlugin);
   await app.register(cachePlugin);
   await app.register(authPlugin);
-
-  // Stub requireApproved for tests — just check JWT
-  app.decorate("requireApproved", app.authenticate);
 
   const { default: authRoutes } = await import(
     "../src/modules/auth/auth.routes"
