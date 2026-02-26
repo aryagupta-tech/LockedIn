@@ -326,6 +326,10 @@ function Navbar() {
         </a>
         <nav className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
           <a href="#how" className="transition-colors hover:text-white">How it Works</a>
+          <a href="/login" className="transition-colors hover:text-white">Sign In</a>
+          <Button size="sm" asChild>
+            <a href="/register">Get Started</a>
+          </Button>
         </nav>
       </div>
     </header>
@@ -368,8 +372,11 @@ function Hero() {
             transition={{ duration: 0.6, delay: 0.35, ease: "easeOut" }}
             className="mt-10 flex flex-wrap items-center justify-center gap-4"
           >
+            <Button size="lg" asChild>
+              <a href="/register">Get Started</a>
+            </Button>
             <Button variant="outline" size="lg" asChild>
-              <a href="#how">See the Process</a>
+              <a href="/login">Sign In</a>
             </Button>
           </motion.div>
 

@@ -7,6 +7,26 @@ import { UpdateProfileBody, ProfileResponse } from "./profile.schemas";
 const profileRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new ProfileService(fastify);
 
+  fastify.get(
+    "/me",
+    {
+      schema: {
+        tags: ["profiles"],
+        summary: "Get my own profile",
+        security: [{ bearerAuth: [] }],
+      },
+      preHandler: [fastify.authenticate],
+    },
+    async (request) => {
+      const user = await fastify.prisma.user.findUnique({
+        where: { id: request.user.sub },
+        select: { id: true, email: true, username: true, displayName: true, avatarUrl: true, role: true, status: true },
+      });
+      if (!user) throw new AppError("User not found", 404, "NOT_FOUND");
+      return user;
+    },
+  );
+
   fastify.get<{ Params: { username: string } }>(
     "/:username",
     {

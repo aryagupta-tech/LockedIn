@@ -18,8 +18,9 @@ export class ProfileService {
         leetcodeHandle: true,
         portfolioUrl: true,
         role: true,
+        status: true,
         createdAt: true,
-        _count: { select: { followers: true, following: true } },
+        _count: { select: { followers: true, following: true, posts: true } },
       },
     });
 
@@ -42,6 +43,7 @@ export class ProfileService {
       ...user,
       followersCount: user._count.followers,
       followingCount: user._count.following,
+      postsCount: user._count.posts,
       isFollowing,
     };
   }

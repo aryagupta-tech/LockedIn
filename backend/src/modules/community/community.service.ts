@@ -39,6 +39,19 @@ export class CommunityService {
     });
   }
 
+  async list(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const communities = await this.app.prisma.community.findMany({
+      include: {
+        owner: { select: { id: true, username: true, displayName: true } },
+      },
+      orderBy: { memberCount: "desc" },
+      skip,
+      take: limit,
+    });
+    return communities;
+  }
+
   async getBySlug(slug: string) {
     const community = await this.app.prisma.community.findUnique({
       where: { slug },

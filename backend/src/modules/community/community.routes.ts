@@ -7,6 +7,21 @@ import { CreateCommunityBody, CommunityResponse, type CreateCommunityBody as CCB
 const communityRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new CommunityService(fastify);
 
+  fastify.get<{ Querystring: { page?: number; limit?: number } }>(
+    "/",
+    {
+      schema: {
+        tags: ["communities"],
+        summary: "List communities",
+        querystring: Type.Object({
+          page: Type.Optional(Type.Number({ minimum: 1 })),
+          limit: Type.Optional(Type.Number({ minimum: 1, maximum: 50 })),
+        }),
+      },
+    },
+    async (request) => service.list(request.query.page, request.query.limit),
+  );
+
   fastify.post<{ Body: CCB }>(
     "/",
     {

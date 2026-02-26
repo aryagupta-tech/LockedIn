@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-inter" });
@@ -47,7 +48,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${manrope.variable} ${cormorant.variable} bg-bg font-[var(--font-inter)] antialiased`}>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
