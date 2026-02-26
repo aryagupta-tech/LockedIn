@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lockedin-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lockedin
+      POSTGRES_PASSWORD: lockedin
+      POSTGRES_DB: lockedin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lockedin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: lockedin-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    container_name: lockedin-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  api:
+    build: .
+    container_name: lockedin-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://lockedin:lockedin@postgres:5432/lockedin
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+
+  workers:
+    build: .
+    container_name: lockedin-workers
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["node", "dist/workers/index.js"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://lockedin:lockedin@postgres:5432/lockedin
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
