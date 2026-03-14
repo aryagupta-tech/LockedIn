@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Bell, User, Shield, FileCheck, Menu, X, Search } from "lucide-react";
+import { Home, Compass, Bell, Settings, User, Shield, FileCheck, Menu, X, Search } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useNotifications } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 export function TopNavbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications(user?.id);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isAdmin = user?.role === "ADMIN";
@@ -24,7 +26,8 @@ export function TopNavbar() {
   const navItems = [
     { href: "/feed", icon: Home, label: "Home" },
     { href: "/communities", icon: Compass, label: "Explore" },
-    { href: "/settings", icon: Bell, label: "Notifications" },
+    { href: "/notifications", icon: Bell, label: "Notifications", badge: unreadCount },
+    { href: "/settings", icon: Settings, label: "Settings" },
     ...(user ? [{ href: `/u/${user.username}`, icon: User, label: "Profile" }] : []),
     ...(isPending ? [{ href: "/apply", icon: FileCheck, label: "Apply" }] : []),
     ...(isAdmin ? [{ href: "/admin", icon: Shield, label: "Admin" }] : []),
@@ -46,18 +49,24 @@ export function TopNavbar() {
           <nav className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              const badge = "badge" in item ? (item as { badge?: number }).badge : 0;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "relative px-4 py-2 text-[14px] font-medium transition-colors",
+                    "relative flex items-center gap-1 px-4 py-2 text-[14px] font-medium transition-colors",
                     active
                       ? "text-white"
                       : "text-[#888] hover:text-white",
                   )}
                 >
                   {item.label}
+                  {!!badge && badge > 0 && (
+                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-neon px-1 text-[10px] font-bold text-black">
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
                   {active && (
                     <span className="absolute inset-x-2 -bottom-[13px] h-[2px] rounded-full bg-neon" />
                   )}
@@ -107,6 +116,7 @@ export function TopNavbar() {
           <div className="fixed inset-x-0 top-[60px] z-50 border-b border-[#222] bg-[#0a0a0a] p-4">
             {navItems.map((item) => {
               const active = pathname === item.href;
+              const badge = "badge" in item ? (item as { badge?: number }).badge : 0;
               return (
                 <Link
                   key={item.href}
@@ -119,6 +129,11 @@ export function TopNavbar() {
                 >
                   <item.icon className="h-5 w-5" />
                   {item.label}
+                  {!!badge && badge > 0 && (
+                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-neon px-1 text-[10px] font-bold text-black">
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
