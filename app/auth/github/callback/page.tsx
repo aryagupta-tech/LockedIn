@@ -1,35 +1,62 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import { api, type AuthResponse } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { Suspense } from "react";
 
 function GitHubCallbackInner() {
   const router = useRouter();
-  const params = useSearchParams();
   const { setAuth } = useAuth();
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const code = params.get("code");
-    if (!code) {
-      setError("No authorization code received from GitHub");
-      return;
-    }
+    async function handleCallback() {
+      const hash = window.location.hash;
+      const params = new URLSearchParams(hash.replace("#", "?"));
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
 
-    api.post<AuthResponse>("/auth/github/callback", { code }, { skipAuth: true })
-      .then((data) => {
-        setAuth(data);
+      if (!accessToken || !refreshToken) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          try {
+            const result = await api.post<AuthResponse>(
+              "/auth/github/callback",
+              { access_token: session.access_token, refresh_token: session.refresh_token },
+              { skipAuth: true },
+            );
+            setAuth(result);
+            document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
+            router.push("/feed");
+            return;
+          } catch (err) {
+            setError((err as Error).message || "GitHub authentication failed");
+            return;
+          }
+        }
+        setError("No authorization tokens received from GitHub");
+        return;
+      }
+
+      try {
+        const result = await api.post<AuthResponse>(
+          "/auth/github/callback",
+          { access_token: accessToken, refresh_token: refreshToken },
+          { skipAuth: true },
+        );
+        setAuth(result);
         document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
         router.push("/feed");
-      })
-      .catch((err) => {
-        setError(err.message || "GitHub authentication failed");
-      });
-  }, [params, router, setAuth]);
+      } catch (err) {
+        setError((err as Error).message || "GitHub authentication failed");
+      }
+    }
+
+    handleCallback();
+  }, [router, setAuth]);
 
   if (error) {
     return (

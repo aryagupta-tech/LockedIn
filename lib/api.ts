@@ -1,49 +1,33 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { supabase } from "./supabase";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 interface ApiOptions extends RequestInit {
   skipAuth?: boolean;
 }
 
 class ApiClient {
-  private getToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("lockedin_access_token");
+  private accessToken: string | null = null;
+
+  setAccessToken(token: string) {
+    this.accessToken = token;
   }
 
-  private getRefreshToken(): string | null {
+  private async getToken(): Promise<string | null> {
+    if (this.accessToken) return this.accessToken;
     if (typeof window === "undefined") return null;
-    return localStorage.getItem("lockedin_refresh_token");
-  }
 
-  private setTokens(access: string, refresh: string) {
-    localStorage.setItem("lockedin_access_token", access);
-    localStorage.setItem("lockedin_refresh_token", refresh);
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      this.accessToken = data.session.access_token;
+      return this.accessToken;
+    }
+    return null;
   }
 
   clearTokens() {
-    localStorage.removeItem("lockedin_access_token");
-    localStorage.removeItem("lockedin_refresh_token");
+    this.accessToken = null;
     localStorage.removeItem("lockedin_user");
-  }
-
-  private async refreshAccessToken(): Promise<boolean> {
-    const refreshToken = this.getRefreshToken();
-    if (!refreshToken) return false;
-
-    try {
-      const res = await fetch(`${API_BASE}/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
-      });
-      if (!res.ok) return false;
-      const data = await res.json();
-      this.setTokens(data.accessToken, data.refreshToken);
-      localStorage.setItem("lockedin_user", JSON.stringify(data.user));
-      return true;
-    } catch {
-      return false;
-    }
   }
 
   async request<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
@@ -54,17 +38,17 @@ class ApiClient {
     };
 
     if (!skipAuth) {
-      const token = this.getToken();
+      const token = await this.getToken();
       if (token) headers["Authorization"] = `Bearer ${token}`;
     }
 
     let res = await fetch(`${API_BASE}${path}`, { ...rest, headers });
 
     if (res.status === 401 && !skipAuth) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        const newToken = this.getToken();
-        if (newToken) headers["Authorization"] = `Bearer ${newToken}`;
+      const { data } = await supabase.auth.refreshSession();
+      if (data.session) {
+        this.accessToken = data.session.access_token;
+        headers["Authorization"] = `Bearer ${data.session.access_token}`;
         res = await fetch(`${API_BASE}${path}`, { ...rest, headers });
       }
     }
@@ -159,6 +143,7 @@ export interface Comment {
     avatarUrl: string | null;
   };
   createdAt: string;
+  replies?: Comment[];
 }
 
 export interface Community {

@@ -1,62 +1,89 @@
 import fp from "fastify-plugin";
-import fastifyJwt from "@fastify/jwt";
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { getSupabaseAdmin } from "../lib/supabase";
 
 export default fp(
   async (fastify) => {
-    const cfg = fastify.config;
+    const supabase = getSupabaseAdmin();
 
-    await fastify.register(fastifyJwt, {
-      secret: cfg.JWT_SECRET,
-      sign: { expiresIn: cfg.JWT_ACCESS_EXPIRES_SECONDS },
-    });
-
-    // Verify JWT and attach user to request
     fastify.decorate(
       "authenticate",
       async function (request: FastifyRequest, reply: FastifyReply) {
-        try {
-          await request.jwtVerify();
-        } catch {
-          reply.code(401).send({ error: "Unauthorized", code: "UNAUTHORIZED" });
+        const authHeader = request.headers.authorization;
+        if (!authHeader?.startsWith("Bearer ")) {
+          return reply.code(401).send({ error: "Unauthorized", code: "UNAUTHORIZED" });
         }
+
+        const token = authHeader.slice(7);
+        const { data, error } = await supabase.auth.getUser(token);
+        if (error || !data.user) {
+          return reply.code(401).send({ error: "Unauthorized", code: "UNAUTHORIZED" });
+        }
+
+        (request as any).supabaseUser = data.user;
+        (request as any).user = {
+          sub: data.user.id,
+          role: data.user.user_metadata?.role || "USER",
+        };
       },
     );
 
-    // Require ADMIN role
     fastify.decorate(
       "requireAdmin",
       async function (request: FastifyRequest, reply: FastifyReply) {
-        try {
-          await request.jwtVerify();
-          if (request.user.role !== "ADMIN") {
-            reply.code(403).send({ error: "Forbidden", code: "FORBIDDEN" });
-          }
-        } catch {
-          reply.code(401).send({ error: "Unauthorized", code: "UNAUTHORIZED" });
+        const authHeader = request.headers.authorization;
+        if (!authHeader?.startsWith("Bearer ")) {
+          return reply.code(401).send({ error: "Unauthorized", code: "UNAUTHORIZED" });
         }
+
+        const token = authHeader.slice(7);
+        const { data, error } = await supabase.auth.getUser(token);
+        if (error || !data.user) {
+          return reply.code(401).send({ error: "Unauthorized", code: "UNAUTHORIZED" });
+        }
+
+        const profile = await fastify.prisma.user.findUnique({
+          where: { id: data.user.id },
+          select: { role: true },
+        });
+
+        if (!profile || profile.role !== "ADMIN") {
+          return reply.code(403).send({ error: "Forbidden", code: "FORBIDDEN" });
+        }
+
+        (request as any).supabaseUser = data.user;
+        (request as any).user = { sub: data.user.id, role: profile.role };
       },
     );
 
-    // Require APPROVED status (checks DB, not just the token claim)
     fastify.decorate(
       "requireApproved",
       async function (request: FastifyRequest, reply: FastifyReply) {
-        try {
-          await request.jwtVerify();
-          const user = await fastify.prisma.user.findUnique({
-            where: { id: request.user.sub },
-            select: { status: true },
-          });
-          if (!user || user.status !== "APPROVED") {
-            reply.code(403).send({
-              error: "Account not yet approved",
-              code: "NOT_APPROVED",
-            });
-          }
-        } catch {
-          reply.code(401).send({ error: "Unauthorized", code: "UNAUTHORIZED" });
+        const authHeader = request.headers.authorization;
+        if (!authHeader?.startsWith("Bearer ")) {
+          return reply.code(401).send({ error: "Unauthorized", code: "UNAUTHORIZED" });
         }
+
+        const token = authHeader.slice(7);
+        const { data, error } = await supabase.auth.getUser(token);
+        if (error || !data.user) {
+          return reply.code(401).send({ error: "Unauthorized", code: "UNAUTHORIZED" });
+        }
+
+        const profile = await fastify.prisma.user.findUnique({
+          where: { id: data.user.id },
+          select: { status: true, role: true },
+        });
+
+        if (!profile || profile.status !== "APPROVED") {
+          return reply.code(403).send({
+            error: "Account not yet approved",
+            code: "NOT_APPROVED",
+          });
+        }
+
+        (request as any).supabaseUser = data.user;
+        (request as any).user = { sub: data.user.id, role: profile.role };
       },
     );
   },

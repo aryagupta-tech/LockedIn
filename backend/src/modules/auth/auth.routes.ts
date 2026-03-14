@@ -47,19 +47,23 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   fastify.get("/github", { schema: githubUrlSchema }, async () => {
-    return { url: service.getGitHubAuthUrl() };
+    const origin = fastify.config.CORS_ORIGIN;
+    const redirectTo = `${origin}/auth/github/callback`;
+    return { url: service.getGitHubAuthUrl(redirectTo) };
   });
 
   fastify.post<{ Body: GitHubCallbackBody }>(
     "/github/callback",
     { schema: githubCallbackSchema },
     async (request, reply) => {
-      const result = await service.githubCallback(request.body.code);
+      const result = await service.githubCallback(
+        request.body.access_token,
+        request.body.refresh_token,
+      );
       return reply.send(result);
     },
   );
 
-  // Global error handler for auth routes
   fastify.setErrorHandler((error, _request, reply) => {
     if (error instanceof AppError) {
       return reply

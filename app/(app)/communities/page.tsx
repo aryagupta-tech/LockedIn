@@ -2,9 +2,25 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plus, Users2, Lock, Globe } from "lucide-react";
+import { Loader2, Plus, Lock, Globe, Compass } from "lucide-react";
 import { api, type Community } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const COMMUNITY_COLORS = [
+  "from-purple-500 to-pink-400",
+  "from-blue-500 to-cyan-400",
+  "from-green-500 to-emerald-400",
+  "from-orange-500 to-amber-400",
+  "from-rose-500 to-red-400",
+  "from-indigo-500 to-violet-400",
+];
+
+function getColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return COMMUNITY_COLORS[Math.abs(hash) % COMMUNITY_COLORS.length];
+}
 
 export default function CommunitiesPage() {
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -21,13 +37,11 @@ export default function CommunitiesPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-[var(--font-geist)] text-2xl font-semibold text-white">Communities</h1>
-          <p className="mt-1 text-sm text-zinc-500">Find your tribe</p>
-        </div>
-        <Button size="sm" asChild>
+    <div className="min-h-screen bg-[#000]">
+      {/* Header */}
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">Explore Communities</h1>
+        <Button size="sm" asChild className="rounded-full">
           <Link href="/communities/create">
             <Plus className="mr-1.5 h-3.5 w-3.5" /> Create
           </Link>
@@ -35,38 +49,66 @@ export default function CommunitiesPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-neon" />
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-[#888]" />
         </div>
       ) : communities.length === 0 ? (
-        <div className="rounded-2xl border border-white/[0.06] bg-surface/40 py-16 text-center">
-          <Users2 className="mx-auto mb-3 h-8 w-8 text-zinc-600" />
-          <p className="text-sm text-zinc-500">No communities yet. Create the first one!</p>
+        <div className="rounded-2xl border border-[#222] bg-[#111] px-8 py-20 text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-500/30 to-cyan-500/30">
+            <Compass className="h-10 w-10 text-[#888]" />
+          </div>
+          <h2 className="mb-2 text-xl font-bold text-white">No communities yet</h2>
+          <p className="mx-auto max-w-sm text-[15px] text-[#888]">
+            Create the first community and invite builders to join.
+          </p>
+          <Button size="sm" asChild className="mt-6 rounded-full">
+            <Link href="/communities/create">Create Community</Link>
+          </Button>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-4">
           {communities.map((c) => (
-            <Link
+            <div
               key={c.id}
-              href={`/communities/${c.slug}`}
-              className="group rounded-2xl border border-white/[0.06] bg-surface/60 p-5 transition-all hover:border-white/[0.1] hover:shadow-neon"
+              className="rounded-2xl border border-[#222] bg-[#111] p-6 transition-colors hover:border-[#333]"
             >
-              <div className="mb-3 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon/20 to-purple-500/20 text-sm font-bold text-white">
+              <div className="flex items-start gap-5">
+                <div
+                  className={cn(
+                    "flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-lg font-bold text-white",
+                    getColor(c.name)
+                  )}
+                >
                   {c.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-medium text-white group-hover:text-neon-light">{c.name}</h3>
-                  <div className="flex items-center gap-2 text-xs text-zinc-500">
-                    {c.isPrivate ? <Lock className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
-                    <span>{c.memberCount} member{c.memberCount !== 1 ? "s" : ""}</span>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[17px] font-bold text-white">{c.name}</h3>
+                    {c.isPrivate ? (
+                      <Lock className="h-4 w-4 flex-shrink-0 text-[#666]" />
+                    ) : (
+                      <Globe className="h-4 w-4 flex-shrink-0 text-[#666]" />
+                    )}
                   </div>
+                  <p className="mt-1 text-[14px] text-[#888]">
+                    {c.memberCount} member{c.memberCount !== 1 ? "s" : ""}
+                  </p>
+                  {c.description && (
+                    <p className="mt-2 line-clamp-2 text-[15px] leading-relaxed text-[#e4e4e4]">
+                      {c.description}
+                    </p>
+                  )}
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="flex-shrink-0 rounded-full border-[#333] text-[14px] text-white hover:bg-[#1a1a1a] hover:border-[#444]"
+                >
+                  <Link href={`/communities/${c.slug}`}>View</Link>
+                </Button>
               </div>
-              {c.description && (
-                <p className="line-clamp-2 text-sm text-zinc-400">{c.description}</p>
-              )}
-            </Link>
+            </div>
           ))}
         </div>
       )}

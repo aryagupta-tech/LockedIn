@@ -6,7 +6,6 @@ import { QUEUE_NAMES } from "../lib/queue";
 import { fetchGitHubSignal } from "../modules/scoring/providers/github.provider";
 import { fetchCodeforcesSignal } from "../modules/scoring/providers/codeforces.provider";
 import { fetchLeetCodeSignal } from "../modules/scoring/providers/leetcode.provider";
-import { decrypt } from "../lib/crypto";
 import { loadConfig } from "../config";
 
 interface RefreshPayload {
@@ -88,7 +87,6 @@ async function processRefresh(job: Job<RefreshPayload>) {
     where: { id: userId },
     select: {
       githubUsername: true,
-      githubTokenEnc: true,
       codeforcesHandle: true,
       leetcodeHandle: true,
     },
@@ -102,10 +100,7 @@ async function processRefresh(job: Job<RefreshPayload>) {
     switch (provider) {
       case "github":
         if (!user.githubUsername) return;
-        signal = await fetchGitHubSignal(
-          user.githubUsername,
-          user.githubTokenEnc ? decrypt(user.githubTokenEnc) : undefined,
-        );
+        signal = await fetchGitHubSignal(user.githubUsername);
         break;
       case "codeforces":
         if (!user.codeforcesHandle) return;

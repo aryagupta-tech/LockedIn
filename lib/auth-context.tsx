@@ -1,7 +1,9 @@
 "use client";
 
 import { createContext, useContext, useCallback, useEffect, useState, type ReactNode } from "react";
+import { supabase } from "./supabase";
 import { api, type User, type AuthResponse } from "./api";
+import type { Session } from "@supabase/supabase-js";
 
 interface AuthState {
   user: User | null;
@@ -20,32 +22,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("lockedin_user");
-    const token = localStorage.getItem("lockedin_access_token");
-    if (stored && token) {
-      try { setUser(JSON.parse(stored)); } catch { /* ignore */ }
-    }
-    setLoading(false);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        restoreProfile(session);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setUser(null);
+        localStorage.removeItem("lockedin_user");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  async function restoreProfile(session: Session) {
+    api.setAccessToken(session.access_token);
+    const stored = localStorage.getItem("lockedin_user");
+    if (stored) {
+      try {
+        setUser(JSON.parse(stored));
+      } catch { /* ignore */ }
+    }
+
+    try {
+      const profile = await api.get<User>("/profiles/me");
+      localStorage.setItem("lockedin_user", JSON.stringify(profile));
+      setUser(profile);
+    } catch { /* ignore */ }
+
+    setLoading(false);
+  }
+
   const setAuth = useCallback((data: AuthResponse) => {
-    localStorage.setItem("lockedin_access_token", data.accessToken);
-    localStorage.setItem("lockedin_refresh_token", data.refreshToken);
+    api.setAccessToken(data.accessToken);
     localStorage.setItem("lockedin_user", JSON.stringify(data.user));
     setUser(data.user);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const data = await api.post<AuthResponse>("/auth/login", { email, password }, { skipAuth: true });
+    supabase.auth.setSession({
+      access_token: data.accessToken,
+      refresh_token: data.refreshToken,
+    });
     setAuth(data);
   }, [setAuth]);
 
   const register = useCallback(async (body: { email: string; username: string; password: string; displayName: string }) => {
     const data = await api.post<AuthResponse>("/auth/register", body, { skipAuth: true });
+    supabase.auth.setSession({
+      access_token: data.accessToken,
+      refresh_token: data.refreshToken,
+    });
     setAuth(data);
   }, [setAuth]);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     api.clearTokens();
     setUser(null);
   }, []);

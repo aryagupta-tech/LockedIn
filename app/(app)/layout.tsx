@@ -1,7 +1,8 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { Sidebar } from "@/components/app/sidebar";
+import { TopNavbar } from "@/components/app/top-navbar";
+import { RightSidebar } from "@/components/app/right-sidebar";
 import { Loader2 } from "lucide-react";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -9,20 +10,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-black">
         <Loader2 className="h-8 w-8 animate-spin text-neon" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <Sidebar />
-      <main className="lg:pl-64">
-        <div className="mx-auto max-w-3xl px-4 py-8 pt-20 lg:pt-8">
+    <div className="min-h-screen bg-black">
+      <TopNavbar />
+      <div className="mx-auto flex max-w-[1200px] gap-6 px-5 pt-[72px]">
+        {/* Main feed */}
+        <main className="min-w-0 flex-1">
           {children}
-        </div>
-      </main>
+        </main>
+        {/* Right sidebar */}
+        <aside className="hidden w-[300px] flex-shrink-0 xl:block">
+          <RightSidebar />
+        </aside>
+      </div>
     </div>
   );
 }

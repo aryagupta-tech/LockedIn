@@ -1,28 +1,10 @@
-import { hash, compare } from "bcryptjs";
-import { createHash, randomBytes } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { ConflictError, UnauthorizedError } from "../../lib/errors";
-import { encrypt } from "../../lib/crypto";
-import {
-  buildGitHubAuthUrl,
-  exchangeGitHubCode,
-  fetchGitHubUser,
-  fetchGitHubEmail,
-} from "./github-oauth";
-
-const BCRYPT_ROUNDS = 12;
-
-function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
-}
-
-interface TokenPair {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-}
+import { getSupabaseAdmin } from "../../lib/supabase";
 
 export class AuthService {
+  private supabase = getSupabaseAdmin();
+
   constructor(private readonly app: FastifyInstance) {}
 
   async register(data: {
@@ -46,193 +28,175 @@ export class AuthService {
       throw new ConflictError(`A user with this ${field} already exists`);
     }
 
-    const passwordHash = await hash(data.password, BCRYPT_ROUNDS);
+    const { data: authData, error: authError } =
+      await this.supabase.auth.admin.createUser({
+        email: data.email.toLowerCase(),
+        password: data.password,
+        email_confirm: true,
+        user_metadata: {
+          username: data.username.toLowerCase(),
+          displayName: data.displayName,
+        },
+      });
+
+    if (authError) {
+      throw new ConflictError(authError.message);
+    }
 
     const user = await this.app.prisma.user.create({
       data: {
+        id: authData.user.id,
         email: data.email.toLowerCase(),
         username: data.username.toLowerCase(),
         displayName: data.displayName,
-        passwordHash,
       },
     });
 
-    const tokens = await this.generateTokens(user.id, user.role);
-    return { ...tokens, user: this.publicUser(user) };
+    const { data: session, error: signInError } =
+      await this.supabase.auth.signInWithPassword({
+        email: data.email.toLowerCase(),
+        password: data.password,
+      });
+
+    if (signInError || !session.session) {
+      throw new UnauthorizedError("Account created but login failed. Please try logging in.");
+    }
+
+    return {
+      accessToken: session.session.access_token,
+      refreshToken: session.session.refresh_token,
+      expiresIn: session.session.expires_in,
+      user: this.publicUser(user),
+    };
   }
 
   async login(email: string, password: string) {
+    const { data: session, error } =
+      await this.supabase.auth.signInWithPassword({
+        email: email.toLowerCase(),
+        password,
+      });
+
+    if (error || !session.session) {
+      throw new UnauthorizedError("Invalid email or password");
+    }
+
     const user = await this.app.prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-
-    if (!user?.passwordHash) {
-      throw new UnauthorizedError("Invalid email or password");
-    }
-
-    const valid = await compare(password, user.passwordHash);
-    if (!valid) {
-      throw new UnauthorizedError("Invalid email or password");
-    }
-
-    if (user.status === "BANNED") {
-      throw new UnauthorizedError("This account has been suspended");
-    }
-
-    const tokens = await this.generateTokens(user.id, user.role);
-    return { ...tokens, user: this.publicUser(user) };
-  }
-
-  async refresh(refreshToken: string) {
-    const tokenHash = hashToken(refreshToken);
-
-    const stored = await this.app.prisma.refreshToken.findUnique({
-      where: { tokenHash },
-      include: { user: true },
-    });
-
-    if (!stored || stored.expiresAt < new Date()) {
-      if (stored) {
-        // Token reuse detected — revoke all tokens for this user
-        await this.app.prisma.refreshToken.deleteMany({
-          where: { userId: stored.userId },
-        });
-      }
-      throw new UnauthorizedError("Invalid or expired refresh token");
-    }
-
-    // Rotate: delete old token, issue new pair
-    await this.app.prisma.refreshToken.delete({ where: { id: stored.id } });
-
-    const tokens = await this.generateTokens(
-      stored.user.id,
-      stored.user.role,
-    );
-    return { ...tokens, user: this.publicUser(stored.user) };
-  }
-
-  getGitHubAuthUrl(): string {
-    return buildGitHubAuthUrl();
-  }
-
-  async githubCallback(code: string) {
-    const ghToken = await exchangeGitHubCode(code);
-    const ghUser = await fetchGitHubUser(ghToken);
-
-    let email = ghUser.email;
-    if (!email) {
-      email = await fetchGitHubEmail(ghToken);
-    }
-    if (!email) {
-      throw new UnauthorizedError(
-        "No verified email found on your GitHub account",
-      );
-    }
-
-    let user = await this.app.prisma.user.findUnique({
-      where: { githubId: ghUser.id },
+      where: { id: session.user.id },
     });
 
     if (!user) {
-      // Check if email is taken by a non-GitHub user
-      const emailUser = await this.app.prisma.user.findUnique({
-        where: { email: email.toLowerCase() },
-      });
-
-      if (emailUser) {
-        // Link GitHub to existing account
-        user = await this.app.prisma.user.update({
-          where: { id: emailUser.id },
-          data: {
-            githubId: ghUser.id,
-            githubUsername: ghUser.login,
-            githubTokenEnc: encrypt(ghToken),
-            avatarUrl: emailUser.avatarUrl || ghUser.avatar_url,
-          },
-        });
-      } else {
-        // Create new user — derive a unique username
-        let username = ghUser.login.toLowerCase().replace(/[^a-z0-9_]/g, "_");
-        const taken = await this.app.prisma.user.findUnique({
-          where: { username },
-        });
-        if (taken) {
-          username = `${username}_${randomBytes(3).toString("hex")}`;
-        }
-
-        user = await this.app.prisma.user.create({
-          data: {
-            email: email.toLowerCase(),
-            username,
-            displayName: ghUser.name || ghUser.login,
-            avatarUrl: ghUser.avatar_url,
-            bio: ghUser.bio,
-            githubId: ghUser.id,
-            githubUsername: ghUser.login,
-            githubTokenEnc: encrypt(ghToken),
-          },
-        });
-      }
-    } else {
-      // Update token on every login
-      user = await this.app.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          githubTokenEnc: encrypt(ghToken),
-          githubUsername: ghUser.login,
-          avatarUrl: user.avatarUrl || ghUser.avatar_url,
-        },
-      });
+      throw new UnauthorizedError("Profile not found. Please register first.");
     }
 
     if (user.status === "BANNED") {
       throw new UnauthorizedError("This account has been suspended");
     }
 
-    const tokens = await this.generateTokens(user.id, user.role);
-    return { ...tokens, user: this.publicUser(user) };
+    return {
+      accessToken: session.session.access_token,
+      refreshToken: session.session.refresh_token,
+      expiresIn: session.session.expires_in,
+      user: this.publicUser(user),
+    };
   }
 
-  // ─── Internals ───────────────────────────────────────────────────────────
-
-  private async generateTokens(
-    userId: string,
-    role: string,
-  ): Promise<TokenPair> {
-    const cfg = this.app.config;
-    const expiresIn = cfg.JWT_ACCESS_EXPIRES_SECONDS;
-
-    const accessToken = this.app.jwt.sign(
-      { sub: userId, role },
-      { expiresIn },
-    );
-
-    const rawRefresh = randomBytes(48).toString("hex");
-    const tokenHash = hashToken(rawRefresh);
-
-    await this.app.prisma.refreshToken.create({
-      data: {
-        tokenHash,
-        userId,
-        expiresAt: new Date(
-          Date.now() + cfg.JWT_REFRESH_EXPIRES_SECONDS * 1000,
-        ),
-      },
+  async refresh(refreshToken: string) {
+    const { data: session, error } = await this.supabase.auth.refreshSession({
+      refresh_token: refreshToken,
     });
 
-    // Limit active refresh tokens per user (keep latest 5)
-    const tokens = await this.app.prisma.refreshToken.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      skip: 5,
-    });
-    if (tokens.length > 0) {
-      await this.app.prisma.refreshToken.deleteMany({
-        where: { id: { in: tokens.map((t) => t.id) } },
-      });
+    if (error || !session.session) {
+      throw new UnauthorizedError("Invalid or expired refresh token");
     }
 
-    return { accessToken, refreshToken: rawRefresh, expiresIn };
+    const user = await this.app.prisma.user.findUnique({
+      where: { id: session.user!.id },
+    });
+
+    if (!user) {
+      throw new UnauthorizedError("Profile not found");
+    }
+
+    return {
+      accessToken: session.session.access_token,
+      refreshToken: session.session.refresh_token,
+      expiresIn: session.session.expires_in,
+      user: this.publicUser(user),
+    };
+  }
+
+  getGitHubAuthUrl(redirectTo: string): string {
+    return `${this.app.config.SUPABASE_URL}/auth/v1/authorize?provider=github&redirect_to=${encodeURIComponent(redirectTo)}`;
+  }
+
+  async githubCallback(accessToken: string, refreshToken: string) {
+    const { data: session, error } = await this.supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (error || !session.session) {
+      throw new UnauthorizedError("GitHub authentication failed");
+    }
+
+    const supaUser = session.user!;
+    let user = await this.app.prisma.user.findUnique({
+      where: { id: supaUser.id },
+    });
+
+    if (!user) {
+      const meta = supaUser.user_metadata || {};
+      let username = (
+        meta.user_name ||
+        meta.preferred_username ||
+        supaUser.email?.split("@")[0] ||
+        "user"
+      )
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "_");
+
+      const taken = await this.app.prisma.user.findUnique({
+        where: { username },
+      });
+      if (taken) {
+        username = `${username}_${supaUser.id.slice(0, 6)}`;
+      }
+
+      user = await this.app.prisma.user.create({
+        data: {
+          id: supaUser.id,
+          email: (supaUser.email || `${username}@github.user`).toLowerCase(),
+          username,
+          displayName: meta.full_name || meta.name || username,
+          avatarUrl: meta.avatar_url || null,
+          githubId: meta.provider_id ? parseInt(meta.provider_id) : null,
+          githubUsername: meta.user_name || null,
+        },
+      });
+    } else {
+      const meta = supaUser.user_metadata || {};
+      if (meta.avatar_url && !user.avatarUrl) {
+        user = await this.app.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            avatarUrl: meta.avatar_url,
+            githubUsername: meta.user_name || user.githubUsername,
+          },
+        });
+      }
+    }
+
+    if (user.status === "BANNED") {
+      throw new UnauthorizedError("This account has been suspended");
+    }
+
+    return {
+      accessToken: session.session.access_token,
+      refreshToken: session.session.refresh_token,
+      expiresIn: session.session.expires_in,
+      user: this.publicUser(user),
+    };
   }
 
   private publicUser(user: {

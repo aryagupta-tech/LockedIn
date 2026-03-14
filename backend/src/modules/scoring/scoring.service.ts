@@ -9,7 +9,6 @@ import {
 import { fetchGitHubSignal } from "./providers/github.provider";
 import { fetchCodeforcesSignal } from "./providers/codeforces.provider";
 import { fetchLeetCodeSignal } from "./providers/leetcode.provider";
-import { decrypt } from "../../lib/crypto";
 
 const WEIGHTS_CACHE_KEY = "scoring:weights";
 const WEIGHTS_CACHE_TTL = 300; // 5 minutes
@@ -60,19 +59,12 @@ export class ScoringService {
     const signals: SignalInput[] = [];
     const errors: string[] = [];
 
-    // GitHub
+    // GitHub (public API — no user token needed for public profile data)
     if (application.githubUrl) {
       const username = this.extractGitHubUsername(application.githubUrl);
       if (username) {
         try {
-          const user = await this.app.prisma.user.findUnique({
-            where: { id: application.userId },
-            select: { githubTokenEnc: true },
-          });
-          const token = user?.githubTokenEnc
-            ? decrypt(user.githubTokenEnc)
-            : undefined;
-          signals.push(await fetchGitHubSignal(username, token));
+          signals.push(await fetchGitHubSignal(username));
         } catch (e) {
           errors.push(`github: ${(e as Error).message}`);
         }

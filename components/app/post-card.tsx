@@ -2,21 +2,43 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Trash2 } from "lucide-react";
 import { api, type Post } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
+const AVATAR_COLORS = [
+  "from-violet-500 to-fuchsia-500",
+  "from-blue-500 to-cyan-400",
+  "from-orange-500 to-rose-500",
+  "from-emerald-500 to-teal-400",
+  "from-pink-500 to-rose-400",
+  "from-amber-500 to-orange-400",
+  "from-indigo-500 to-blue-400",
+  "from-teal-500 to-emerald-400",
+];
+
+function getAvatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 function timeAgo(date: string): string {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return "just now";
+  if (seconds < 60) return "now";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d`;
+  if (days < 7) return `${days}d`;
   return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatCount(n: number): string {
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+  return String(n);
 }
 
 export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: string) => void }) {
@@ -24,8 +46,11 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
   const [liked, setLiked] = useState(post.hasLiked ?? false);
   const [likes, setLikes] = useState(post.likesCount);
   const [toggling, setToggling] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const isAuthor = user?.id === post.author.id;
+  const avatarColor = getAvatarColor(post.author.username);
 
   const toggleLike = async () => {
     if (toggling) return;
@@ -49,52 +74,121 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
       await api.del(`/posts/${post.id}`);
       onDelete?.(post.id);
     } catch { /* ignore */ }
+    setShowMenu(false);
   };
 
   return (
-    <article className="rounded-2xl border border-white/[0.06] bg-surface/60 p-5 transition-all hover:border-white/[0.1]">
-      <div className="mb-3 flex items-start justify-between">
+    <div className="post-card">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3">
         <Link href={`/u/${post.author.username}`} className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-neon/20 to-blue-500/20 text-sm font-bold text-white">
-            {post.author.displayName.charAt(0).toUpperCase()}
+          <div className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-[13px] font-bold text-white",
+            avatarColor,
+          )}>
+            {post.author.avatarUrl ? (
+              <img src={post.author.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+            ) : (
+              post.author.displayName.charAt(0).toUpperCase()
+            )}
           </div>
           <div>
-            <p className="text-sm font-medium text-white">{post.author.displayName}</p>
-            <p className="text-xs text-zinc-500">@{post.author.username} &middot; {timeAgo(post.createdAt)}</p>
+            <p className="text-[14px] font-semibold text-white">{post.author.displayName}</p>
+            <p className="text-[12px] text-[#777]">@{post.author.username}</p>
           </div>
         </Link>
-        {isAuthor && (
-          <button onClick={handleDelete} className="rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-red-400">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )}
+
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] text-[#555]">{timeAgo(post.createdAt)}</span>
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="rounded-full p-1.5 text-[#555] transition-colors hover:text-white"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+            {showMenu && isAuthor && (
+              <div className="absolute right-0 top-8 z-10 rounded-xl border border-[#222] bg-[#111] py-1 shadow-lg">
+                <button
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] text-red-400 hover:bg-[#1a1a1a]"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      <Link href={`/post/${post.id}`}>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-200">{post.content}</p>
+      {/* Content */}
+      <Link href={`/post/${post.id}`} className="block px-4 pb-3">
+        <p className="whitespace-pre-wrap text-[15px] leading-[1.65] text-[#e4e4e4]">
+          {post.content}
+        </p>
       </Link>
 
+      {/* Code block */}
       {post.codeSnippet && (
-        <div className="mt-3 overflow-x-auto rounded-xl border border-white/[0.06] bg-[#0a0e1a] p-4">
+        <div className="mx-4 mb-3 overflow-hidden rounded-xl border border-[#222]">
           {post.codeLanguage && (
-            <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-zinc-600">{post.codeLanguage}</p>
+            <div className="border-b border-[#222] bg-[#0a0a0a] px-4 py-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#555]">
+                {post.codeLanguage}
+              </span>
+            </div>
           )}
-          <pre className="text-xs text-zinc-300">
-            <code>{post.codeSnippet}</code>
-          </pre>
+          <div className="overflow-x-auto bg-[#0a0a0a] p-4">
+            <pre className="text-[13px] leading-relaxed text-[#ccc]">
+              <code>{post.codeSnippet}</code>
+            </pre>
+          </div>
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-5">
-        <button onClick={toggleLike} className="flex items-center gap-1.5 text-xs transition-colors">
-          <Heart className={cn("h-4 w-4", liked ? "fill-red-400 text-red-400" : "text-zinc-500 hover:text-red-400")} />
-          <span className={liked ? "text-red-400" : "text-zinc-500"}>{likes}</span>
+      {/* Actions */}
+      <div className="flex items-center justify-between border-t border-[#1a1a1a] px-4 py-2">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={toggleLike}
+            className="group flex items-center gap-1.5 transition-colors"
+          >
+            <Heart className={cn(
+              "h-[20px] w-[20px] transition-all",
+              liked ? "fill-red-500 text-red-500 scale-110" : "text-[#777] group-hover:text-red-400"
+            )} />
+            {likes > 0 && (
+              <span className={cn("text-[13px]", liked ? "text-red-400" : "text-[#777]")}>
+                {formatCount(likes)}
+              </span>
+            )}
+          </button>
+
+          <Link
+            href={`/post/${post.id}`}
+            className="group flex items-center gap-1.5 text-[#777] transition-colors hover:text-blue-400"
+          >
+            <MessageCircle className="h-[20px] w-[20px] transition-colors group-hover:text-blue-400" />
+            {post.commentsCount > 0 && (
+              <span className="text-[13px]">{formatCount(post.commentsCount)}</span>
+            )}
+          </Link>
+
+          <button className="text-[#777] transition-colors hover:text-emerald-400">
+            <Share2 className="h-[18px] w-[18px]" />
+          </button>
+        </div>
+
+        <button
+          onClick={() => setSaved(!saved)}
+          className="transition-colors"
+        >
+          <Bookmark className={cn(
+            "h-[20px] w-[20px]",
+            saved ? "fill-neon text-neon" : "text-[#777] hover:text-neon"
+          )} />
         </button>
-        <Link href={`/post/${post.id}`} className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300">
-          <MessageCircle className="h-4 w-4" />
-          <span>{post.commentsCount}</span>
-        </Link>
       </div>
-    </article>
+    </div>
   );
 }

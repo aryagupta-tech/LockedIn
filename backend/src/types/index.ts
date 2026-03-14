@@ -20,11 +20,9 @@ declare module "fastify" {
       reply: import("fastify").FastifyReply,
     ) => Promise<void>;
   }
-}
 
-declare module "@fastify/jwt" {
-  interface FastifyJWT {
-    payload: { sub: string; role: string };
+  interface FastifyRequest {
     user: { sub: string; role: string };
+    supabaseUser: import("@supabase/supabase-js").User;
   }
 }

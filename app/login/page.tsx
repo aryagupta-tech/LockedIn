@@ -7,7 +7,8 @@ import { Github, Lock, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
-import { api, ApiError } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,8 +35,11 @@ export default function LoginPage() {
 
   const handleGitHub = async () => {
     try {
-      const { url } = await api.get<{ url: string }>("/auth/github", { skipAuth: true });
-      window.location.href = url;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: { redirectTo: `${window.location.origin}/auth/github/callback` },
+      });
+      if (error) throw error;
     } catch {
       setError("Failed to start GitHub login");
     }

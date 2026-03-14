@@ -26,7 +26,8 @@ export const RefreshBody = Type.Object({
 export type RefreshBody = Static<typeof RefreshBody>;
 
 export const GitHubCallbackBody = Type.Object({
-  code: Type.String(),
+  access_token: Type.String(),
+  refresh_token: Type.String(),
 });
 export type GitHubCallbackBody = Static<typeof GitHubCallbackBody>;
 
@@ -72,7 +73,7 @@ export const loginSchema = {
 
 export const refreshSchema = {
   tags: ["auth"],
-  summary: "Refresh access token",
+  summary: "Refresh access token using refresh token",
   body: RefreshBody,
   response: { 200: AuthTokens, 401: ErrorResponse },
 };
@@ -87,7 +88,7 @@ export const githubUrlSchema = {
 
 export const githubCallbackSchema = {
   tags: ["auth"],
-  summary: "Exchange GitHub OAuth code for tokens",
+  summary: "Exchange Supabase OAuth tokens after GitHub callback",
   body: GitHubCallbackBody,
   response: { 200: AuthTokens },
 };

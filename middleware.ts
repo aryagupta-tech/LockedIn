@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicPaths = ["/", "/login", "/register", "/auth"];
+const publicPaths = ["/", "/login", "/register", "/auth", "/dev-login"];
 const authOnlyPaths = ["/login", "/register"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const supabaseRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https:\/\/(.+)\.supabase\.co/)?.[1] || "";
   const hasToken = request.cookies.has("lockedin_logged_in") ||
-    request.headers.get("x-has-token") === "true";
+    request.cookies.has(`sb-${supabaseRef}-auth-token`);
 
-  // For auth pages, redirect logged-in users to feed
   if (hasToken && authOnlyPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL("/feed", request.url));
   }
 
-  // For app pages, redirect unauthenticated users to login
   if (!hasToken && !publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
     return NextResponse.redirect(new URL("/login", request.url));
   }

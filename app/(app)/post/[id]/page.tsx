@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Heart, Loader2, MessageCircle, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, Heart, Loader2, MessageCircle, Trash2, Share2 } from "lucide-react";
 import Link from "next/link";
 import { api, type Post, type Comment } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -89,130 +89,177 @@ export default function PostDetailPage() {
   if (!post) {
     return (
       <div className="py-20 text-center">
-        <p className="text-zinc-500">Post not found</p>
-        <Link href="/feed" className="mt-4 inline-block text-sm text-neon">Back to feed</Link>
+        <p className="text-zinc-400">Post not found</p>
+        <Link href="/feed" className="mt-4 inline-block text-sm text-neon hover:underline">Back to feed</Link>
       </div>
     );
   }
 
   const isAuthor = user?.id === post.author.id;
-
   const topLevel = comments.filter((c) => !c.parentId);
-  const replies = comments.filter((c) => c.parentId);
+  const repliesMap = comments.filter((c) => c.parentId);
 
   return (
-    <div className="space-y-6">
-      <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300">
-        <ArrowLeft className="h-4 w-4" /> Back
-      </button>
+    <div>
+      {/* Header */}
+      <div className="flex items-center gap-4 border-b border-white/[0.06] pb-4">
+        <button onClick={() => router.back()} className="rounded-full p-2 text-zinc-400 hover:bg-white/[0.06] hover:text-white">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <h1 className="text-xl font-bold text-white">Post</h1>
+      </div>
 
-      <article className="rounded-2xl border border-white/[0.06] bg-surface/60 p-6">
-        <div className="mb-4 flex items-start justify-between">
-          <Link href={`/u/${post.author.username}`} className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-neon/20 to-blue-500/20 text-sm font-bold text-white">
-              {post.author.displayName.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <p className="font-medium text-white">{post.author.displayName}</p>
-              <p className="text-xs text-zinc-500">@{post.author.username} &middot; {timeAgo(post.createdAt)}</p>
+      {/* Post */}
+      <div className="border-b border-white/[0.06] px-1 py-4">
+        <div className="flex items-start gap-3">
+          <Link href={`/u/${post.author.username}`} className="flex-shrink-0">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-neon/25 to-blue-500/25 text-sm font-bold text-white ring-1 ring-white/[0.1]">
+              {post.author.avatarUrl ? (
+                <img src={post.author.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+              ) : (
+                post.author.displayName.charAt(0).toUpperCase()
+              )}
             </div>
           </Link>
-          {isAuthor && (
-            <button onClick={handleDelete} className="rounded-lg p-1.5 text-zinc-600 hover:bg-white/[0.04] hover:text-red-400">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <div>
+                <Link href={`/u/${post.author.username}`} className="text-[15px] font-semibold text-white hover:underline">
+                  {post.author.displayName}
+                </Link>
+                <p className="text-sm text-zinc-500">@{post.author.username}</p>
+              </div>
+              {isAuthor && (
+                <button onClick={handleDelete} className="rounded-lg p-1.5 text-zinc-600 hover:bg-red-500/10 hover:text-red-400">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-200">{post.content}</p>
+        <p className="mt-4 whitespace-pre-wrap text-[17px] leading-relaxed text-zinc-100">{post.content}</p>
 
         {post.codeSnippet && (
-          <div className="mt-4 overflow-x-auto rounded-xl border border-white/[0.06] bg-[#0a0e1a] p-4">
+          <div className="mt-4 overflow-x-auto rounded-xl border border-white/[0.08] bg-[#0d1117] p-4">
             {post.codeLanguage && (
-              <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-zinc-600">{post.codeLanguage}</p>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{post.codeLanguage}</p>
             )}
-            <pre className="text-xs text-zinc-300"><code>{post.codeSnippet}</code></pre>
+            <pre className="text-[13px] leading-relaxed text-zinc-300"><code>{post.codeSnippet}</code></pre>
           </div>
         )}
 
-        <div className="mt-5 flex items-center gap-5 border-t border-white/[0.06] pt-4">
-          <button onClick={toggleLike} className="flex items-center gap-1.5 text-sm">
-            <Heart className={cn("h-4 w-4", liked ? "fill-red-400 text-red-400" : "text-zinc-500 hover:text-red-400")} />
-            <span className={liked ? "text-red-400" : "text-zinc-500"}>{likes}</span>
-          </button>
-          <div className="flex items-center gap-1.5 text-sm text-zinc-500">
-            <MessageCircle className="h-4 w-4" />
-            <span>{comments.length}</span>
-          </div>
+        <p className="mt-4 text-sm text-zinc-500">
+          {new Date(post.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          {" · "}
+          {new Date(post.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+        </p>
+
+        {/* Stats bar */}
+        <div className="mt-3 flex items-center gap-5 border-t border-white/[0.06] pt-3 text-[14px]">
+          <span className="text-zinc-400"><strong className="font-semibold text-white">{likes}</strong> Likes</span>
+          <span className="text-zinc-400"><strong className="font-semibold text-white">{comments.length}</strong> Comments</span>
         </div>
-      </article>
+
+        {/* Action buttons */}
+        <div className="mt-1 flex items-center justify-around border-t border-white/[0.06] pt-1">
+          <button
+            onClick={toggleLike}
+            className={cn(
+              "flex items-center gap-2 rounded-full px-4 py-2 text-[14px] transition-colors",
+              liked ? "text-red-400" : "text-zinc-500 hover:text-red-400"
+            )}
+          >
+            <Heart className={cn("h-5 w-5", liked && "fill-red-400")} />
+          </button>
+          <button className="flex items-center gap-2 rounded-full px-4 py-2 text-[14px] text-zinc-500 hover:text-blue-400">
+            <MessageCircle className="h-5 w-5" />
+          </button>
+          <button className="flex items-center gap-2 rounded-full px-4 py-2 text-[14px] text-zinc-500 hover:text-green-400">
+            <Share2 className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
 
       {/* Comment input */}
-      <div className="rounded-2xl border border-white/[0.06] bg-surface/60 p-4">
+      <div className="border-b border-white/[0.06] px-1 py-3">
         {replyTo && (
           <div className="mb-2 flex items-center gap-2 text-xs text-zinc-500">
             <span>Replying to comment</span>
             <button onClick={() => setReplyTo(null)} className="text-neon hover:underline">Cancel</button>
           </div>
         )}
-        <div className="flex gap-3">
-          <textarea
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neon/25 to-blue-500/25 text-xs font-bold text-white ring-1 ring-white/[0.1]">
+            {user?.displayName?.charAt(0).toUpperCase() || "?"}
+          </div>
+          <input
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Write a comment..."
-            rows={2}
-            className="flex-1 resize-none bg-transparent text-sm text-zinc-200 placeholder-zinc-600 outline-none"
+            onKeyDown={(e) => e.key === "Enter" && handleComment()}
+            placeholder="Post your reply"
+            className="flex-1 bg-transparent text-[15px] text-white placeholder-zinc-600 outline-none"
           />
-          <Button size="sm" onClick={handleComment} disabled={!commentText.trim() || submitting}>
-            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          <Button size="sm" onClick={handleComment} disabled={!commentText.trim() || submitting} className="rounded-full px-4">
+            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Reply"}
           </Button>
         </div>
       </div>
 
       {/* Comments */}
-      <div className="space-y-3">
-        {topLevel.map((comment) => (
-          <CommentItem
-            key={comment.id}
-            comment={comment}
-            replies={replies.filter((r) => r.parentId === comment.id)}
-            onReply={(id) => { setReplyTo(id); }}
-          />
-        ))}
-        {comments.length === 0 && (
-          <p className="py-8 text-center text-sm text-zinc-600">No comments yet. Be the first!</p>
-        )}
-      </div>
+      {topLevel.map((comment) => (
+        <CommentItem
+          key={comment.id}
+          comment={comment}
+          replies={repliesMap.filter((r) => r.parentId === comment.id)}
+          onReply={(id) => setReplyTo(id)}
+        />
+      ))}
+      {comments.length === 0 && (
+        <div className="py-12 text-center">
+          <p className="text-[15px] text-zinc-500">No comments yet. Be the first to reply!</p>
+        </div>
+      )}
     </div>
   );
 }
 
 function CommentItem({ comment, replies, onReply }: { comment: Comment; replies: Comment[]; onReply: (id: string) => void }) {
   return (
-    <div className="rounded-xl border border-white/[0.04] bg-surface/40 p-4">
-      <div className="mb-2 flex items-center gap-2">
-        <Link href={`/u/${comment.author.username}`} className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-neon/15 to-blue-500/15 text-[10px] font-bold text-white">
+    <div className="border-b border-white/[0.06] px-1 py-3">
+      <div className="flex gap-3">
+        <Link href={`/u/${comment.author.username}`} className="flex-shrink-0">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-neon/20 to-blue-500/20 text-xs font-bold text-white ring-1 ring-white/[0.08]">
             {comment.author.displayName.charAt(0).toUpperCase()}
           </div>
-          <span className="text-xs font-medium text-white">{comment.author.displayName}</span>
         </Link>
-        <span className="text-[10px] text-zinc-600">{timeAgo(comment.createdAt)}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <Link href={`/u/${comment.author.username}`} className="text-[14px] font-semibold text-white hover:underline">
+              {comment.author.displayName}
+            </Link>
+            <span className="text-sm text-zinc-500">@{comment.author.username}</span>
+            <span className="text-zinc-600">&middot;</span>
+            <span className="text-sm text-zinc-500">{timeAgo(comment.createdAt)}</span>
+          </div>
+          <p className="mt-0.5 text-[15px] text-zinc-200">{comment.content}</p>
+          <button onClick={() => onReply(comment.id)} className="mt-1.5 text-[13px] text-zinc-500 hover:text-neon">
+            Reply
+          </button>
+        </div>
       </div>
-      <p className="text-sm text-zinc-300">{comment.content}</p>
-      <button onClick={() => onReply(comment.id)} className="mt-2 text-[11px] text-zinc-600 hover:text-neon">
-        Reply
-      </button>
 
       {replies.length > 0 && (
-        <div className="ml-6 mt-3 space-y-2 border-l border-white/[0.04] pl-4">
+        <div className="ml-12 mt-2 space-y-0 border-l-2 border-white/[0.06]">
           {replies.map((r) => (
-            <div key={r.id} className="rounded-lg bg-surface/30 p-3">
-              <div className="mb-1 flex items-center gap-2">
-                <Link href={`/u/${r.author.username}`} className="text-xs font-medium text-white">{r.author.displayName}</Link>
-                <span className="text-[10px] text-zinc-600">{timeAgo(r.createdAt)}</span>
+            <div key={r.id} className="py-2.5 pl-4">
+              <div className="flex items-center gap-1.5">
+                <Link href={`/u/${r.author.username}`} className="text-[13px] font-semibold text-white hover:underline">
+                  {r.author.displayName}
+                </Link>
+                <span className="text-xs text-zinc-500">{timeAgo(r.createdAt)}</span>
               </div>
-              <p className="text-xs text-zinc-400">{r.content}</p>
+              <p className="mt-0.5 text-[14px] text-zinc-300">{r.content}</p>
             </div>
           ))}
         </div>

@@ -11,7 +11,6 @@ import {
 import { fetchGitHubSignal } from "../modules/scoring/providers/github.provider";
 import { fetchCodeforcesSignal } from "../modules/scoring/providers/codeforces.provider";
 import { fetchLeetCodeSignal } from "../modules/scoring/providers/leetcode.provider";
-import { decrypt } from "../lib/crypto";
 import { getConfig } from "../config";
 
 interface VerificationPayload {
@@ -40,14 +39,7 @@ async function fetchSignals(application: {
     const username = extractGitHubUsername(application.githubUrl);
     if (username) {
       try {
-        const user = await prisma.user.findUnique({
-          where: { id: application.userId },
-          select: { githubTokenEnc: true },
-        });
-        const token = user?.githubTokenEnc
-          ? decrypt(user.githubTokenEnc)
-          : undefined;
-        signals.push(await fetchGitHubSignal(username, token));
+        signals.push(await fetchGitHubSignal(username));
       } catch (e) {
         console.warn(`GitHub fetch failed: ${(e as Error).message}`);
       }

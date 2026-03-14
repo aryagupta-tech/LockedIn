@@ -12,7 +12,7 @@ const buttonVariants = cva(
           "bg-gradient-to-r from-[#e3c98e] via-[#d4a85c] to-[#c49450] text-[#1a1005] shadow-neon hover:shadow-neon-lg hover:brightness-110 active:scale-[0.98]",
         ghost: "text-zinc-300 hover:bg-white/5 hover:text-white",
         outline:
-          "border border-white/10 bg-white/[0.03] text-zinc-200 hover:border-neon/30 hover:bg-neon/[0.06] hover:text-neon-light active:scale-[0.98]"
+          "border border-[#333] bg-transparent text-white hover:bg-[#1a1a1a] hover:border-[#444] active:scale-[0.98]"
       },
       size: {
         default: "h-11 px-5",

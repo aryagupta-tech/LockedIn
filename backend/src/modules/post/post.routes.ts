@@ -3,6 +3,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { PostService } from "./post.service";
 import { AppError } from "../../lib/errors";
 import { CreatePostBody, CreateCommentBody, PostResponse, type CreatePostBody as CPB, type CreateCommentBody as CCB } from "./post.schemas";
+import { getSupabaseAdmin } from "../../lib/supabase";
 
 const postRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new PostService(fastify);
@@ -26,7 +27,14 @@ const postRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request) => {
       let viewerId: string | undefined;
-      try { await request.jwtVerify(); viewerId = request.user.sub; } catch { /* ok */ }
+      try {
+        const authHeader = request.headers.authorization;
+        if (authHeader?.startsWith("Bearer ")) {
+          const supabase = getSupabaseAdmin();
+          const { data } = await supabase.auth.getUser(authHeader.slice(7));
+          if (data.user) viewerId = data.user.id;
+        }
+      } catch { /* ok */ }
       return service.getById(request.params.id, viewerId);
     },
   );

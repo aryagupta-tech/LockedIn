@@ -3,6 +3,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { ProfileService } from "./profile.service";
 import { AppError } from "../../lib/errors";
 import { UpdateProfileBody, ProfileResponse } from "./profile.schemas";
+import { getSupabaseAdmin } from "../../lib/supabase";
 
 const profileRoutes: FastifyPluginAsync = async (fastify) => {
   const service = new ProfileService(fastify);
@@ -40,8 +41,12 @@ const profileRoutes: FastifyPluginAsync = async (fastify) => {
     async (request) => {
       let viewerId: string | undefined;
       try {
-        await request.jwtVerify();
-        viewerId = request.user.sub;
+        const authHeader = request.headers.authorization;
+        if (authHeader?.startsWith("Bearer ")) {
+          const supabase = getSupabaseAdmin();
+          const { data } = await supabase.auth.getUser(authHeader.slice(7));
+          if (data.user) viewerId = data.user.id;
+        }
       } catch { /* unauthenticated is OK */ }
       return service.getByUsername(request.params.username, viewerId);
     },
