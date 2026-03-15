@@ -22,6 +22,15 @@ backend/.env.*
 # waitlist data
 data/
 
+# database dumps
+dump.rdb
+*.db
+*.db-journal
+*.sqlite
+
+# build artifacts
+tsconfig.tsbuildinfo
+
 # OS/editor
 .DS_Store
 *.swp

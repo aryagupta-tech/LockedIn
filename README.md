@@ -1,64 +1,76 @@
 # LockedIn
 
-A private, invite-style social network for high-signal builders — developers, designers, creators, and founders. A gated community where quality matters more than follower count.
+A private, gated social network for high-signal builders: developers, designers, creators, and founders. Quality over noise.
 
 ## Features
 
-- **Gated access** — application-based onboarding with automated scoring
-- **Feed** — post text and code snippets, like, comment, and bookmark
-- **Communities** — create and join topic-based groups
-- **Profiles** — follow other builders, view post history
-- **Notifications** — real-time alerts for likes, comments, and follows (powered by Supabase Realtime)
-- **Admin dashboard** — review and approve/reject applications
-- **Dark-mode UI** — card-based, text-focused design with gold accent
+- **Gated access** - application-based entry with automated scoring (GitHub, Codeforces, LeetCode signals)
+- **Feed** - post text and code snippets, like and comment
+- **Communities** - create and join topic-based groups with moderated join requests
+- **Profiles** - follow builders, view post history
+- **Notifications** - real-time alerts for likes, comments, follows, and application updates
+- **Appeals** - rejected applicants can submit appeals for re-review
+- **Admin dashboard** - review applications, manage scoring weights, handle appeals
+- **Auth** - email/password registration, login, token refresh, GitHub OAuth
+- **Middleware** - route protection with automatic redirects for authenticated/unauthenticated users
 
 ## Tech Stack
 
-### Frontend
-
-- Next.js 15 (App Router)
-- React 19
-- TypeScript
-- Tailwind CSS
-- Radix UI primitives
-- Framer Motion
-- Supabase JS (auth sessions, realtime notifications)
-- Lucide icons
-
-### Backend
-
-- Fastify 4
-- Prisma ORM (PostgreSQL)
-- Supabase (Auth, Database, Realtime)
-- Redis + BullMQ (task queues)
-- TypeBox (schema validation)
+- **Framework** - Next.js 15 (App Router) + React 19 + TypeScript
+- **Styling** - Tailwind CSS + Radix UI primitives + Framer Motion
+- **Backend** - Next.js API Routes (`app/api/`)
+- **Database & Auth** - Supabase (PostgreSQL, Auth, Realtime, Storage)
+- **Scoring** - custom engine with configurable weights per signal provider
+- **Validation** - Zod (frontend forms), server-side validation in API routes
+- **Icons** - Lucide React
 
 ## Project Structure
 
 ```
-├── app/                    # Next.js pages (App Router)
-│   ├── (app)/              # Authenticated routes
-│   │   ├── feed/           # Main feed
-│   │   ├── communities/    # Communities list + detail
-│   │   ├── notifications/  # Notification center
-│   │   ├── settings/       # User settings
-│   │   ├── u/[username]/   # User profiles
-│   │   ├── post/[id]/      # Post detail + comments
-│   │   ├── apply/          # Application form
-│   │   └── admin/          # Admin dashboard
-│   ├── login/              # Login page
-│   └── register/           # Registration page
+lockedin/
+├── app/
+│   ├── (app)/                # Authenticated routes (behind middleware)
+│   │   ├── feed/             # Main feed
+│   │   ├── communities/      # List, create, detail pages
+│   │   ├── notifications/    # Notification center
+│   │   ├── settings/         # User settings
+│   │   ├── u/[username]/     # User profiles
+│   │   ├── post/[id]/        # Post detail + comments
+│   │   ├── apply/            # Application form
+│   │   └── admin/            # Admin dashboard
+│   ├── api/
+│   │   ├── auth/             # register, login, refresh, github oauth
+│   │   ├── applications/     # submit + review applications
+│   │   ├── posts/            # CRUD + likes + comments
+│   │   ├── communities/      # CRUD + join + members
+│   │   ├── profiles/         # view + follow
+│   │   ├── feed/             # personalized feed
+│   │   ├── appeals/          # submit + view appeals
+│   │   ├── admin/            # application review, scoring weights, appeals
+│   │   └── health/           # health check
+│   ├── login/                # Login page
+│   ├── register/             # Registration page
+│   ├── not-found.tsx         # Custom 404
+│   └── global-error.tsx      # Custom error boundary
 ├── components/
-│   ├── app/                # App-specific components
-│   └── ui/                 # Reusable UI primitives
-├── lib/                    # Shared utilities, API client, hooks
-├── backend/
-│   ├── src/                # Fastify server source
-│   │   ├── modules/        # Feature modules (auth, posts, etc.)
-│   │   ├── lib/            # Supabase admin client, helpers
-│   │   └── config/         # Environment config
-│   └── prisma/             # Schema + migrations
-└── supabase-setup.sql      # Initial Supabase database setup
+│   ├── app/                  # App components (navbar, post card, sidebar)
+│   ├── ui/                   # Reusable UI primitives
+│   └── landing-page.tsx      # Landing page
+├── lib/
+│   ├── scoring/              # Scoring engine + signal providers
+│   │   ├── engine.ts         # Score computation + decision logic
+│   │   └── providers/        # GitHub, Codeforces, LeetCode fetchers
+│   ├── api.ts                # Client-side API helper
+│   ├── api-utils.ts          # Server-side auth + response helpers
+│   ├── auth-context.tsx      # Auth provider (React context)
+│   ├── supabase.ts           # Client-side Supabase client
+│   ├── supabase-server.ts    # Server-side Supabase client (service role)
+│   ├── notifications.ts      # Notification helpers
+│   └── storage.ts            # Supabase storage helpers
+├── middleware.ts              # Route protection
+├── supabase-setup.sql         # Database setup (RLS, storage, seed data)
+├── Dockerfile                 # Multi-stage production build
+└── docker-compose.yml         # Production container
 ```
 
 ## Getting Started
@@ -66,7 +78,6 @@ A private, invite-style social network for high-signal builders — developers, 
 ### Prerequisites
 
 - Node.js 20+
-- Redis (for backend task queues)
 - A [Supabase](https://supabase.com) project
 
 ### 1. Clone and install
@@ -74,37 +85,23 @@ A private, invite-style social network for high-signal builders — developers, 
 ```bash
 git clone <repo-url> && cd lockedin
 npm install
-cd backend && npm install && cd ..
 ```
 
 ### 2. Configure environment
 
 ```bash
 cp .env.example .env
-cp backend/.env.example backend/.env
 ```
 
-Fill in your Supabase project URL, anon key, service role key, and database connection string in both `.env` files. See the `.env.example` files for the full list of variables.
+Fill in your Supabase project URL, anon key, and service role key. See `.env.example` for all required variables.
 
 ### 3. Set up the database
 
-Run `supabase-setup.sql` in the Supabase SQL Editor to create tables and enable RLS.
+Run `supabase-setup.sql` in the Supabase SQL Editor to enable RLS, create the storage bucket, and seed scoring weights.
 
-Then run `supabase-notifications.sql` to set up the notifications system (table, triggers, realtime).
-
-Generate the Prisma client:
+### 4. Start the dev server
 
 ```bash
-cd backend && npx prisma generate && cd ..
-```
-
-### 4. Start the servers
-
-```bash
-# Terminal 1 — Backend
-cd backend && npm run dev
-
-# Terminal 2 — Frontend
 npm run dev
 ```
 
@@ -114,14 +111,24 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 cp .env.example .env
-cp backend/.env.example backend/.env
+# fill in your keys
 docker compose up -d --build
 ```
 
 ## Environment Variables
 
-All sensitive keys (Supabase URLs, API keys, database credentials) are loaded from `.env` files and are **not** committed to version control. See `.env.example` and `backend/.env.example` for the required variables.
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (public) key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
+| `ADMIN_KEY` | Secret key for admin operations |
+| `SCORING_PASS_THRESHOLD` | Minimum score to pass (default: 70) |
+| `SCORING_AUTO_APPROVE_THRESHOLD` | Auto-approve above this score (default: 90) |
+| `SCORING_AUTO_REJECT_THRESHOLD` | Auto-reject below this score (default: 30) |
+
+All secrets are loaded from `.env` and are **never** committed to version control.
 
 ## License
 
-This is a personal side project. All rights reserved.
+All rights reserved.

@@ -5,10 +5,6 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    volumes:
-      - waitlist-data:/app/data
+    env_file: .env
     environment:
       - ADMIN_KEY=${ADMIN_KEY:-change-me}
-
-volumes:
-  waitlist-data:

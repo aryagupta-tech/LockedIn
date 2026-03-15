@@ -4,15 +4,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   devIndicators: false,
   experimental: {
-    optimizePackageImports: ["lucide-react"]
-  },
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "http://localhost:4000/:path*",
-      },
-    ];
+    optimizePackageImports: ["lucide-react"],
   },
 };
 
