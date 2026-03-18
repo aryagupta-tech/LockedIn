@@ -13,57 +13,32 @@ function GitHubCallbackInner() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    async function handleCallback() {
-      const hash = window.location.hash;
-      const params = new URLSearchParams(hash.replace("#", "?"));
-      const accessToken = params.get("access_token");
-      const refreshToken = params.get("refresh_token");
-
-      if (!accessToken || !refreshToken) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          try {
-            const result = await api.post<AuthResponse>(
-              "/auth/github/callback",
-              { access_token: session.access_token, refresh_token: session.refresh_token },
-              { skipAuth: true },
-            );
-            await supabase.auth.setSession({
-              access_token: result.accessToken,
-              refresh_token: result.refreshToken,
-            });
-            setAuth(result);
-            document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
-            router.push("/feed");
-            return;
-          } catch (err) {
-            setError((err as Error).message || "GitHub authentication failed");
-            return;
-          }
-        }
-        setError("No authorization tokens received from GitHub");
-        return;
-      }
-
+    async function syncBackend(session: any) {
+      if (!session) return;
       try {
         const result = await api.post<AuthResponse>(
           "/auth/github/callback",
-          { access_token: accessToken, refresh_token: refreshToken },
-          { skipAuth: true },
+          { access_token: session.access_token, refresh_token: session.refresh_token },
+          { skipAuth: true }
         );
-        await supabase.auth.setSession({
-          access_token: result.accessToken,
-          refresh_token: result.refreshToken,
-        });
         setAuth(result);
         document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
         router.push("/feed");
       } catch (err) {
-        setError((err as Error).message || "GitHub authentication failed");
+        setError((err as Error).message || "GitHub backend sync failed");
       }
     }
 
-    handleCallback();
+    // Give Supabase client a moment to parse the URL hash from GitHub
+    setTimeout(() => {
+      supabase.auth.getSession().then(({ data, error: sessionErr }) => {
+        if (sessionErr || !data.session) {
+          setError("No session tokens received from GitHub. Please try again.");
+          return;
+        }
+        syncBackend(data.session);
+      });
+    }, 1000);
   }, [router, setAuth]);
 
   if (error) {
