@@ -28,6 +28,10 @@ function GitHubCallbackInner() {
               { access_token: session.access_token, refresh_token: session.refresh_token },
               { skipAuth: true },
             );
+            await supabase.auth.setSession({
+              access_token: result.accessToken,
+              refresh_token: result.refreshToken,
+            });
             setAuth(result);
             document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
             router.push("/feed");
@@ -47,6 +51,10 @@ function GitHubCallbackInner() {
           { access_token: accessToken, refresh_token: refreshToken },
           { skipAuth: true },
         );
+        await supabase.auth.setSession({
+          access_token: result.accessToken,
+          refresh_token: result.refreshToken,
+        });
         setAuth(result);
         document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
         router.push("/feed");
