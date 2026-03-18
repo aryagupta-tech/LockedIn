@@ -17,15 +17,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [loading, user, router]);
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-black">
         <Loader2 className="h-8 w-8 animate-spin text-neon" />
+        <div className="hidden">{children}</div>
       </div>
     );
   }
-  
-  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-black">
