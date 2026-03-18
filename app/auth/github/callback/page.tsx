@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { api, type AuthResponse } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import type { Session } from "@supabase/supabase-js";
 
 function GitHubCallbackInner() {
   const router = useRouter();
@@ -13,7 +14,7 @@ function GitHubCallbackInner() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    async function syncBackend(session: any) {
+    async function syncBackend(session: Session) {
       if (!session) return;
       try {
         const result = await api.post<AuthResponse>(
