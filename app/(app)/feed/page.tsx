@@ -48,7 +48,16 @@ export default function FeedPage() {
   const handlePostCreated = (post: Post) => setPosts((prev) => [post, ...prev]);
   const handleDelete = (id: string) => setPosts((prev) => prev.filter((p) => p.id !== id));
 
-  if (!user) return null;
+  if (!user) {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-neon" />
+        </div>
+      );
+    }
+    return null;
+  }
 
   if (user.status === "PENDING") {
     return (
