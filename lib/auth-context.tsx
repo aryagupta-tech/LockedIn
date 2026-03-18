@@ -22,10 +22,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Only restore session if the user explicitly logged in/registered
+    // (indicated by the lockedin_logged_in cookie), unless they are currently in the middle of an OAuth callback
+    const hasLoginCookie = document.cookie.split(";").some((c) => c.trim().startsWith("lockedin_logged_in="));
+    const isAuthCallback = typeof window !== "undefined" && window.location.pathname.startsWith("/auth/");
+
+    if (!hasLoginCookie && !isAuthCallback) {
+      // No login cookie — clear any stale Supabase session
+      supabase.auth.signOut().catch(() => {});
+      localStorage.removeItem("lockedin_user");
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         restoreProfile(session);
       } else {
+        // Cookie exists but session expired — clear cookie
+        document.cookie = "lockedin_logged_in=; path=/; max-age=0";
+        localStorage.removeItem("lockedin_user");
         setLoading(false);
       }
     });

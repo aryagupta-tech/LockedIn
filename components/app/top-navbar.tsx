@@ -2,20 +2,51 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Bell, Settings, User, Shield, FileCheck, Menu, X, Search } from "lucide-react";
-import { useState } from "react";
+import { Home, Compass, Bell, Shield, FileCheck, Menu, X, Search, Settings, LogOut, User } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+
+const AVATAR_COLORS = [
+  "from-violet-500 to-fuchsia-500",
+  "from-blue-500 to-cyan-400",
+  "from-orange-500 to-rose-500",
+  "from-emerald-500 to-teal-400",
+  "from-pink-500 to-rose-400",
+  "from-amber-500 to-orange-400",
+  "from-indigo-500 to-blue-400",
+  "from-teal-500 to-emerald-400",
+];
+
+function getAvatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 export function TopNavbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications(user?.id);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role === "ADMIN";
   const isPending = user?.status === "PENDING";
+  const avatarColor = user?.username ? getAvatarColor(user.username) : AVATAR_COLORS[0];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     document.cookie = "lockedin_logged_in=; path=/; max-age=0";
@@ -27,8 +58,6 @@ export function TopNavbar() {
     { href: "/feed", icon: Home, label: "Home" },
     { href: "/communities", icon: Compass, label: "Explore" },
     { href: "/notifications", icon: Bell, label: "Notifications", badge: unreadCount },
-    { href: "/settings", icon: Settings, label: "Settings" },
-    ...(user ? [{ href: `/u/${user.username}`, icon: User, label: "Profile" }] : []),
     ...(isPending ? [{ href: "/apply", icon: FileCheck, label: "Apply" }] : []),
     ...(isAdmin ? [{ href: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
@@ -87,15 +116,72 @@ export function TopNavbar() {
               />
             </div>
 
-            {/* User avatar / logout */}
+            {/* User avatar with dropdown */}
             {user && (
-              <button
-                onClick={handleLogout}
-                className="group flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-neon/40 to-amber-600/40 text-xs font-bold text-white ring-1 ring-[#333] transition-all hover:ring-neon/50"
-                title="Sign out"
-              >
-                {user.displayName.charAt(0).toUpperCase()}
-              </button>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className={cn(
+                    "group flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-xs font-bold text-white ring-2 transition-all",
+                    avatarColor,
+                    dropdownOpen
+                      ? "ring-neon/60 shadow-[0_0_12px_rgba(126,211,33,0.25)]"
+                      : "ring-[#333] hover:ring-neon/40",
+                  )}
+                  title="Profile menu"
+                >
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    user.displayName.charAt(0).toUpperCase()
+                  )}
+                </button>
+
+                {/* Dropdown menu */}
+                {dropdownOpen && (
+                  <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[220px] overflow-hidden rounded-xl border border-[#222] bg-[#111] shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+                    {/* User info header */}
+                    <div className="border-b border-[#222] px-4 py-3">
+                      <p className="truncate text-[14px] font-semibold text-white">{user.displayName}</p>
+                      <p className="truncate text-[12px] text-[#666]">@{user.username}</p>
+                    </div>
+
+                    {/* Menu items */}
+                    <div className="py-1.5">
+                      <Link
+                        href={`/u/${user.username}`}
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[#ccc] transition-colors hover:bg-[#1a1a1a] hover:text-white"
+                      >
+                        <User className="h-4 w-4 text-[#888]" />
+                        My Profile
+                      </Link>
+                      <Link
+                        href="/settings"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[#ccc] transition-colors hover:bg-[#1a1a1a] hover:text-white"
+                      >
+                        <Settings className="h-4 w-4 text-[#888]" />
+                        Settings
+                      </Link>
+                    </div>
+
+                    {/* Sign out */}
+                    <div className="border-t border-[#222] py-1.5">
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-[14px] text-[#ccc] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                      >
+                        <LogOut className="h-4 w-4 text-[#888]" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Mobile menu */}
@@ -137,10 +223,31 @@ export function TopNavbar() {
                 </Link>
               );
             })}
+            {user && (
+              <>
+                <Link
+                  href={`/u/${user.username}`}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-[#888] hover:text-white"
+                >
+                  <User className="h-5 w-5" />
+                  My Profile
+                </Link>
+                <Link
+                  href="/settings"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-[#888] hover:text-white"
+                >
+                  <Settings className="h-5 w-5" />
+                  Settings
+                </Link>
+              </>
+            )}
             <button
               onClick={handleLogout}
               className="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-[#888] hover:text-red-400"
             >
+              <LogOut className="h-5 w-5" />
               Sign Out
             </button>
           </div>

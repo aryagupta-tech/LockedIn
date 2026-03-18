@@ -86,3 +86,26 @@ function round(n: number, decimals = 2): number {
   const factor = 10 ** decimals;
   return Math.round(n * factor) / factor;
 }
+
+/**
+ * Per-platform pass thresholds.
+ * A user is approved if ANY single platform meets its threshold.
+ */
+export const PLATFORM_THRESHOLDS: Record<string, number> = {
+  github_contributions: 500,
+  codeforces_rating: 900,
+  leetcode_problems: 100,
+};
+
+/**
+ * Returns true if at least one signal meets or exceeds its platform threshold.
+ */
+export function checkAnyPlatformPasses(signals: SignalInput[]): boolean {
+  for (const signal of signals) {
+    const threshold = PLATFORM_THRESHOLDS[signal.key];
+    if (threshold !== undefined && signal.rawValue >= threshold) {
+      return true;
+    }
+  }
+  return false;
+}

@@ -49,9 +49,23 @@ export default function ProfilePage() {
     setLoading(false);
   }, [username]);
 
+  const fetchPosts = useCallback(async () => {
+    try {
+      const data = await api.get<Post[]>(`/posts?author=${username}`);
+      setPosts(data);
+    } catch {
+      // Fallback: try feed-style response
+      try {
+        const data = await api.get<{ items: Post[] }>(`/feed?author=${username}`);
+        setPosts(data.items || []);
+      } catch { /* ignore */ }
+    }
+  }, [username]);
+
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]);
+    fetchPosts();
+  }, [fetchProfile, fetchPosts]);
 
   const toggleFollow = async () => {
     if (!profile || toggling) return;

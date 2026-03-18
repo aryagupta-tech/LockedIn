@@ -1,7 +1,7 @@
 {
   "name": "LockedIn Dev",
 
-  "image": "node:20-alpine",
+  "image": "node:20",
 
   "workspaceFolder": "/workspace",
 
@@ -9,5 +9,15 @@
 
   "forwardPorts": [3000],
 
-  "remoteUser": "node"
+  "postCreateCommand": "npm install",
+
+  "remoteUser": "node",
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
 }

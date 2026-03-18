@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireAuth, errorResponse, generateId, now } from "@/lib/api-utils";
-import { computeScore, deriveDecision } from "@/lib/scoring/engine";
-import type { SignalInput, WeightConfig } from "@/lib/scoring/engine";
+import { checkAnyPlatformPasses, PLATFORM_THRESHOLDS } from "@/lib/scoring/engine";
+import type { SignalInput } from "@/lib/scoring/engine";
 import { fetchGitHubSignal } from "@/lib/scoring/providers/github";
 import { fetchCodeforcesSignal } from "@/lib/scoring/providers/codeforces";
 import { fetchLeetCodeSignal } from "@/lib/scoring/providers/leetcode";
@@ -61,44 +61,47 @@ export async function POST(request: Request) {
       return errorResponse("You already have a pending application. Please wait for it to be reviewed.", "CONFLICT", 409);
     }
 
-    const passThreshold = Number(process.env.SCORING_PASS_THRESHOLD) || 70;
-    const autoApprove = Number(process.env.SCORING_AUTO_APPROVE_THRESHOLD) || 90;
-    const autoReject = Number(process.env.SCORING_AUTO_REJECT_THRESHOLD) || 30;
-
     const ts = now();
     const appId = generateId();
     const application: Record<string, unknown> = {
       id: appId, userId, status: "PROCESSING",
       githubUrl: githubUrl || null, codeforcesHandle: codeforcesHandle || null,
       leetcodeHandle: leetcodeHandle || null, portfolioUrl: portfolioUrl || null,
-      score: null, scoreBreakdown: null, passingThreshold: passThreshold,
+      score: null, scoreBreakdown: null, passingThreshold: null,
       createdAt: ts, updatedAt: ts,
     };
 
     await supabase.from("applications").insert(application);
 
     try {
-      const { data: weightRows } = await supabase.from("scoring_weights").select("key, weight, threshold, minimum");
-      const weights: WeightConfig[] = (weightRows || []).map((r) => ({
-        key: r.key, weight: r.weight, threshold: r.threshold, minimum: r.minimum,
-      }));
       const signals = await fetchSignals(application as { githubUrl?: string | null; codeforcesHandle?: string | null; leetcodeHandle?: string | null });
-      const result = computeScore(signals, weights, passThreshold);
-      const decision = deriveDecision(result.score, autoApprove, autoReject);
+      const passed = checkAnyPlatformPasses(signals);
+      const decision = passed ? "APPROVED" : "UNDER_REVIEW";
+
+      // Build a breakdown showing each signal's raw value and the threshold it was compared against
+      const breakdown: Record<string, { rawValue: number; threshold: number; passed: boolean }> = {};
+      for (const signal of signals) {
+        const threshold = PLATFORM_THRESHOLDS[signal.key];
+        if (threshold !== undefined) {
+          breakdown[signal.key] = {
+            rawValue: signal.rawValue,
+            threshold,
+            passed: signal.rawValue >= threshold,
+          };
+        }
+      }
 
       await supabase.from("applications").update({
-        score: result.score, scoreBreakdown: result.breakdown as object,
+        score: passed ? 100 : 0, scoreBreakdown: breakdown as object,
         status: decision, updatedAt: now(),
       }).eq("id", appId);
 
       if (decision === "APPROVED") {
         await supabase.from("users").update({ status: "APPROVED", updatedAt: now() }).eq("id", userId);
-      } else if (decision === "REJECTED") {
-        await supabase.from("users").update({ status: "REJECTED", updatedAt: now() }).eq("id", userId);
       }
 
-      application.score = result.score;
-      application.scoreBreakdown = result.breakdown;
+      application.score = passed ? 100 : 0;
+      application.scoreBreakdown = breakdown;
       application.status = decision;
     } catch (scoringErr) {
       console.error("Scoring failed, setting to UNDER_REVIEW:", scoringErr);

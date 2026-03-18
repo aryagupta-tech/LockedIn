@@ -100,8 +100,8 @@ export function LandingPage() {
               <span className="text-gradient-gold"> serious builders.</span>
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-zinc-400">
-              Thresholds: 1,000+ GitHub contributions (last 2 years) OR Codeforces 2100+ OR LeetCode
-              2,000+ OR a strong AI resume score.
+              Pass any one: 500+ GitHub commits OR Codeforces 900+ rating OR 100+ LeetCode
+              problems solved.
             </p>
           </motion.div>
 

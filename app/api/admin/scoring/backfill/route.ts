@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireAdmin, errorResponse, now } from "@/lib/api-utils";
-import { computeScore, deriveDecision } from "@/lib/scoring/engine";
-import type { SignalInput, WeightConfig } from "@/lib/scoring/engine";
+import { checkAnyPlatformPasses, PLATFORM_THRESHOLDS } from "@/lib/scoring/engine";
+import type { SignalInput } from "@/lib/scoring/engine";
 import { fetchGitHubSignal } from "@/lib/scoring/providers/github";
 import { fetchCodeforcesSignal } from "@/lib/scoring/providers/codeforces";
 import { fetchLeetCodeSignal } from "@/lib/scoring/providers/leetcode";
@@ -40,9 +40,6 @@ export async function POST(request: Request) {
     if ("error" in auth) return auth.error;
 
     const supabase = createServiceClient();
-    const passThreshold = Number(process.env.SCORING_PASS_THRESHOLD) || 70;
-    const autoApprove = Number(process.env.SCORING_AUTO_APPROVE_THRESHOLD) || 90;
-    const autoReject = Number(process.env.SCORING_AUTO_REJECT_THRESHOLD) || 30;
 
     const { data: applications } = await supabase
       .from("applications")
@@ -53,28 +50,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ queued: 0, message: "No applications to re-score" });
     }
 
-    const { data: weightRows } = await supabase
-      .from("scoring_weights")
-      .select("key, weight, threshold, minimum");
-
-    const weights: WeightConfig[] = (weightRows || []).map((r) => ({
-      key: r.key, weight: r.weight, threshold: r.threshold, minimum: r.minimum,
-    }));
-
     let scored = 0;
     for (const app of applications) {
       try {
         const signals = await fetchSignals(app);
-        const result = computeScore(signals, weights, passThreshold);
-        const decision = deriveDecision(result.score, autoApprove, autoReject);
+        const passed = checkAnyPlatformPasses(signals);
+        const decision = passed ? "APPROVED" : "UNDER_REVIEW";
+
+        const breakdown: Record<string, { rawValue: number; threshold: number; passed: boolean }> = {};
+        for (const signal of signals) {
+          const threshold = PLATFORM_THRESHOLDS[signal.key];
+          if (threshold !== undefined) {
+            breakdown[signal.key] = {
+              rawValue: signal.rawValue,
+              threshold,
+              passed: signal.rawValue >= threshold,
+            };
+          }
+        }
 
         const ts = now();
         await supabase
           .from("applications")
           .update({
-            score: result.score,
-            scoreBreakdown: result.breakdown as object,
-            passingThreshold: passThreshold,
+            score: passed ? 100 : 0,
+            scoreBreakdown: breakdown as object,
             status: decision,
             updatedAt: ts,
           })
@@ -82,8 +82,6 @@ export async function POST(request: Request) {
 
         if (decision === "APPROVED") {
           await supabase.from("users").update({ status: "APPROVED", updatedAt: ts }).eq("id", app.userId);
-        } else if (decision === "REJECTED") {
-          await supabase.from("users").update({ status: "REJECTED", updatedAt: ts }).eq("id", app.userId);
         }
         scored++;
       } catch (err) {
