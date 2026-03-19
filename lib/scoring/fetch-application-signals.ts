@@ -1,15 +1,10 @@
 import type { SignalInput } from "./engine";
+import { extractGitHubUsername } from "@/lib/github-username";
 import { fetchGitHubSignal } from "./providers/github";
 import { fetchCodeforcesSignal } from "./providers/codeforces";
 import { fetchLeetCodeSignal } from "./providers/leetcode";
 
-export function extractGitHubUsername(input: string): string | null {
-  if (input.includes("github.com/")) {
-    const parts = input.split("github.com/");
-    return parts[1]?.split("/")[0]?.split("?")[0] || null;
-  }
-  return input.trim() || null;
-}
+export { extractGitHubUsername };
 
 export type FetchSignalsResult = {
   signals: SignalInput[];

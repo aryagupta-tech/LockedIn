@@ -11,16 +11,20 @@ interface CFUserInfo {
     rating?: number;
     maxRating?: number;
     rank?: string;
+    organization?: string;
   }>;
 }
 
-/**
- * Fetches peak Codeforces rating for a handle.
- * Uses the public Codeforces API — no auth required.
- */
-export async function fetchCodeforcesSignal(
+export type CodeforcesPublicProfile = {
+  handle: string;
+  rating: number;
+  maxRating: number;
+  organization: string | null;
+};
+
+export async function fetchCodeforcesProfile(
   handle: string,
-): Promise<SignalInput> {
+): Promise<CodeforcesPublicProfile> {
   const trimmed = handle.trim();
   if (!trimmed) throw new Error("Codeforces handle is empty");
 
@@ -31,7 +35,7 @@ export async function fetchCodeforcesSignal(
   });
   if (!res.ok) {
     if (res.status === 400) {
-      throw new Error(`Codeforces user '${handle}' not found`);
+      throw new Error(`Codeforces user '${trimmed}' not found`);
     }
     throw new Error(`Codeforces API returned ${res.status}`);
   }
@@ -39,12 +43,30 @@ export async function fetchCodeforcesSignal(
   const data = (await res.json()) as CFUserInfo;
 
   if (data.status !== "OK" || !data.result?.length) {
-    throw new Error(`Codeforces returned unexpected response for '${handle}'`);
+    throw new Error(`Codeforces returned unexpected response for '${trimmed}'`);
   }
 
-  const current = data.result[0].rating ?? 0;
-  const peak = data.result[0].maxRating ?? 0;
-  const rating = Math.max(current, peak);
+  const u = data.result[0];
+  const current = u.rating ?? 0;
+  const peak = u.maxRating ?? 0;
+
+  return {
+    handle: u.handle,
+    rating: current,
+    maxRating: peak,
+    organization: u.organization?.trim() ? u.organization.trim() : null,
+  };
+}
+
+/**
+ * Fetches peak Codeforces rating for a handle.
+ * Uses the public Codeforces API — no auth required.
+ */
+export async function fetchCodeforcesSignal(
+  handle: string,
+): Promise<SignalInput> {
+  const p = await fetchCodeforcesProfile(handle);
+  const rating = Math.max(p.rating, p.maxRating);
 
   return { key: "codeforces_rating", rawValue: rating };
 }

@@ -4,6 +4,7 @@ import { requireAdmin, errorResponse, now } from "@/lib/api-utils";
 import { checkAnyPlatformPasses, PLATFORM_THRESHOLDS } from "@/lib/scoring/engine";
 import type { SignalInput } from "@/lib/scoring/engine";
 import { fetchApplicationSignals } from "@/lib/scoring/fetch-application-signals";
+import { validatePlatformOwnership } from "@/lib/verification/platform-ownership";
 
 function buildScoreBreakdown(
   signals: SignalInput[],
@@ -27,7 +28,7 @@ function buildScoreBreakdown(
   }
 
   breakdown._eligibilityRule =
-    "Auto-approve if ANY: GitHub ≥500 contributions OR LeetCode ≥100 solved OR Codeforces rating ≥900.";
+    "Auto-approve if ANY: GitHub ≥500 OR LeetCode ≥100 OR Codeforces ≥900 — proofs must match GitHub sign-in / CF org phrase.";
 
   return breakdown;
 }
@@ -52,8 +53,37 @@ export async function POST(request: Request) {
     }
 
     let scored = 0;
+    let skipped = 0;
     for (const app of applications) {
       try {
+        const { data: dbUser } = await supabase
+          .from("users")
+          .select("id, githubUsername")
+          .eq("id", app.userId as string)
+          .single();
+
+        if (!dbUser) {
+          console.warn(`Backfill skip ${app.id}: user row missing`);
+          skipped++;
+          continue;
+        }
+
+        const violation = await validatePlatformOwnership(
+          {
+            githubUrl: (app.githubUrl as string | null) || undefined,
+            codeforcesHandle: (app.codeforcesHandle as string | null) || undefined,
+            leetcodeHandle: (app.leetcodeHandle as string | null) || undefined,
+          },
+          dbUser,
+        );
+        if (violation) {
+          console.warn(
+            `Backfill skip ${app.id} (${violation.code}): ${violation.message}`,
+          );
+          skipped++;
+          continue;
+        }
+
         const { signals, errors: fetchErrors } = await fetchApplicationSignals(
           app as {
             githubUrl?: string | null;
@@ -92,7 +122,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       queued: scored,
-      message: `${scored} applications re-scored`,
+      skipped,
+      message: `${scored} applications re-scored, ${skipped} skipped (ownership / config)`,
     });
   } catch (e) {
     console.error("Backfill error:", e);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Sparkles, PenLine, Rocket } from "lucide-react";
 import { api, type Post, type FeedResponse } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -10,13 +10,26 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function FeedPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const pendingProfileSync = useRef(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
   const isApproved = user?.status === "APPROVED";
+
+  // If DB was updated to APPROVED but client still shows PENDING, refetch profile (once per PENDING stretch).
+  useEffect(() => {
+    if (user?.status === "APPROVED") {
+      pendingProfileSync.current = false;
+      return;
+    }
+    if (!user || user.status !== "PENDING") return;
+    if (pendingProfileSync.current) return;
+    pendingProfileSync.current = true;
+    void refreshUser();
+  }, [user, refreshUser]);
 
   const fetchFeed = useCallback(async (cursorParam?: string) => {
     try {

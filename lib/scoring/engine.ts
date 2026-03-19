@@ -103,9 +103,10 @@ export const PLATFORM_THRESHOLDS: Record<string, number> = {
 export function checkAnyPlatformPasses(signals: SignalInput[]): boolean {
   for (const signal of signals) {
     const threshold = PLATFORM_THRESHOLDS[signal.key];
-    if (threshold !== undefined && signal.rawValue >= threshold) {
-      return true;
-    }
+    if (threshold === undefined) continue;
+    const raw = Number(signal.rawValue);
+    if (!Number.isFinite(raw)) continue;
+    if (raw >= threshold) return true;
   }
   return false;
 }

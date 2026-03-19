@@ -4,6 +4,7 @@ import { requireAuth, errorResponse, generateId, now } from "@/lib/api-utils";
 import { checkAnyPlatformPasses, PLATFORM_THRESHOLDS } from "@/lib/scoring/engine";
 import type { SignalInput } from "@/lib/scoring/engine";
 import { fetchApplicationSignals } from "@/lib/scoring/fetch-application-signals";
+import { validatePlatformOwnership } from "@/lib/verification/platform-ownership";
 
 function buildScoreBreakdown(
   signals: SignalInput[],
@@ -27,7 +28,7 @@ function buildScoreBreakdown(
   }
 
   breakdown._eligibilityRule =
-    "Auto-approve if ANY: GitHub ≥500 contributions (last year on profile) OR LeetCode ≥100 solved OR Codeforces rating ≥900 (max of current vs peak).";
+    "Auto-approve if ANY: GitHub ≥500 contributions OR LeetCode ≥100 solved OR Codeforces rating ≥900 — each proof must be tied to your GitHub sign-in (see ownership rules).";
 
   return breakdown;
 }
@@ -56,6 +57,32 @@ export async function POST(request: Request) {
     }
 
     const supabase = createServiceClient();
+
+    const { data: dbUser, error: profErr } = await supabase
+      .from("users")
+      .select("id, githubUsername")
+      .eq("id", userId)
+      .single();
+
+    if (profErr || !dbUser) {
+      return errorResponse("User record not found", "NOT_FOUND", 404);
+    }
+
+    const ownershipViolation = await validatePlatformOwnership(
+      {
+        githubUrl: gh || undefined,
+        codeforcesHandle: cf || undefined,
+        leetcodeHandle: lc || undefined,
+      },
+      dbUser,
+    );
+    if (ownershipViolation) {
+      return errorResponse(
+        ownershipViolation.message,
+        ownershipViolation.code,
+        ownershipViolation.status,
+      );
+    }
 
     const { data: existing } = await supabase
       .from("applications")
@@ -90,7 +117,13 @@ export async function POST(request: Request) {
       updatedAt: ts,
     };
 
-    await supabase.from("applications").insert(application);
+    const { error: insertError } = await supabase
+      .from("applications")
+      .insert(application);
+    if (insertError) {
+      console.error("applications insert failed:", insertError);
+      return errorResponse("Could not create application", "DB_ERROR", 500);
+    }
 
     try {
       const { signals, errors: fetchErrors } = await fetchApplicationSignals({
@@ -103,7 +136,7 @@ export async function POST(request: Request) {
       const decision = passed ? "APPROVED" : "UNDER_REVIEW";
       const breakdown = buildScoreBreakdown(signals, fetchErrors);
 
-      await supabase
+      const { error: appUpdateError } = await supabase
         .from("applications")
         .update({
           score: passed ? 100 : 0,
@@ -114,11 +147,20 @@ export async function POST(request: Request) {
         })
         .eq("id", appId);
 
+      if (appUpdateError) {
+        console.error("applications update failed:", appUpdateError);
+        throw appUpdateError;
+      }
+
       if (decision === "APPROVED") {
-        await supabase
+        const { error: userUpdateError } = await supabase
           .from("users")
           .update({ status: "APPROVED", updatedAt: now() })
           .eq("id", userId);
+        if (userUpdateError) {
+          console.error("users.status APPROVED update failed:", userUpdateError);
+          throw userUpdateError;
+        }
       }
 
       application.score = passed ? 100 : 0;

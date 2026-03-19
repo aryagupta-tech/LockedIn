@@ -149,3 +149,56 @@ export async function fetchLeetCodeSignal(username: string): Promise<SignalInput
 
   return { key: "leetcode_problems", rawValue: total };
 }
+
+interface LeetCodeGithubResponse {
+  data?: { matchedUser?: { githubUrl: string | null } };
+  errors?: Array<{ message: string }>;
+}
+
+/**
+ * Public GraphQL field — used to prove LeetCode account ↔ GitHub identity.
+ */
+export async function fetchLeetCodeGithubUrl(
+  username: string,
+): Promise<string | null> {
+  const handle = username.trim();
+  if (!handle) throw new Error("LeetCode username is empty");
+
+  const query = `query ($u: String!) { matchedUser(username: $u) { githubUrl } }`;
+
+  const res = await fetch(`${LEETCODE_ORIGIN}/graphql`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
+      Referer: `${LEETCODE_ORIGIN}/`,
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify({ query, variables: { username: handle } }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`LeetCode API returned ${res.status}`);
+  }
+
+  const text = await res.text();
+  if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
+    throw new Error(
+      "LeetCode blocked the request. Try again later or set LEETCODE_CSRF_TOKEN.",
+    );
+  }
+
+  let json: LeetCodeGithubResponse;
+  try {
+    json = JSON.parse(text) as LeetCodeGithubResponse;
+  } catch {
+    throw new Error("LeetCode returned a non-JSON response");
+  }
+
+  if (json.errors?.length) {
+    throw new Error(json.errors[0].message);
+  }
+
+  const url = json.data?.matchedUser?.githubUrl;
+  return url?.trim() ? url.trim() : null;
+}

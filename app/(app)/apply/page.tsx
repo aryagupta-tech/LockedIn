@@ -5,12 +5,16 @@ import { Loader2, Send, FileCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, type Application, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 export default function ApplyPage() {
+  const { refreshUser } = useAuth();
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  /** Exact string for Codeforces "Organization" field (proves CF handle ownership). */
+  const [codeforcesOrgPhrase, setCodeforcesOrgPhrase] = useState<string | null>(null);
   const [form, setForm] = useState({
     githubUrl: "",
     codeforcesHandle: "",
@@ -21,13 +25,25 @@ export default function ApplyPage() {
   useEffect(() => {
     api
       .get<Application | Application[]>("/applications/me")
-      .then((data) => {
+      .then(async (data) => {
         const app = Array.isArray(data) ? data[0] : data;
-        if (app) setApplication(app);
+        if (app) {
+          setApplication(app);
+          // Server may have set users.status to APPROVED; sync auth profile for /feed, etc.
+          if (app.status === "APPROVED") await refreshUser();
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshUser]);
+
+  useEffect(() => {
+    if (application) return;
+    api
+      .get<{ phrase: string }>("/verification/codeforces-phrase")
+      .then((r) => setCodeforcesOrgPhrase(r.phrase))
+      .catch(() => setCodeforcesOrgPhrase(null));
+  }, [application]);
 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -53,6 +69,8 @@ export default function ApplyPage() {
         portfolioUrl: form.portfolioUrl || undefined,
       });
       setApplication(result);
+      // Auto-approval updates users.status in DB; refresh so Feed unlocks without re-login.
+      await refreshUser();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to submit application");
     } finally {
@@ -220,11 +238,37 @@ export default function ApplyPage() {
       <div>
         <h1 className="text-2xl font-semibold text-white">Apply to LockedIn</h1>
         <p className="mt-1 text-sm text-[#888]">
-          Automated verification: you need{" "}
-          <strong className="text-[#ccc]">at least one</strong> of GitHub (≥500
-          contributions in the last year), LeetCode (≥100 solved), or Codeforces
-          (rating ≥900). Portfolio is optional extra context only.
+          You must be signed in with <strong className="text-[#ccc]">GitHub</strong> so we
+          can tie proofs to <em>your</em> identity. You need{" "}
+          <strong className="text-[#ccc]">at least one</strong> of: GitHub URL (≥500
+          contributions / year), LeetCode (≥100 solved, with the same GitHub linked on
+          LeetCode), or Codeforces (rating ≥900 + one-time org phrase below). Portfolio
+          is optional context only.
         </p>
+
+        <div className="mt-4 rounded-xl border border-[#333] bg-[#141414] px-4 py-3 text-[12px] leading-relaxed text-[#aaa]">
+          <p className="font-medium text-[#ccc]">LeetCode &amp; how you log in there</p>
+          <ul className="mt-2 list-disc space-y-1.5 pl-4 text-[#888]">
+            <li>
+              It doesn&apos;t matter if you use <strong className="text-[#aaa]">Google</strong>
+              , <strong className="text-[#aaa]">Apple</strong>, or{" "}
+              <strong className="text-[#aaa]">email</strong> to sign in to LeetCode — we
+              don&apos;t check that.
+            </li>
+            <li>
+              We <strong className="text-[#aaa]">do</strong> need your LeetCode profile to
+              show a <strong className="text-[#aaa]">GitHub URL</strong> in settings (the
+              same GitHub you used to sign in here). Add it under Profile → Settings if
+              it&apos;s empty.
+            </li>
+            <li>
+              If you don&apos;t want to link GitHub on LeetCode, use{" "}
+              <strong className="text-[#aaa]">GitHub contributions</strong> or{" "}
+              <strong className="text-[#aaa]">Codeforces</strong> (with the org phrase)
+              instead — or your application may stay under manual review.
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div className="mt-6 rounded-2xl border border-[#222] bg-[#111] p-6">
@@ -238,6 +282,9 @@ export default function ApplyPage() {
               onChange={update("githubUrl")}
               placeholder="https://github.com/username"
             />
+            <p className="mt-1.5 text-[11px] leading-relaxed text-[#666]">
+              Must match the GitHub account you used to sign in (no one else&apos;s profile).
+            </p>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-[#888]">
@@ -248,6 +295,26 @@ export default function ApplyPage() {
               onChange={update("codeforcesHandle")}
               placeholder="tourist"
             />
+            {codeforcesOrgPhrase ? (
+              <div className="mt-2 rounded-lg border border-[#e3c98e]/25 bg-[#e3c98e]/5 px-3 py-2 text-[11px] text-[#c9b896]">
+                <p className="font-medium text-[#e3c98e]">Prove it&apos;s your CF account</p>
+                <p className="mt-1 text-[#aaa]">
+                  On Codeforces → Settings, set <strong>Organization</strong> to exactly:
+                </p>
+                <code className="mt-1 block break-all font-mono text-xs text-white">
+                  {codeforcesOrgPhrase}
+                </code>
+                <p className="mt-1 text-[#888]">
+                  Save, wait a few seconds, then submit. You can clear it after you&apos;re
+                  approved.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-1.5 text-[11px] text-[#666]">
+                Sign in with GitHub to load your personal verification phrase for
+                Codeforces.
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-[#888]">
@@ -258,6 +325,11 @@ export default function ApplyPage() {
               onChange={update("leetcodeHandle")}
               placeholder="leetcode_user"
             />
+            <p className="mt-1.5 text-[11px] leading-relaxed text-[#666]">
+              Your LeetCode profile must list the <strong>same</strong> GitHub account in
+              settings (GitHub URL field). Signing into LeetCode with Google / Apple /
+              email is fine — that&apos;s separate from this GitHub link.
+            </p>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-[#888]">Portfolio URL</label>
