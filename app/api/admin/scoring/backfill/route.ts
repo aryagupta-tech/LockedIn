@@ -3,35 +3,33 @@ import { createServiceClient } from "@/lib/supabase-server";
 import { requireAdmin, errorResponse, now } from "@/lib/api-utils";
 import { checkAnyPlatformPasses, PLATFORM_THRESHOLDS } from "@/lib/scoring/engine";
 import type { SignalInput } from "@/lib/scoring/engine";
-import { fetchGitHubSignal } from "@/lib/scoring/providers/github";
-import { fetchCodeforcesSignal } from "@/lib/scoring/providers/codeforces";
-import { fetchLeetCodeSignal } from "@/lib/scoring/providers/leetcode";
+import { fetchApplicationSignals } from "@/lib/scoring/fetch-application-signals";
 
-function extractGitHubUsername(input: string): string | null {
-  if (input.includes("github.com/")) {
-    const parts = input.split("github.com/");
-    return parts[1]?.split("/")[0]?.split("?")[0] || null;
-  }
-  return input.trim() || null;
-}
+function buildScoreBreakdown(
+  signals: SignalInput[],
+  fetchErrors: Record<string, string>,
+): Record<string, unknown> {
+  const breakdown: Record<string, unknown> = {};
 
-async function fetchSignals(app: {
-  githubUrl?: string | null;
-  codeforcesHandle?: string | null;
-  leetcodeHandle?: string | null;
-}): Promise<SignalInput[]> {
-  const signals: SignalInput[] = [];
-  if (app.githubUrl) {
-    const u = extractGitHubUsername(app.githubUrl);
-    if (u) { try { signals.push(await fetchGitHubSignal(u)); } catch { /* skip */ } }
+  for (const signal of signals) {
+    const threshold = PLATFORM_THRESHOLDS[signal.key];
+    if (threshold !== undefined) {
+      breakdown[signal.key] = {
+        rawValue: signal.rawValue,
+        threshold,
+        passed: signal.rawValue >= threshold,
+      };
+    }
   }
-  if (app.codeforcesHandle) {
-    try { signals.push(await fetchCodeforcesSignal(app.codeforcesHandle)); } catch { /* skip */ }
+
+  if (Object.keys(fetchErrors).length > 0) {
+    breakdown._fetchErrors = fetchErrors;
   }
-  if (app.leetcodeHandle) {
-    try { signals.push(await fetchLeetCodeSignal(app.leetcodeHandle)); } catch { /* skip */ }
-  }
-  return signals;
+
+  breakdown._eligibilityRule =
+    "Auto-approve if ANY: GitHub ≥500 contributions OR LeetCode ≥100 solved OR Codeforces rating ≥900.";
+
+  return breakdown;
 }
 
 export async function POST(request: Request) {
@@ -47,27 +45,26 @@ export async function POST(request: Request) {
       .eq("status", "UNDER_REVIEW");
 
     if (!applications || applications.length === 0) {
-      return NextResponse.json({ queued: 0, message: "No applications to re-score" });
+      return NextResponse.json({
+        queued: 0,
+        message: "No applications to re-score",
+      });
     }
 
     let scored = 0;
     for (const app of applications) {
       try {
-        const signals = await fetchSignals(app);
+        const { signals, errors: fetchErrors } = await fetchApplicationSignals(
+          app as {
+            githubUrl?: string | null;
+            codeforcesHandle?: string | null;
+            leetcodeHandle?: string | null;
+          },
+        );
+
         const passed = checkAnyPlatformPasses(signals);
         const decision = passed ? "APPROVED" : "UNDER_REVIEW";
-
-        const breakdown: Record<string, { rawValue: number; threshold: number; passed: boolean }> = {};
-        for (const signal of signals) {
-          const threshold = PLATFORM_THRESHOLDS[signal.key];
-          if (threshold !== undefined) {
-            breakdown[signal.key] = {
-              rawValue: signal.rawValue,
-              threshold,
-              passed: signal.rawValue >= threshold,
-            };
-          }
-        }
+        const breakdown = buildScoreBreakdown(signals, fetchErrors);
 
         const ts = now();
         await supabase
@@ -75,13 +72,17 @@ export async function POST(request: Request) {
           .update({
             score: passed ? 100 : 0,
             scoreBreakdown: breakdown as object,
+            passingThreshold: 1,
             status: decision,
             updatedAt: ts,
           })
           .eq("id", app.id);
 
         if (decision === "APPROVED") {
-          await supabase.from("users").update({ status: "APPROVED", updatedAt: ts }).eq("id", app.userId);
+          await supabase
+            .from("users")
+            .update({ status: "APPROVED", updatedAt: ts })
+            .eq("id", app.userId);
         }
         scored++;
       } catch (err) {
@@ -89,7 +90,10 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ queued: scored, message: `${scored} applications re-scored` });
+    return NextResponse.json({
+      queued: scored,
+      message: `${scored} applications re-scored`,
+    });
   } catch (e) {
     console.error("Backfill error:", e);
     return errorResponse("Internal server error", "INTERNAL_ERROR", 500);

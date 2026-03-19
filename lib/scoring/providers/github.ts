@@ -1,40 +1,73 @@
 import type { SignalInput } from "../engine";
 
+const USER_AGENT =
+  process.env.GITHUB_USER_AGENT ||
+  "LockedIn-SignalBot/1.0 (+https://lockedin-arya.vercel.app)";
+
+function githubRestHeaders(): Record<string, string> {
+  const h: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": USER_AGENT,
+  };
+  const token = process.env.GITHUB_TOKEN;
+  if (token) {
+    h.Authorization = `Bearer ${token}`;
+  }
+  return h;
+}
+
 /**
- * Fetches a user's GitHub contribution count for the current year using
- * the REST API. Falls back to public_repos count if the events endpoint
- * doesn't have sufficient data.
- *
- * For authenticated requests (when we have the user's token), we use the
- * GraphQL API which gives a precise 1-year contribution total.
+ * Fetches GitHub contribution count for the last ~year shown on the public
+ * contributions page (sums per-day tooltips). Optionally uses GITHUB_TOKEN
+ * with GraphQL for the same total when a token is configured.
  */
 export async function fetchGitHubSignal(
   username: string,
   accessToken?: string,
 ): Promise<SignalInput> {
+  const login = username.trim();
+  if (!login) throw new Error("GitHub username is empty");
+
   try {
-    if (accessToken) {
-      return await fetchViaGraphQL(username, accessToken);
+    const token = accessToken || process.env.GITHUB_TOKEN;
+    if (token) {
+      try {
+        return await fetchViaGraphQL(login, token);
+      } catch (graphqlErr) {
+        console.warn(
+          `[GitHub] GraphQL failed for ${login}, falling back to public contributions page:`,
+          graphqlErr,
+        );
+      }
     }
-    return await fetchViaREST(username);
+
+    await assertGitHubUserExists(login);
+    const total = await fetchContributionsFromProfilePage(login);
+    return { key: "github_contributions", rawValue: total };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown GitHub fetch error";
-    throw new Error(`GitHub provider failed for '${username}': ${message}`);
+    throw new Error(`GitHub provider failed for '${login}': ${message}`);
   }
 }
 
-async function fetchViaGraphQL(
-  username: string,
-  token: string,
-): Promise<SignalInput> {
+async function assertGitHubUserExists(login: string): Promise<void> {
+  const res = await fetch(
+    `https://api.github.com/users/${encodeURIComponent(login)}`,
+    { headers: githubRestHeaders() },
+  );
+  if (res.status === 404) throw new Error("GitHub user not found");
+  if (!res.ok) {
+    throw new Error(`GitHub REST API returned ${res.status}`);
+  }
+}
+
+async function fetchViaGraphQL(login: string, token: string): Promise<SignalInput> {
   const query = `
     query($login: String!) {
       user(login: $login) {
         contributionsCollection {
-          contributionCalendar {
-            totalContributions
-          }
+          contributionCalendar { totalContributions }
         }
       }
     }
@@ -45,11 +78,14 @@ async function fetchViaGraphQL(
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
     },
-    body: JSON.stringify({ query, variables: { login: username } }),
+    body: JSON.stringify({ query, variables: { login } }),
   });
 
-  if (!res.ok) throw new Error(`GraphQL request failed: ${res.status}`);
+  if (!res.ok) {
+    throw new Error(`GraphQL request failed: ${res.status}`);
+  }
 
   const json = (await res.json()) as {
     data?: {
@@ -73,22 +109,40 @@ async function fetchViaGraphQL(
   return { key: "github_contributions", rawValue: total };
 }
 
-async function fetchViaREST(username: string): Promise<SignalInput> {
-  const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
-    headers: { Accept: "application/vnd.github+json" },
+/**
+ * Parses https://github.com/users/{login}/contributions HTML. GitHub encodes
+ * per-day counts in accessible tooltips like "4 contributions on March 16th."
+ */
+async function fetchContributionsFromProfilePage(login: string): Promise<number> {
+  const url = `https://github.com/users/${encodeURIComponent(login)}/contributions`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": USER_AGENT,
+      Accept: "text/html,application/xhtml+xml",
+    },
   });
 
+  if (res.status === 404) throw new Error("GitHub user not found");
   if (!res.ok) {
-    if (res.status === 404) throw new Error("GitHub user not found");
-    throw new Error(`GitHub REST API returned ${res.status}`);
+    throw new Error(`GitHub contributions page returned ${res.status}`);
   }
 
-  const user = (await res.json()) as { public_repos: number; followers: number };
+  const html = await res.text();
 
-  // Heuristic: public repos × 50 as a rough contributions proxy.
-  // This is intentionally conservative — users are encouraged to OAuth
-  // for an accurate count.
-  const estimated = user.public_repos * 50;
+  const tooltipRe =
+    />(?:No contributions|(\d+) contributions?) on[^<]+<\/tool-tip>/gi;
+  let sum = 0;
+  let matched = false;
+  for (const m of html.matchAll(tooltipRe)) {
+    matched = true;
+    if (m[1]) sum += parseInt(m[1], 10);
+  }
 
-  return { key: "github_contributions", rawValue: estimated };
+  if (!matched) {
+    throw new Error(
+      "Could not parse GitHub contribution calendar (GitHub HTML format may have changed). Set GITHUB_TOKEN for reliable counts.",
+    );
+  }
+
+  return sum;
 }

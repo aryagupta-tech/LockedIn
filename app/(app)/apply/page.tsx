@@ -35,6 +35,15 @@ export default function ApplyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    const gh = form.githubUrl.trim();
+    const cf = form.codeforcesHandle.trim();
+    const lc = form.leetcodeHandle.trim();
+    if (!gh && !cf && !lc) {
+      setError(
+        "Add at least one of GitHub URL, Codeforces handle, or LeetCode username for automated verification.",
+      );
+      return;
+    }
     setSubmitting(true);
     try {
       const result = await api.post<Application>("/applications", {
@@ -128,8 +137,70 @@ export default function ApplyPage() {
                   {application.score}
                   <span className="text-sm text-[#888]">/100</span>
                 </p>
+                <p className="mt-2 text-xs text-[#666]">
+                  100 = auto-approved (met at least one platform threshold). 0 =
+                  under manual review.
+                </p>
               </div>
             )}
+            {application.scoreBreakdown != null &&
+            typeof application.scoreBreakdown === "object" ? (
+                <div className="mt-4 rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-xs text-[#aaa]">
+                  <p className="font-medium uppercase tracking-widest text-[#555]">
+                    Verification details
+                  </p>
+                  <ul className="mt-2 space-y-1 font-mono text-[11px]">
+                    {Object.entries(
+                      application.scoreBreakdown as Record<string, unknown>,
+                    ).map(([key, val]) => {
+                      if (key.startsWith("_")) return null;
+                      if (
+                        val &&
+                        typeof val === "object" &&
+                        "rawValue" in val &&
+                        "threshold" in val
+                      ) {
+                        const v = val as {
+                          rawValue: number;
+                          threshold: number;
+                          passed?: boolean;
+                        };
+                        return (
+                          <li key={key}>
+                            <span className="text-[#e3c98e]">{key}</span>:{" "}
+                            {v.rawValue} (need ≥{v.threshold}
+                            {v.passed === false ? ", not met" : v.passed ? ", met" : ""})
+                          </li>
+                        );
+                      }
+                      return null;
+                    })}
+                  </ul>
+                  {"_fetchErrors" in (application.scoreBreakdown as object) &&
+                    (
+                      application.scoreBreakdown as {
+                        _fetchErrors?: Record<string, string>;
+                      }
+                    )._fetchErrors && (
+                      <div className="mt-3 text-red-400/90">
+                        <p className="font-medium text-red-400">Fetch issues</p>
+                        <ul className="mt-1 space-y-0.5">
+                          {Object.entries(
+                            (
+                              application.scoreBreakdown as {
+                                _fetchErrors: Record<string, string>;
+                              }
+                            )._fetchErrors,
+                          ).map(([k, msg]) => (
+                            <li key={k}>
+                              {k}: {msg}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                </div>
+              ) : null}
           </div>
 
           {application.status === "REJECTED" && (
@@ -149,7 +220,10 @@ export default function ApplyPage() {
       <div>
         <h1 className="text-2xl font-semibold text-white">Apply to LockedIn</h1>
         <p className="mt-1 text-sm text-[#888]">
-          Prove your signal. Provide at least one proof of work.
+          Automated verification: you need{" "}
+          <strong className="text-[#ccc]">at least one</strong> of GitHub (≥500
+          contributions in the last year), LeetCode (≥100 solved), or Codeforces
+          (rating ≥900). Portfolio is optional extra context only.
         </p>
       </div>
 

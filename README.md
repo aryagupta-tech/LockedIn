@@ -58,7 +58,8 @@ lockedin/
 │   └── landing-page.tsx      # Landing page
 ├── lib/
 │   ├── scoring/              # Scoring engine + signal providers
-│   │   ├── engine.ts         # Score computation + decision logic
+│   │   ├── engine.ts         # Score computation + platform OR-thresholds
+│   │   ├── fetch-application-signals.ts  # Orchestrates provider fetches
 │   │   └── providers/        # GitHub, Codeforces, LeetCode fetchers
 │   ├── api.ts                # Client-side API helper
 │   ├── api-utils.ts          # Server-side auth + response helpers
@@ -126,6 +127,10 @@ docker compose up -d --build
 | `SCORING_PASS_THRESHOLD` | Minimum score to pass (default: 70) |
 | `SCORING_AUTO_APPROVE_THRESHOLD` | Auto-approve above this score (default: 90) |
 | `SCORING_AUTO_REJECT_THRESHOLD` | Auto-reject below this score (default: 30) |
+| `GITHUB_TOKEN` | Optional fine-grained/classic PAT for accurate GitHub contribution totals via GraphQL (higher rate limits; falls back to public contributions page if unset or invalid) |
+| `LEETCODE_CSRF_TOKEN` | Optional: value of LeetCode `csrftoken` cookie if automated stats fetch fails with CSRF/bot protection in your region |
+
+**Application verification (automated):** users are auto-approved when **any one** of these is true: GitHub ≥ **500** contributions (last year, from the public contributions calendar), LeetCode ≥ **100** accepted problems, or Codeforces **rating** ≥ **900** (max of current vs peak). Portfolio links are optional context only and do not count toward auto-approval.
 
 All secrets are loaded from `.env` and are **never** committed to version control.
 
