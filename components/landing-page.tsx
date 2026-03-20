@@ -75,7 +75,7 @@ export function LandingPage() {
               <span className="text-gradient-gold"> serious builders.</span>
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-app-fg-muted">
-              Pass any one: 500+ GitHub commits OR Codeforces 900+ rating OR 100+ LeetCode
+              Pass any one: 250+ GitHub contributions OR Codeforces 900+ rating OR 100+ LeetCode
               problems solved.
             </p>
           </motion.div>

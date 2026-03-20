@@ -232,7 +232,7 @@ export default function ApplyPage() {
         <p className="mt-1 text-sm text-app-fg-muted">
           You must be signed in with <strong className="text-app-fg-secondary">GitHub</strong> so we
           can tie proofs to <em>your</em> identity. You need{" "}
-          <strong className="text-app-fg-secondary">at least one</strong> of: GitHub URL (≥500
+          <strong className="text-app-fg-secondary">at least one</strong> of: GitHub URL (≥250
           contributions / year), LeetCode (≥100 solved, with the same GitHub linked on
           LeetCode), or Codeforces (rating ≥900 + one-time org phrase below).
         </p>

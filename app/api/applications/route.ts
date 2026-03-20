@@ -28,7 +28,7 @@ function buildScoreBreakdown(
   }
 
   breakdown._eligibilityRule =
-    "Auto-approve if ANY: GitHub ≥500 contributions OR LeetCode ≥100 solved OR Codeforces rating ≥900 — each proof must be tied to your GitHub sign-in (see ownership rules).";
+    "Auto-approve if ANY: GitHub ≥250 contributions OR LeetCode ≥100 solved OR Codeforces rating ≥900 — each proof must be tied to your GitHub sign-in (see ownership rules).";
 
   return breakdown;
 }

@@ -92,7 +92,7 @@ function round(n: number, decimals = 2): number {
  * A user is approved if ANY single platform meets its threshold.
  */
 export const PLATFORM_THRESHOLDS: Record<string, number> = {
-  github_contributions: 500,
+  github_contributions: 250,
   codeforces_rating: 900,
   leetcode_problems: 100,
 };

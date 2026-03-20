@@ -28,7 +28,7 @@ function buildScoreBreakdown(
   }
 
   breakdown._eligibilityRule =
-    "Auto-approve if ANY: GitHub ≥500 OR LeetCode ≥100 OR Codeforces ≥900 — proofs must match GitHub sign-in / CF org phrase.";
+    "Auto-approve if ANY: GitHub ≥250 OR LeetCode ≥100 OR Codeforces ≥900 — proofs must match GitHub sign-in / CF org phrase.";
 
   return breakdown;
 }
