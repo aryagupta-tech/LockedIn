@@ -109,6 +109,14 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### Production build
+
+```bash
+npm run build
+```
+
+The build script sets **`NODE_ENV=production`** (via `cross-env`) so `next build` succeeds even if your shell or `.env` exports `NODE_ENV=development`. Using `development` during `next build` used to break prerendering of internal error routes and surface a misleading `<Html> should not be imported outside of pages/_document` error.
+
 ## Docker
 
 ```bash
