@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Compass, Bell, Shield, FileCheck, Menu, X, Search, Settings, LogOut, User } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications";
@@ -64,12 +65,12 @@ export function TopNavbar() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-[#222] bg-black/90 backdrop-blur-xl">
+      <header className="app-top-nav fixed inset-x-0 top-0 z-50">
         <div className="mx-auto flex h-[60px] max-w-[1200px] items-center justify-between px-5">
           {/* Logo */}
           <Link href="/feed" className="flex items-center gap-2.5">
             <BrandMark />
-            <span className="font-[var(--font-geist)] text-[19px] font-bold tracking-tight text-neon-light">
+            <span className="text-brand-logo font-[var(--font-geist)] text-[19px] font-bold tracking-tight">
               LockedIn
             </span>
           </Link>
@@ -85,19 +86,17 @@ export function TopNavbar() {
                   href={item.href}
                   className={cn(
                     "relative flex items-center gap-1 px-4 py-2 text-[14px] font-medium transition-colors",
-                    active
-                      ? "text-white"
-                      : "text-[#888] hover:text-white",
+                    active ? "text-app-fg" : "text-app-fg-muted hover:text-app-fg",
                   )}
                 >
                   {item.label}
                   {!!badge && badge > 0 && (
-                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-neon px-1 text-[10px] font-bold text-black">
+                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--app-accent)] px-1 text-[10px] font-bold text-white shadow-[0_2px_8px_var(--app-accent-soft)] dark:text-[#1a0c06]">
                       {badge > 99 ? "99+" : badge}
                     </span>
                   )}
                   {active && (
-                    <span className="absolute inset-x-2 -bottom-[13px] h-[2px] rounded-full bg-neon" />
+                    <span className="absolute inset-x-2 bottom-1 h-0.5 rounded-full bg-[var(--app-accent)] shadow-[0_0_12px_var(--app-accent-soft)]" />
                   )}
                 </Link>
               );
@@ -105,14 +104,15 @@ export function TopNavbar() {
           </nav>
 
           {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeToggle />
             {/* Search */}
             <div className="relative hidden lg:block">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#555]" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-fg-muted" />
               <input
                 type="text"
                 placeholder="Search LockedIn..."
-                className="h-9 w-[200px] rounded-full border border-[#222] bg-[#111] pl-9 pr-4 text-[13px] text-white placeholder-[#555] outline-none transition-all focus:w-[260px] focus:border-[#333] focus:bg-[#1a1a1a]"
+                className="neo-field h-9 w-[200px] rounded-full bg-app-input pl-9 pr-4 text-[13px] text-app-fg placeholder:text-app-fg-muted outline-none transition-all focus:w-[260px]"
               />
             </div>
 
@@ -125,8 +125,8 @@ export function TopNavbar() {
                     "group flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-xs font-bold text-white ring-2 transition-all",
                     avatarColor,
                     dropdownOpen
-                      ? "ring-neon/60 shadow-[0_0_12px_rgba(126,211,33,0.25)]"
-                      : "ring-[#333] hover:ring-neon/40",
+                      ? "ring-neon/60 shadow-[0_0_12px_rgba(214,179,106,0.25)]"
+                      : "ring-app-border-strong hover:ring-neon/40",
                   )}
                   title="Profile menu"
                 >
@@ -139,11 +139,11 @@ export function TopNavbar() {
 
                 {/* Dropdown menu */}
                 {dropdownOpen && (
-                  <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[220px] overflow-hidden rounded-xl border border-[#222] bg-[#111] shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+                  <div className="app-panel absolute right-0 top-[calc(100%+8px)] z-50 w-[220px] overflow-hidden rounded-app-md">
                     {/* User info header */}
-                    <div className="border-b border-[#222] px-4 py-3">
-                      <p className="truncate text-[14px] font-semibold text-white">{user.displayName}</p>
-                      <p className="truncate text-[12px] text-[#666]">@{user.username}</p>
+                    <div className="border-b border-app-border px-4 py-3">
+                      <p className="truncate text-[14px] font-semibold text-app-fg">{user.displayName}</p>
+                      <p className="truncate text-[12px] text-app-fg-muted">@{user.username}</p>
                     </div>
 
                     {/* Menu items */}
@@ -151,31 +151,31 @@ export function TopNavbar() {
                       <Link
                         href={`/u/${user.username}`}
                         onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[#ccc] transition-colors hover:bg-[#1a1a1a] hover:text-white"
+                        className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-app-fg-secondary transition-colors hover:bg-app-surface-2 hover:text-app-fg"
                       >
-                        <User className="h-4 w-4 text-[#888]" />
+                        <User className="h-4 w-4 text-app-fg-muted" />
                         My Profile
                       </Link>
                       <Link
                         href="/settings"
                         onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[#ccc] transition-colors hover:bg-[#1a1a1a] hover:text-white"
+                        className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-app-fg-secondary transition-colors hover:bg-app-surface-2 hover:text-app-fg"
                       >
-                        <Settings className="h-4 w-4 text-[#888]" />
+                        <Settings className="h-4 w-4 text-app-fg-muted" />
                         Settings
                       </Link>
                     </div>
 
                     {/* Sign out */}
-                    <div className="border-t border-[#222] py-1.5">
+                    <div className="border-t border-app-border py-1.5">
                       <button
                         onClick={() => {
                           setDropdownOpen(false);
                           handleLogout();
                         }}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-[14px] text-[#ccc] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-[14px] text-app-fg-secondary transition-colors hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400"
                       >
-                        <LogOut className="h-4 w-4 text-[#888]" />
+                        <LogOut className="h-4 w-4 text-app-fg-muted" />
                         Sign Out
                       </button>
                     </div>
@@ -186,7 +186,7 @@ export function TopNavbar() {
 
             {/* Mobile menu */}
             <button
-              className="rounded-lg p-1.5 text-[#888] md:hidden"
+              className="rounded-lg p-1.5 text-app-fg-muted md:hidden"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -198,8 +198,8 @@ export function TopNavbar() {
       {/* Mobile menu dropdown */}
       {mobileOpen && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/70" onClick={() => setMobileOpen(false)} />
-          <div className="fixed inset-x-0 top-[60px] z-50 border-b border-[#222] bg-[#0a0a0a] p-4">
+          <div className="fixed inset-0 z-40 bg-app-overlay" onClick={() => setMobileOpen(false)} />
+          <div className="app-panel fixed inset-x-0 top-[var(--app-nav-h)] z-50 mx-3 rounded-b-app border-b-0 p-4 shadow-modal">
             {navItems.map((item) => {
               const active = pathname === item.href;
               const badge = "badge" in item ? (item as { badge?: number }).badge : 0;
@@ -210,13 +210,13 @@ export function TopNavbar() {
                   onClick={() => setMobileOpen(false)}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium",
-                    active ? "bg-[#1a1a1a] text-white" : "text-[#888] hover:text-white",
+                    active ? "bg-app-surface-2 text-app-fg" : "text-app-fg-muted hover:text-app-fg",
                   )}
                 >
                   <item.icon className="h-5 w-5" />
                   {item.label}
                   {!!badge && badge > 0 && (
-                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-neon px-1 text-[10px] font-bold text-black">
+                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--app-accent)] px-1 text-[10px] font-bold text-white shadow-[0_2px_8px_var(--app-accent-soft)] dark:text-[#1a0c06]">
                       {badge > 99 ? "99+" : badge}
                     </span>
                   )}
@@ -228,7 +228,7 @@ export function TopNavbar() {
                 <Link
                   href={`/u/${user.username}`}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-[#888] hover:text-white"
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-app-fg-muted hover:text-app-fg"
                 >
                   <User className="h-5 w-5" />
                   My Profile
@@ -236,7 +236,7 @@ export function TopNavbar() {
                 <Link
                   href="/settings"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-[#888] hover:text-white"
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-app-fg-muted hover:text-app-fg"
                 >
                   <Settings className="h-5 w-5" />
                   Settings
@@ -245,7 +245,7 @@ export function TopNavbar() {
             )}
             <button
               onClick={handleLogout}
-              className="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-[#888] hover:text-red-400"
+              className="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-app-fg-muted hover:text-red-500 dark:hover:text-red-400"
             >
               <LogOut className="h-5 w-5" />
               Sign Out
@@ -261,7 +261,7 @@ function BrandMark() {
   return (
     <span className="relative inline-flex h-7 w-7 items-center justify-center">
       <span className="absolute inset-0 rounded-lg bg-gradient-to-br from-neon/80 via-[#c49450] to-amber-700 opacity-90" />
-      <span className="absolute inset-[1.5px] rounded-[6px] bg-black" />
+      <span className="absolute inset-[1.5px] rounded-[6px] bg-app-bg" />
       <span className="absolute h-2 w-2 rounded-full bg-gradient-to-br from-neon-light to-neon" />
     </span>
   );

@@ -28,6 +28,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const gateSteps = [
   { label: "Connect GitHub + LeetCode", icon: Github, desc: "Link your coding profiles" },
@@ -85,7 +86,7 @@ export function LandingPage() {
   }, [isScoring, scoreProgress]);
 
   return (
-    <main className="relative overflow-x-hidden text-zinc-100">
+    <main className="relative overflow-x-hidden bg-app-bg text-app-fg">
       <Navbar />
       <Hero />
 
@@ -95,11 +96,11 @@ export function LandingPage() {
         <AnimatedSection>
           <motion.div variants={fadeUp} className="mb-14 max-w-3xl">
             <Badge className="mb-5">How It Works</Badge>
-            <h2 className="font-[var(--font-geist)] text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+            <h2 className="font-[var(--font-geist)] text-3xl font-semibold tracking-tight text-app-fg sm:text-5xl">
               A focused entry flow for
               <span className="text-gradient-gold"> serious builders.</span>
             </h2>
-            <p className="mt-5 text-lg leading-relaxed text-zinc-400">
+            <p className="mt-5 text-lg leading-relaxed text-app-fg-muted">
               Pass any one: 500+ GitHub commits OR Codeforces 900+ rating OR 100+ LeetCode
               problems solved.
             </p>
@@ -108,16 +109,16 @@ export function LandingPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {gateSteps.map((step, i) => (
               <motion.div key={step.label} variants={fadeUp}>
-                <Card className="card-glow group h-full border-white/[0.06] hover:border-white/[0.12]">
+                <Card className="card-glow group h-full">
                   <CardHeader>
                     <div className="mb-3 flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-neon/20 to-neon/5 text-neon transition-colors group-hover:from-neon/30 group-hover:to-neon/10">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[color-mix(in_srgb,var(--app-accent)_22%,transparent)] to-[color-mix(in_srgb,var(--app-accent-soft)_12%,transparent)] text-[var(--app-accent)] transition-colors group-hover:from-[color-mix(in_srgb,var(--app-accent)_32%,transparent)] group-hover:to-[color-mix(in_srgb,var(--app-accent-soft)_18%,transparent)]">
                         <step.icon className="h-4 w-4" />
                       </div>
-                      <span className="text-xs font-bold tracking-widest text-zinc-500">0{i + 1}</span>
+                      <span className="text-xs font-bold tracking-widest text-app-fg-muted">0{i + 1}</span>
                     </div>
-                    <CardTitle className="text-base font-semibold text-white">{step.label}</CardTitle>
-                    <p className="mt-1 text-sm text-zinc-500">{step.desc}</p>
+                    <CardTitle className="text-base font-semibold text-app-fg">{step.label}</CardTitle>
+                    <p className="mt-1 text-sm text-app-fg-muted">{step.desc}</p>
                   </CardHeader>
                 </Card>
               </motion.div>
@@ -125,16 +126,16 @@ export function LandingPage() {
           </div>
 
           <motion.div variants={fadeUp}>
-            <Card className="animated-border mt-10 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-neon/[0.04] via-transparent to-blue-500/[0.03]" />
+            <Card className="animated-border card-glow mt-10 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-[color-mix(in_srgb,var(--app-accent)_10%,transparent)] via-transparent to-blue-500/[0.06] dark:from-neon/[0.04] dark:to-blue-500/[0.03]" />
               <CardHeader className="relative">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon/10 text-neon">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--app-accent-soft)_25%,transparent)] text-[var(--app-accent)] dark:bg-neon/10 dark:text-neon">
                     <Zap className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl text-white">Try the Gate</CardTitle>
-                    <CardDescription className="text-zinc-400">Mock the full review flow in under a minute.</CardDescription>
+                    <CardTitle className="text-xl text-app-fg">Try the Gate</CardTitle>
+                    <CardDescription className="text-app-fg-muted">Mock the full review flow in under a minute.</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -162,14 +163,14 @@ export function LandingPage() {
                         <Github className="mr-2 h-4 w-4" />
                         {connected ? "GitHub connected" : "Connect GitHub"}
                       </Button>
-                      <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-white/10 p-4 text-sm text-zinc-400 transition-colors hover:border-neon/30 hover:text-zinc-300">
+                      <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-app-border bg-app-surface-2/50 p-4 text-sm text-app-fg-muted transition-colors hover:border-[var(--app-accent-soft)] hover:text-app-fg-secondary">
                         <input
                           className="hidden"
                           type="file"
                           accept=".pdf"
                           onChange={(e) => setUploadName(e.target.files?.[0]?.name ?? null)}
                         />
-                        <UploadCloud className="h-4 w-4 text-neon/70" />
+                        <UploadCloud className="h-4 w-4 text-[var(--app-accent)]/80 dark:text-neon/70" />
                         {uploadName ?? "Upload resume (PDF)"}
                       </label>
                       <Button
@@ -185,13 +186,13 @@ export function LandingPage() {
                       </Button>
                       <div className="space-y-2">
                         <Progress value={scoreProgress} />
-                        <p className="text-xs text-zinc-500">
-                          Live score: <span className="font-mono text-zinc-300">{scoreProgress}</span>/100
+                        <p className="text-xs text-app-fg-muted">
+                          Live score: <span className="font-mono text-app-fg-secondary">{scoreProgress}</span>/100
                         </p>
                       </div>
                       {scoreProgress >= 94 && (
-                        <div className="rounded-xl border border-neon/30 bg-neon/[0.08] p-4 text-sm text-neon-light">
-                          <CheckCircle2 className="mb-1 inline h-4 w-4 text-neon" /> Congratulations, you&apos;re locked in.
+                        <div className="rounded-xl border border-[var(--app-accent-soft)] bg-[color-mix(in_srgb,var(--app-accent-soft)_12%,transparent)] p-4 text-sm text-[var(--app-accent)] dark:text-[#f0d9a8]">
+                          <CheckCircle2 className="mb-1 inline h-4 w-4 text-[var(--app-accent)] dark:text-neon" /> Congratulations, you&apos;re locked in.
                         </div>
                       )}
                     </div>
@@ -209,7 +210,7 @@ export function LandingPage() {
         <AnimatedSection>
           <motion.div variants={fadeUp} className="mb-14 max-w-3xl">
             <Badge className="mb-5">Inside LockedIn</Badge>
-            <h3 className="font-[var(--font-geist)] text-3xl font-semibold text-white sm:text-5xl">
+            <h3 className="font-[var(--font-geist)] text-3xl font-semibold text-app-fg sm:text-5xl">
               What happens after
               <span className="text-gradient-blue"> you get in</span>
             </h3>
@@ -253,7 +254,7 @@ export function LandingPage() {
         <AnimatedSection>
           <motion.div variants={fadeUp} className="mb-14 max-w-3xl">
             <Badge className="mb-5">Inner Circle</Badge>
-            <h3 className="font-[var(--font-geist)] text-3xl font-semibold text-white sm:text-5xl">
+            <h3 className="font-[var(--font-geist)] text-3xl font-semibold text-app-fg sm:text-5xl">
               Elite club protocol
             </h3>
           </motion.div>
@@ -279,15 +280,15 @@ export function LandingPage() {
               }
             ].map((item) => (
               <motion.div key={item.title} variants={fadeUp}>
-                <Card className="card-glow group h-full border-white/[0.06] hover:border-white/[0.12]">
+                <Card className="card-glow group h-full">
                   <CardHeader>
                     <div className={`mb-3 w-fit rounded-xl bg-gradient-to-br ${item.gradient} p-2.5 transition-all group-hover:scale-105`}>
-                      <item.icon className="h-5 w-5 text-white/80" />
+                      <item.icon className="h-5 w-5 text-app-fg/85" />
                     </div>
-                    <CardTitle className="text-xl text-white">{item.title}</CardTitle>
+                    <CardTitle className="text-xl text-app-fg">{item.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="leading-relaxed text-zinc-400">{item.desc}</p>
+                    <p className="leading-relaxed text-app-fg-muted">{item.desc}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -315,22 +316,54 @@ function Navbar() {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "border-b border-white/[0.06] bg-[rgba(6,9,22,0.8)] shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl"
-          : "bg-transparent"
+        scrolled ? "app-top-nav" : "bg-transparent"
       }`}
     >
-      <div className="section-shell flex h-16 items-center justify-between">
-        <a href="#" className="flex items-center gap-2.5 font-[var(--font-geist)] text-lg font-semibold text-white">
-          <BrandMark /> LockedIn
+      <div className="section-shell flex h-16 items-center justify-between gap-3">
+        <a
+          href="#"
+          className={`flex items-center gap-2.5 font-[var(--font-geist)] text-lg font-bold transition-colors ${
+            scrolled ? "text-app-fg" : "text-slate-900 dark:text-app-fg"
+          }`}
+        >
+          <BrandMark /> <span className="text-brand-logo">LockedIn</span>
         </a>
-        <nav className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
-          <a href="#how" className="transition-colors hover:text-white">How it Works</a>
-          <a href="/login" className="transition-colors hover:text-white">Sign In</a>
-          <Button size="sm" asChild>
-            <a href="/register">Get Started</a>
-          </Button>
-        </nav>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <a
+            href="/login"
+            className={`text-sm font-medium md:hidden ${
+              scrolled ? "text-app-fg-muted hover:text-app-fg" : "text-slate-600 hover:text-slate-900 dark:text-app-fg-muted dark:hover:text-app-fg"
+            }`}
+          >
+            Sign in
+          </a>
+          <ThemeToggle />
+          <nav className="hidden items-center gap-6 text-sm sm:gap-8 md:flex">
+            <a
+              href="#how"
+              className={`transition-colors ${
+                scrolled
+                  ? "text-app-fg-muted hover:text-app-fg"
+                  : "text-slate-600 hover:text-slate-900 dark:text-app-fg-muted dark:hover:text-app-fg"
+              }`}
+            >
+              How it Works
+            </a>
+            <a
+              href="/login"
+              className={`transition-colors ${
+                scrolled
+                  ? "text-app-fg-muted hover:text-app-fg"
+                  : "text-slate-600 hover:text-slate-900 dark:text-app-fg-muted dark:hover:text-app-fg"
+              }`}
+            >
+              Sign In
+            </a>
+            <Button size="sm" asChild>
+              <a href="/register">Get Started</a>
+            </Button>
+          </nav>
+        </div>
       </div>
     </header>
   );
@@ -350,10 +383,10 @@ function Hero() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="mx-auto max-w-4xl text-center"
         >
-          <Badge className="mb-8 border-white/10 bg-white/[0.05] text-zinc-300">
-            <Sparkles className="mr-1.5 h-3 w-3 text-neon" /> Curated network for high-signal builders
+          <Badge variant="muted" className="mb-8">
+            <Sparkles className="mr-1.5 h-3 w-3 text-[var(--app-accent)] dark:text-neon" /> Curated network for high-signal builders
           </Badge>
-          <h1 className="font-[var(--font-geist)] text-5xl font-semibold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-7xl">
+          <h1 className="font-[var(--font-geist)] text-5xl font-semibold leading-[1.1] tracking-tight text-app-fg sm:text-6xl lg:text-7xl">
             Build with people who
             <br />
             <span className="text-gradient-gold">actually ship.</span>
@@ -362,7 +395,7 @@ function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-            className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-zinc-400 sm:text-xl"
+            className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-app-fg-muted sm:text-xl"
           >
             LockedIn is a private professional network where quality matters more than noise.
           </motion.p>
@@ -392,7 +425,7 @@ function FloatingOrbs() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
       <div className="absolute left-[10%] top-[20%] h-72 w-72 animate-float rounded-full bg-blue-500/[0.06] blur-[100px]" />
-      <div className="absolute right-[15%] top-[30%] h-56 w-56 animate-float-slow rounded-full bg-neon/[0.05] blur-[80px]" />
+      <div className="absolute right-[15%] top-[30%] h-56 w-56 animate-float-slow rounded-full bg-[color-mix(in_srgb,var(--app-accent)_12%,transparent)] blur-[80px] dark:bg-neon/[0.05]" />
       <div className="absolute bottom-[20%] left-[40%] h-64 w-64 animate-float rounded-full bg-purple-500/[0.04] blur-[90px]" />
     </div>
   );
@@ -410,15 +443,15 @@ function FeatureCard({
   desc: string;
 }) {
   return (
-    <Card className="card-glow group h-full border-white/[0.06] hover:border-white/[0.12]">
+    <Card className="card-glow group h-full">
       <CardHeader>
-        <div className="mb-4 w-fit rounded-xl bg-gradient-to-br from-neon/20 to-neon/5 p-2.5 text-neon transition-transform duration-300 group-hover:scale-110">
+        <div className="mb-4 w-fit rounded-xl bg-gradient-to-br from-[color-mix(in_srgb,var(--app-accent)_22%,transparent)] to-[color-mix(in_srgb,var(--app-accent-soft)_10%,transparent)] p-2.5 text-[var(--app-accent)] transition-transform duration-300 group-hover:scale-110 dark:from-neon/20 dark:to-neon/5 dark:text-neon">
           <Icon className="h-5 w-5" />
         </div>
-        <CardTitle className="text-lg text-white">{title}</CardTitle>
+        <CardTitle className="text-lg text-app-fg">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="leading-relaxed text-zinc-400">{desc}</p>
+        <p className="leading-relaxed text-app-fg-muted">{desc}</p>
       </CardContent>
     </Card>
   );
@@ -430,14 +463,14 @@ function Footer() {
   const links = ["Privacy", "Terms", "Careers", "Contact", "X"];
 
   return (
-    <footer className="border-t border-white/[0.06] py-12">
-      <div className="section-shell flex flex-col items-start justify-between gap-6 text-sm text-zinc-500 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2.5 text-zinc-300">
-          <BrandMark /> <span className="font-[var(--font-geist)] font-semibold">LockedIn</span>
+    <footer className="border-t border-app-border py-12">
+      <div className="section-shell flex flex-col items-start justify-between gap-6 text-sm text-app-fg-muted sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2.5 text-app-fg-secondary">
+          <BrandMark /> <span className="text-brand-logo font-[var(--font-geist)] font-bold">LockedIn</span>
         </div>
         <div className="flex flex-wrap items-center gap-6">
           {links.map((link) => (
-            <a key={link} href="#" className="transition-colors hover:text-zinc-200">
+            <a key={link} href="#" className="transition-colors hover:text-app-fg">
               {link}
             </a>
           ))}
@@ -453,7 +486,7 @@ function BrandMark() {
   return (
     <span className="relative inline-flex h-6 w-6 items-center justify-center">
       <span className="absolute inset-0 rounded-[9px] bg-gradient-to-br from-[#7b9dff] via-[#6e78ff] to-[#f3c680] opacity-90" />
-      <span className="absolute inset-[1.5px] rounded-[8px] bg-[#080d1e]" />
+      <span className="absolute inset-[1.5px] rounded-[8px] bg-app-bg dark:bg-[#080d1e]" />
       <span className="absolute h-2.5 w-2.5 rounded-full bg-gradient-to-br from-[#a5d4ff] to-[#f0c670]" />
       <span className="absolute h-3.5 w-3.5 rounded-full border border-white/20" />
     </span>

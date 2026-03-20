@@ -91,8 +91,8 @@ export default function ApplyPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center bg-[#000] py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-white" />
+      <div className="flex min-h-[200px] items-center justify-center bg-app-bg py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-neon" />
       </div>
     );
   }
@@ -107,16 +107,16 @@ export default function ApplyPage() {
     };
 
     return (
-      <div className="min-h-screen bg-[#000]">
+      <div className="min-h-screen bg-app-bg">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Your Application</h1>
-          <p className="mt-1 text-sm text-[#888]">Track your verification status</p>
+          <h1 className="text-2xl font-semibold text-app-fg">Your Application</h1>
+          <p className="mt-1 text-sm text-app-fg-muted">Track your verification status</p>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-[#222] bg-[#111] p-6">
+        <div className="app-panel mt-6 p-6">
           <div
             className={`mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium ${
-              statusColors[application.status] || "text-[#888]"
+              statusColors[application.status] || "text-app-fg-muted"
             }`}
           >
             <FileCheck className="h-4 w-4" />
@@ -126,36 +126,36 @@ export default function ApplyPage() {
           <div className="space-y-3 text-sm">
             {application.githubUrl && (
               <div>
-                <span className="text-[#666]">GitHub:</span>{" "}
-                <span className="text-[#e4e4e4]">{application.githubUrl}</span>
+                <span className="text-app-fg-muted">GitHub:</span>{" "}
+                <span className="text-app-fg-secondary">{application.githubUrl}</span>
               </div>
             )}
             {application.codeforcesHandle && (
               <div>
-                <span className="text-[#666]">Codeforces:</span>{" "}
-                <span className="text-[#e4e4e4]">{application.codeforcesHandle}</span>
+                <span className="text-app-fg-muted">Codeforces:</span>{" "}
+                <span className="text-app-fg-secondary">{application.codeforcesHandle}</span>
               </div>
             )}
             {application.leetcodeHandle && (
               <div>
-                <span className="text-[#666]">LeetCode:</span>{" "}
-                <span className="text-[#e4e4e4]">{application.leetcodeHandle}</span>
+                <span className="text-app-fg-muted">LeetCode:</span>{" "}
+                <span className="text-app-fg-secondary">{application.leetcodeHandle}</span>
               </div>
             )}
             {application.portfolioUrl && (
               <div>
-                <span className="text-[#666]">Portfolio:</span>{" "}
-                <span className="text-[#e4e4e4]">{application.portfolioUrl}</span>
+                <span className="text-app-fg-muted">Portfolio:</span>{" "}
+                <span className="text-app-fg-secondary">{application.portfolioUrl}</span>
               </div>
             )}
             {application.score !== null && (
-              <div className="mt-4 rounded-xl border border-[#222] bg-[#0a0a0a] p-4">
-                <p className="text-xs font-medium uppercase tracking-widest text-[#555]">Score</p>
-                <p className="mt-1 text-3xl font-bold text-white">
+              <div className="neo-field mt-4 rounded-xl bg-app-surface-2 p-4">
+                <p className="text-xs font-medium uppercase tracking-widest text-app-fg-muted">Score</p>
+                <p className="mt-1 text-3xl font-bold text-app-fg">
                   {application.score}
-                  <span className="text-sm text-[#888]">/100</span>
+                  <span className="text-sm text-app-fg-muted">/100</span>
                 </p>
-                <p className="mt-2 text-xs text-[#666]">
+                <p className="mt-2 text-xs text-app-fg-muted">
                   100 = auto-approved (met at least one platform threshold). 0 =
                   under manual review.
                 </p>
@@ -163,8 +163,8 @@ export default function ApplyPage() {
             )}
             {application.scoreBreakdown != null &&
             typeof application.scoreBreakdown === "object" ? (
-                <div className="mt-4 rounded-xl border border-[#222] bg-[#0a0a0a] p-4 text-xs text-[#aaa]">
-                  <p className="font-medium uppercase tracking-widest text-[#555]">
+                <div className="neo-field mt-4 rounded-xl bg-app-surface-2 p-4 text-xs text-app-fg-muted">
+                  <p className="font-medium uppercase tracking-widest text-app-fg-muted">
                     Verification details
                   </p>
                   <ul className="mt-2 space-y-1 font-mono text-[11px]">
@@ -234,47 +234,47 @@ export default function ApplyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#000]">
+    <div className="min-h-screen bg-app-bg">
       <div>
-        <h1 className="text-2xl font-semibold text-white">Apply to LockedIn</h1>
-        <p className="mt-1 text-sm text-[#888]">
-          You must be signed in with <strong className="text-[#ccc]">GitHub</strong> so we
+        <h1 className="text-2xl font-semibold text-app-fg">Apply to LockedIn</h1>
+        <p className="mt-1 text-sm text-app-fg-muted">
+          You must be signed in with <strong className="text-app-fg-secondary">GitHub</strong> so we
           can tie proofs to <em>your</em> identity. You need{" "}
-          <strong className="text-[#ccc]">at least one</strong> of: GitHub URL (≥500
+          <strong className="text-app-fg-secondary">at least one</strong> of: GitHub URL (≥500
           contributions / year), LeetCode (≥100 solved, with the same GitHub linked on
           LeetCode), or Codeforces (rating ≥900 + one-time org phrase below). Portfolio
           is optional context only.
         </p>
 
-        <div className="mt-4 rounded-xl border border-[#333] bg-[#141414] px-4 py-3 text-[12px] leading-relaxed text-[#aaa]">
-          <p className="font-medium text-[#ccc]">LeetCode &amp; how you log in there</p>
-          <ul className="mt-2 list-disc space-y-1.5 pl-4 text-[#888]">
+        <div className="neo-field mt-4 rounded-xl bg-app-surface-2 px-4 py-3 text-[12px] leading-relaxed text-app-fg-muted">
+          <p className="font-medium text-app-fg-secondary">LeetCode &amp; how you log in there</p>
+          <ul className="mt-2 list-disc space-y-1.5 pl-4 text-app-fg-muted">
             <li>
-              It doesn&apos;t matter if you use <strong className="text-[#aaa]">Google</strong>
-              , <strong className="text-[#aaa]">Apple</strong>, or{" "}
-              <strong className="text-[#aaa]">email</strong> to sign in to LeetCode — we
+              It doesn&apos;t matter if you use <strong className="text-app-fg-secondary">Google</strong>
+              , <strong className="text-app-fg-secondary">Apple</strong>, or{" "}
+              <strong className="text-app-fg-secondary">email</strong> to sign in to LeetCode — we
               don&apos;t check that.
             </li>
             <li>
-              We <strong className="text-[#aaa]">do</strong> need your LeetCode profile to
-              show a <strong className="text-[#aaa]">GitHub URL</strong> in settings (the
+              We <strong className="text-app-fg-secondary">do</strong> need your LeetCode profile to
+              show a <strong className="text-app-fg-secondary">GitHub URL</strong> in settings (the
               same GitHub you used to sign in here). Add it under Profile → Settings if
               it&apos;s empty.
             </li>
             <li>
               If you don&apos;t want to link GitHub on LeetCode, use{" "}
-              <strong className="text-[#aaa]">GitHub contributions</strong> or{" "}
-              <strong className="text-[#aaa]">Codeforces</strong> (with the org phrase)
+              <strong className="text-app-fg-secondary">GitHub contributions</strong> or{" "}
+              <strong className="text-app-fg-secondary">Codeforces</strong> (with the org phrase)
               instead — or your application may stay under manual review.
             </li>
           </ul>
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-[#222] bg-[#111] p-6">
+      <div className="app-panel mt-6 p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[#888]">
+            <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">
               GitHub Profile URL
             </label>
             <Input
@@ -282,12 +282,12 @@ export default function ApplyPage() {
               onChange={update("githubUrl")}
               placeholder="https://github.com/username"
             />
-            <p className="mt-1.5 text-[11px] leading-relaxed text-[#666]">
+            <p className="mt-1.5 text-[11px] leading-relaxed text-app-fg-muted">
               Must match the GitHub account you used to sign in (no one else&apos;s profile).
             </p>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[#888]">
+            <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">
               Codeforces Handle
             </label>
             <Input
@@ -301,23 +301,23 @@ export default function ApplyPage() {
                 <p className="mt-1 text-[#aaa]">
                   On Codeforces → Settings, set <strong>Organization</strong> to exactly:
                 </p>
-                <code className="mt-1 block break-all font-mono text-xs text-white">
+                <code className="mt-1 block break-all font-mono text-xs text-app-fg">
                   {codeforcesOrgPhrase}
                 </code>
-                <p className="mt-1 text-[#888]">
+                <p className="mt-1 text-app-fg-muted">
                   Save, wait a few seconds, then submit. You can clear it after you&apos;re
                   approved.
                 </p>
               </div>
             ) : (
-              <p className="mt-1.5 text-[11px] text-[#666]">
+              <p className="mt-1.5 text-[11px] text-app-fg-muted">
                 Sign in with GitHub to load your personal verification phrase for
                 Codeforces.
               </p>
             )}
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[#888]">
+            <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">
               LeetCode Handle
             </label>
             <Input
@@ -325,14 +325,14 @@ export default function ApplyPage() {
               onChange={update("leetcodeHandle")}
               placeholder="leetcode_user"
             />
-            <p className="mt-1.5 text-[11px] leading-relaxed text-[#666]">
+            <p className="mt-1.5 text-[11px] leading-relaxed text-app-fg-muted">
               Your LeetCode profile must list the <strong>same</strong> GitHub account in
               settings (GitHub URL field). Signing into LeetCode with Google / Apple /
               email is fine — that&apos;s separate from this GitHub link.
             </p>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[#888]">Portfolio URL</label>
+            <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">Portfolio URL</label>
             <Input
               value={form.portfolioUrl}
               onChange={update("portfolioUrl")}

@@ -31,7 +31,7 @@ export default function DevLoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <p className="text-[#888] text-lg">{status}</p>
+      <p className="text-lg text-app-fg-muted">{status}</p>
     </div>
   );
 }

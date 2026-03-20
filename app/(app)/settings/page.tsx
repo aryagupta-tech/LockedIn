@@ -93,23 +93,23 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000]">
-      <div className="border-b border-[#222] pb-4">
-        <h1 className="text-xl font-bold text-white">Settings</h1>
-        <p className="mt-1 text-sm text-[#888]">Manage your profile and account</p>
+    <div className="min-h-screen bg-app-bg">
+      <div className="border-b border-app-border pb-4">
+        <h1 className="text-xl font-bold text-app-fg">Settings</h1>
+        <p className="mt-1 text-sm text-app-fg-muted">Manage your profile and account</p>
       </div>
 
       {/* Profile Section */}
       <div className="mt-6">
-        <h2 className="mb-3 text-[15px] font-semibold text-[#e4e4e4]">Profile</h2>
-        <div className="rounded-2xl border border-[#222] bg-[#111] p-6">
+        <h2 className="mb-3 text-[15px] font-semibold text-app-fg-secondary">Profile</h2>
+        <div className="app-panel p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Avatar */}
             <div className="flex items-center gap-5">
               <div
                 className={cn(
-                  "flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-2xl font-bold text-white",
-                  user?.username ? getAvatarColor(user.username) : "from-violet-500 to-fuchsia-500"
+                  "flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-2xl font-bold text-white shadow-app",
+                  user?.username ? getAvatarColor(user.username) : "from-violet-500 to-fuchsia-500",
                 )}
               >
                 {form.avatarUrl ? (
@@ -137,35 +137,35 @@ export default function SettingsPage() {
                   {uploading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-2 h-3.5 w-3.5" />}
                   {uploading ? "Uploading..." : "Change Avatar"}
                 </Button>
-                <p className="mt-1.5 text-xs text-[#666]">JPG, PNG under 2MB</p>
+                <p className="mt-1.5 text-xs text-app-fg-muted">JPG, PNG under 2MB</p>
               </div>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-[#e4e4e4]">
+              <label className="mb-1.5 block text-[13px] font-medium text-app-fg-muted">
                 Display Name
               </label>
               <Input value={form.displayName} onChange={update("displayName")} />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[13px] font-medium text-[#e4e4e4]">Bio</label>
+              <label className="mb-1.5 block text-[13px] font-medium text-app-fg-muted">Bio</label>
               <textarea
                 value={form.bio}
                 onChange={update("bio")}
                 placeholder="Tell people about yourself..."
                 rows={4}
-                className="w-full rounded-xl border border-[#222] bg-[#0a0a0a] px-4 py-3 text-[15px] text-white placeholder-[#555] outline-none transition-colors focus:border-[#333] focus:ring-1 focus:ring-[#333]"
+                className="neo-field w-full resize-y rounded-app-md bg-app-input px-4 py-3 text-[15px] text-app-fg placeholder:text-app-fg-muted outline-none focus-visible:outline-none"
               />
             </div>
 
             {error && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-[14px] text-red-400">
+              <div className="rounded-app-md border border-red-500/25 bg-red-500/10 px-4 py-3 text-[14px] text-red-500 dark:text-red-400">
                 {error}
               </div>
             )}
             {success && (
-              <div className="rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-[14px] text-green-400">
+              <div className="rounded-app-md border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-[14px] text-emerald-700 dark:text-emerald-400">
                 Profile updated successfully!
               </div>
             )}
@@ -180,35 +180,35 @@ export default function SettingsPage() {
 
       {/* Account Section */}
       <div className="mt-8">
-        <h2 className="mb-3 text-[15px] font-semibold text-[#e4e4e4]">Account</h2>
-        <div className="rounded-2xl border border-[#222] bg-[#111] p-6 space-y-5">
+        <h2 className="mb-3 text-[15px] font-semibold text-app-fg-secondary">Account</h2>
+        <div className="app-panel space-y-5 p-6">
           <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#e4e4e4]">Email</label>
+            <label className="mb-1.5 block text-[13px] font-medium text-app-fg-muted">Email</label>
             <Input value={user?.email || ""} disabled className="opacity-50" />
-            <p className="mt-1.5 text-xs text-[#666]">Email cannot be changed</p>
+            <p className="mt-1.5 text-xs text-app-fg-muted">Email cannot be changed</p>
           </div>
           <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-[#e4e4e4]">Username</label>
+            <label className="mb-1.5 block text-[13px] font-medium text-app-fg-muted">Username</label>
             <Input value={user?.username || ""} disabled className="opacity-50" />
-            <p className="mt-1.5 text-xs text-[#666]">Username cannot be changed</p>
+            <p className="mt-1.5 text-xs text-app-fg-muted">Username cannot be changed</p>
           </div>
         </div>
       </div>
 
       {/* Danger Zone */}
-      <div className="mt-8 mb-10">
-        <h2 className="mb-3 text-[15px] font-semibold text-red-400">Danger Zone</h2>
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-6">
-          <div className="flex items-center justify-between">
+      <div className="mb-10 mt-8">
+        <h2 className="mb-3 text-[15px] font-semibold text-red-500 dark:text-red-400">Danger Zone</h2>
+        <div className="rounded-app border border-red-500/20 bg-red-500/[0.04] p-6 dark:bg-red-500/[0.06]">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[14px] font-medium text-[#e4e4e4]">Sign out of your account</p>
-              <p className="mt-0.5 text-[13px] text-[#666]">You will be redirected to the home page</p>
+              <p className="text-[14px] font-medium text-app-fg">Sign out of your account</p>
+              <p className="mt-0.5 text-[13px] text-app-fg-muted">You will be redirected to the home page</p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="rounded-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              className="w-full shrink-0 rounded-full border-red-500/35 text-red-600 hover:bg-red-500/10 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 sm:w-auto"
             >
               <LogOut className="mr-2 h-3.5 w-3.5" />
               Sign Out

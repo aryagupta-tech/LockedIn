@@ -38,7 +38,9 @@ export default function CommunityDetailPage() {
     try {
       const c = await api.get<Community>(`/communities/${slug}`);
       setCommunity(c);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setLoading(false);
   }, [slug]);
 
@@ -52,7 +54,9 @@ export default function CommunityDetailPage() {
     try {
       const result = await api.post<{ status: string }>(`/communities/${community.id}/join`);
       setJoinStatus(result.status || "PENDING");
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setJoining(false);
   };
 
@@ -63,18 +67,18 @@ export default function CommunityDetailPage() {
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#888]" />
+        <Loader2 className="h-6 w-6 animate-spin text-app-fg-muted" />
       </div>
     );
   }
 
   if (!community) {
     return (
-      <div className="rounded-2xl border border-[#222] bg-[#111] px-8 py-20 text-center">
-        <p className="text-[15px] text-[#e4e4e4]">Community not found</p>
+      <div className="app-panel px-8 py-20 text-center">
+        <p className="text-[15px] text-app-fg-secondary">Community not found</p>
         <Link
           href="/communities"
-          className="mt-4 inline-block text-[14px] text-[#888] hover:text-white hover:underline"
+          className="mt-4 inline-block text-[14px] text-app-fg-muted underline-offset-4 hover:text-app-fg hover:underline"
         >
           Browse communities
         </Link>
@@ -85,17 +89,17 @@ export default function CommunityDetailPage() {
   const avatarColor = getColor(community.name);
 
   return (
-    <div className="min-h-screen bg-[#000]">
+    <div className="min-h-screen bg-app-bg">
       {/* Back link */}
       <Link
         href="/communities"
-        className="mb-6 inline-flex items-center gap-2 text-[14px] text-[#888] transition-colors hover:text-white"
+        className="mb-6 inline-flex items-center gap-2 text-[14px] text-app-fg-muted transition-colors hover:text-app-fg"
       >
         <ArrowLeft className="h-4 w-4" /> Communities
       </Link>
 
       {/* Header card */}
-      <div className="mb-8 rounded-2xl border border-[#222] bg-[#111] overflow-hidden">
+      <div className="app-panel mb-8 overflow-hidden">
         {/* Banner */}
         <div className="h-24 bg-gradient-to-r from-purple-600/40 via-blue-600/30 to-cyan-600/40" />
 
@@ -103,8 +107,8 @@ export default function CommunityDetailPage() {
           <div className="-mt-12 flex items-end justify-between">
             <div
               className={cn(
-                "flex h-24 w-24 items-center justify-center rounded-full border-4 border-[#111] bg-gradient-to-br text-2xl font-bold text-white shadow-lg",
-                avatarColor
+                "flex h-24 w-24 items-center justify-center rounded-full border-4 border-app-surface bg-gradient-to-br text-2xl font-bold text-white shadow-app",
+                avatarColor,
               )}
             >
               {community.name.charAt(0).toUpperCase()}
@@ -128,8 +132,8 @@ export default function CommunityDetailPage() {
             </Button>
           </div>
 
-          <h1 className="mt-4 text-2xl font-bold text-white">{community.name}</h1>
-          <div className="mt-2 flex items-center gap-3 text-[14px] text-[#888]">
+          <h1 className="mt-4 text-2xl font-bold text-app-fg">{community.name}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-[14px] text-app-fg-muted">
             {community.isPrivate ? (
               <>
                 <Lock className="h-4 w-4" /> Private
@@ -139,16 +143,14 @@ export default function CommunityDetailPage() {
                 <Globe className="h-4 w-4" /> Public
               </>
             )}
-            <span className="text-[#555]">·</span>
+            <span className="text-app-fg-muted/50">·</span>
             <span className="flex items-center gap-1">
               <Users2 className="h-4 w-4" />
               {community.memberCount} members
             </span>
           </div>
           {community.description && (
-            <p className="mt-3 text-[15px] leading-relaxed text-[#e4e4e4]">
-              {community.description}
-            </p>
+            <p className="mt-3 text-[15px] leading-relaxed text-app-fg-secondary">{community.description}</p>
           )}
         </div>
       </div>
@@ -157,9 +159,7 @@ export default function CommunityDetailPage() {
 
       {posts.length === 0 ? (
         <div className="post-card px-8 py-16 text-center">
-          <p className="text-[15px] text-[#888]">
-            No posts in this community yet. Be the first!
-          </p>
+          <p className="text-[15px] text-app-fg-muted">No posts in this community yet. Be the first!</p>
         </div>
       ) : (
         <div className="space-y-4">

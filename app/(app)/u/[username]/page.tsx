@@ -45,7 +45,9 @@ export default function ProfilePage() {
       const p = await api.get<Profile>(`/profiles/${username}`);
       setProfile(p);
       setFollowing(p.isFollowing ?? false);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setLoading(false);
   }, [username]);
 
@@ -54,11 +56,12 @@ export default function ProfilePage() {
       const data = await api.get<Post[]>(`/posts?author=${username}`);
       setPosts(data);
     } catch {
-      // Fallback: try feed-style response
       try {
         const data = await api.get<{ items: Post[] }>(`/feed?author=${username}`);
         setPosts(data.items || []);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
   }, [username]);
 
@@ -80,25 +83,27 @@ export default function ProfilePage() {
         setFollowing(true);
         setProfile((p) => (p ? { ...p, followersCount: p.followersCount + 1 } : p));
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setToggling(false);
   };
 
   if (loading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center bg-[#000]">
-        <Loader2 className="h-6 w-6 animate-spin text-[#888]" />
+      <div className="flex min-h-[40vh] items-center justify-center bg-app-bg">
+        <Loader2 className="h-6 w-6 animate-spin text-app-fg-muted" />
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="min-h-[40vh] bg-[#000] px-4 py-20 text-center">
-        <p className="text-[#888]">User not found</p>
+      <div className="min-h-[40vh] bg-app-bg px-4 py-20 text-center">
+        <p className="text-app-fg-muted">User not found</p>
         <Link
           href="/feed"
-          className="mt-4 inline-flex items-center gap-1.5 text-[15px] text-[#e4e4e4] hover:text-white"
+          className="mt-4 inline-flex items-center gap-1.5 text-[15px] text-app-fg-secondary transition-colors hover:text-app-fg"
         >
           <ArrowLeft className="h-4 w-4" /> Back to feed
         </Link>
@@ -107,23 +112,23 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#000]">
+    <div className="min-h-screen bg-app-bg">
       <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
         {/* Back link */}
         <Link
           href="/feed"
-          className="inline-flex items-center gap-2 text-[14px] text-[#666] transition-colors hover:text-[#888]"
+          className="inline-flex items-center gap-2 text-[14px] text-app-fg-muted transition-colors hover:text-app-fg"
         >
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
 
         {/* Profile header card */}
-        <div className="rounded-2xl border border-[#222] bg-[#111] p-6 sm:p-8">
+        <div className="app-panel p-6 sm:p-8">
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             {/* Avatar */}
             <div
               className={cn(
-                "flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-2xl font-bold text-white",
+                "flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-2xl font-bold text-white shadow-app",
                 avatarColor,
               )}
             >
@@ -135,34 +140,29 @@ export default function ProfilePage() {
             </div>
 
             <div className="min-w-0 flex-1 text-center sm:text-left">
-              <h1 className="text-xl font-bold text-white">{profile.displayName}</h1>
-              <p className="mt-0.5 text-[15px] text-[#888]">@{profile.username}</p>
+              <h1 className="text-xl font-bold text-app-fg">{profile.displayName}</h1>
+              <p className="mt-0.5 text-[15px] text-app-fg-muted">@{profile.username}</p>
 
-              {/* Bio */}
               {profile.bio && (
-                <p className="mt-4 text-[15px] leading-relaxed text-[#e4e4e4]">{profile.bio}</p>
+                <p className="mt-4 text-[15px] leading-relaxed text-app-fg-secondary">{profile.bio}</p>
               )}
 
-              {/* Stats */}
               <div className="mt-4 flex items-center justify-center gap-6 sm:justify-start">
-                <span className="text-[14px] text-[#888]">
-                  <strong className="font-semibold text-white">{profile.followingCount}</strong>{" "}
-                  following
+                <span className="text-[14px] text-app-fg-muted">
+                  <strong className="font-semibold text-app-fg">{profile.followingCount}</strong> following
                 </span>
-                <span className="text-[14px] text-[#888]">
-                  <strong className="font-semibold text-white">{profile.followersCount}</strong>{" "}
-                  followers
+                <span className="text-[14px] text-app-fg-muted">
+                  <strong className="font-semibold text-app-fg">{profile.followersCount}</strong> followers
                 </span>
               </div>
 
-              {/* Meta row */}
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[13px] text-[#666] sm:justify-start">
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[13px] text-app-fg-muted sm:justify-start">
                 {profile.githubUsername && (
                   <a
                     href={`https://github.com/${profile.githubUsername}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1.5 text-[#666] transition-colors hover:text-[#888]"
+                    className="flex items-center gap-1.5 transition-colors hover:text-app-fg"
                   >
                     <Github className="h-3.5 w-3.5" /> {profile.githubUsername}
                   </a>
@@ -177,7 +177,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Follow / Edit button */}
             <div className="flex-shrink-0">
               {!isMe ? (
                 <Button
@@ -185,7 +184,7 @@ export default function ProfilePage() {
                   size="sm"
                   onClick={toggleFollow}
                   disabled={toggling}
-                  className="rounded-full border-[#333] bg-white text-black hover:bg-zinc-200"
+                  className="rounded-full"
                 >
                   {toggling ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -200,12 +199,7 @@ export default function ProfilePage() {
                   )}
                 </Button>
               ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                  className="rounded-full border-[#333] text-[#e4e4e4] hover:bg-[#1a1a1a] hover:text-white"
-                >
+                <Button variant="outline" size="sm" asChild className="rounded-full">
                   <Link href="/settings">Edit Profile</Link>
                 </Button>
               )}
@@ -215,11 +209,11 @@ export default function ProfilePage() {
 
         {/* Posts section */}
         <div>
-          <h2 className="mb-4 text-[15px] font-semibold text-white">Posts</h2>
+          <h2 className="mb-4 text-[15px] font-semibold text-app-fg">Posts</h2>
 
           {posts.length === 0 ? (
-            <div className="rounded-2xl border border-[#222] bg-[#111] py-16 text-center">
-              <p className="text-[15px] text-[#666]">No posts yet.</p>
+            <div className="app-panel py-16 text-center">
+              <p className="text-[15px] text-app-fg-muted">No posts yet.</p>
             </div>
           ) : (
             <div className="space-y-4">

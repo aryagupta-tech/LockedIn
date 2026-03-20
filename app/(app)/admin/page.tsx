@@ -77,8 +77,8 @@ export default function AdminPage() {
   if (!isAdmin) {
     return (
       <div className="py-20 text-center">
-        <Shield className="mx-auto mb-3 h-8 w-8 text-zinc-600" />
-        <p className="text-zinc-500">Admin access required</p>
+        <Shield className="mx-auto mb-3 h-8 w-8 text-app-fg-muted" />
+        <p className="text-app-fg-muted">Admin access required</p>
       </div>
     );
   }
@@ -86,8 +86,8 @@ export default function AdminPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-[var(--font-geist)] text-2xl font-semibold text-white">Admin Panel</h1>
-        <p className="mt-1 text-sm text-zinc-500">Manage applications and scoring</p>
+        <h1 className="font-[var(--font-geist)] text-2xl font-semibold text-app-fg">Admin Panel</h1>
+        <p className="mt-1 text-sm text-app-fg-muted">Manage applications and scoring</p>
       </div>
 
       <div className="flex gap-2">
@@ -106,7 +106,7 @@ export default function AdminPage() {
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${statusFilter === s ? "bg-neon/10 text-neon" : "text-zinc-500 hover:text-zinc-300"}`}
+                className={`rounded-app-sm px-3 py-1.5 text-xs font-medium transition-colors ${statusFilter === s ? "bg-neon/10 text-neon" : "text-app-fg-muted hover:text-app-fg-secondary"}`}
               >
                 {s}
               </button>
@@ -116,25 +116,27 @@ export default function AdminPage() {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-neon" /></div>
           ) : apps.length === 0 ? (
-            <p className="py-8 text-center text-sm text-zinc-600">No {statusFilter.toLowerCase()} applications</p>
+            <p className="py-8 text-center text-sm text-app-fg-muted">No {statusFilter.toLowerCase()} applications</p>
           ) : (
             <div className="space-y-3">
               {apps.map((app) => (
-                <div key={app.id} className="rounded-xl border border-white/[0.06] bg-surface/60 p-4">
+                <div key={app.id} className="app-panel p-4">
                   <div className="mb-3 flex items-start justify-between">
                     <div>
-                      <p className="font-medium text-white">{app.user.displayName}</p>
-                      <p className="text-xs text-zinc-500">@{app.user.username} &middot; {app.user.email}</p>
+                      <p className="font-medium text-app-fg">{app.user.displayName}</p>
+                      <p className="text-xs text-app-fg-muted">@{app.user.username} &middot; {app.user.email}</p>
                     </div>
                     {app.score !== null && (
-                      <span className="rounded-lg bg-white/5 px-2.5 py-1 text-sm font-mono font-bold text-white">{app.score}</span>
+                      <span className="rounded-app-sm bg-app-surface-2 px-2.5 py-1 text-sm font-mono font-bold text-app-fg shadow-app">
+                        {app.score}
+                      </span>
                     )}
                   </div>
-                  <div className="mb-3 flex flex-wrap gap-2 text-xs text-zinc-500">
-                    {app.githubUrl && <span className="rounded bg-white/5 px-2 py-0.5">GitHub</span>}
-                    {app.codeforcesHandle && <span className="rounded bg-white/5 px-2 py-0.5">CF: {app.codeforcesHandle}</span>}
-                    {app.leetcodeHandle && <span className="rounded bg-white/5 px-2 py-0.5">LC: {app.leetcodeHandle}</span>}
-                    {app.portfolioUrl && <span className="rounded bg-white/5 px-2 py-0.5">Portfolio</span>}
+                  <div className="mb-3 flex flex-wrap gap-2 text-xs text-app-fg-muted">
+                    {app.githubUrl && <span className="rounded bg-app-surface-2 px-2 py-0.5">GitHub</span>}
+                    {app.codeforcesHandle && <span className="rounded bg-app-surface-2 px-2 py-0.5">CF: {app.codeforcesHandle}</span>}
+                    {app.leetcodeHandle && <span className="rounded bg-app-surface-2 px-2 py-0.5">LC: {app.leetcodeHandle}</span>}
+                    {app.portfolioUrl && <span className="rounded bg-app-surface-2 px-2 py-0.5">Portfolio</span>}
                   </div>
                   {statusFilter === "PENDING" && (
                     <div className="flex gap-2">
@@ -159,11 +161,11 @@ export default function AdminPage() {
         ) : (
           <div className="space-y-3">
             {weights.map((w) => (
-              <div key={w.key} className="rounded-xl border border-white/[0.06] bg-surface/60 p-4">
+              <div key={w.key} className="app-panel p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-white">{w.key}</p>
-                    {w.description && <p className="text-xs text-zinc-500">{w.description}</p>}
+                    <p className="font-medium text-app-fg">{w.key}</p>
+                    {w.description && <p className="text-xs text-app-fg-muted">{w.description}</p>}
                   </div>
                   <span className="font-mono text-sm text-neon">{w.weight}</span>
                 </div>
@@ -176,7 +178,7 @@ export default function AdminPage() {
                   onChange={(e) => handleWeightUpdate(w.key, parseFloat(e.target.value))}
                   className="w-full accent-neon"
                 />
-                <div className="mt-1 flex justify-between text-[10px] text-zinc-600">
+                <div className="mt-1 flex justify-between text-[10px] text-app-fg-muted">
                   <span>Min: {w.minimum}</span>
                   <span>Threshold: {w.threshold}</span>
                 </div>

@@ -5,11 +5,32 @@ const config: Config = {
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
-    "./lib/**/*.{ts,tsx}"
+    "./lib/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
+      borderRadius: {
+        app: "var(--app-r-lg)",
+        "app-md": "var(--app-r-md)",
+        "app-sm": "var(--app-r-sm)",
+        "app-xl": "var(--app-r-xl)",
+      },
       colors: {
+        app: {
+          bg: "var(--app-bg)",
+          "bg-subtle": "var(--app-bg-subtle)",
+          surface: "var(--app-surface)",
+          "surface-2": "var(--app-surface-2)",
+          input: "var(--app-input-bg)",
+          code: "var(--app-code-bg)",
+          nav: "var(--app-nav-bg)",
+          fg: "var(--app-text)",
+          "fg-secondary": "var(--app-text-secondary)",
+          "fg-muted": "var(--app-text-muted)",
+          border: "var(--app-border)",
+          "border-strong": "var(--app-border-strong)",
+          overlay: "var(--app-overlay)",
+        },
         bg: "#000",
         surface: "#111",
         panel: "#1a1a1a",
@@ -19,11 +40,22 @@ const config: Config = {
         muted: "#737373",
         border: "#262626",
       },
+      ringOffsetColor: {
+        app: "var(--app-bg)",
+      },
       boxShadow: {
+        app: "var(--app-shadow)",
+        "app-hover": "var(--app-shadow-hover)",
+        "app-inset": "var(--app-shadow-inset)",
+        "app-raised": "var(--app-shadow-raised)",
+        "app-raised-hover": "var(--app-shadow-raised-hover)",
+        modal: "var(--app-shadow-modal)",
         neon: "0 0 0 1px rgba(214,179,106,0.2), 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(214,179,106,0.08)",
-        "neon-lg": "0 0 0 1px rgba(214,179,106,0.25), 0 16px 48px rgba(0,0,0,0.5), 0 4px 12px rgba(214,179,106,0.1)",
+        "neon-lg":
+          "0 0 0 1px rgba(214,179,106,0.25), 0 16px 48px rgba(0,0,0,0.5), 0 4px 12px rgba(214,179,106,0.1)",
         glass: "0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)",
         card: "0 1px 3px rgba(0,0,0,0.5)",
+        nav: "var(--app-shadow-nav)",
       },
       backgroundImage: {
         "card-gradient": "linear-gradient(180deg, #111, #0a0a0a)",
@@ -38,20 +70,20 @@ const config: Config = {
       keyframes: {
         float: {
           "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-10px)" }
+          "50%": { transform: "translateY(-10px)" },
         },
         marquee: {
           "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-50%)" }
+          "100%": { transform: "translateX(-50%)" },
         },
         fadeUp: {
           "0%": { opacity: "0", transform: "translateY(20px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" }
+          "100%": { opacity: "1", transform: "translateY(0)" },
         },
-      }
-    }
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 };
 
 export default config;

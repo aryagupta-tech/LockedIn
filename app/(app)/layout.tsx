@@ -19,17 +19,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black">
-        <Loader2 className="h-8 w-8 animate-spin text-neon" />
+      <div className="flex min-h-screen items-center justify-center bg-app-bg">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--app-accent)]" />
         <div className="hidden">{children}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-app-bg">
       <TopNavbar />
-      <div className="mx-auto flex max-w-[1200px] gap-6 px-5 pt-[72px]">
+      <div className="mx-auto flex max-w-[1200px] gap-6 px-5 pt-[var(--app-content-offset)]">
         {/* Main feed */}
         <main className="min-w-0 flex-1">
           {children}

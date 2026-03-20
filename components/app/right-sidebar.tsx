@@ -14,12 +14,12 @@ const trendingTopics: { tag: string; count: string }[] = [];
 
 export function RightSidebar() {
   return (
-    <div className="sticky top-[80px] space-y-5">
+    <div className="sticky top-[calc(var(--app-nav-h)+12px)] space-y-5">
       {/* Suggested Profiles */}
-      <div className="rounded-2xl border border-[#222] bg-[#111] p-4">
-        <h3 className="mb-3 text-[15px] font-bold text-white">Suggested Profiles</h3>
+      <div className="app-panel p-4">
+        <h3 className="mb-3 text-[15px] font-bold text-app-fg">Suggested Profiles</h3>
         {suggestedUsers.length === 0 ? (
-          <p className="text-[12px] leading-relaxed text-[#666]">
+          <p className="text-[12px] leading-relaxed text-app-fg-muted">
             No suggestions yet. Once more builders join, we&apos;ll surface people you may
             want to follow here.
           </p>
@@ -33,8 +33,8 @@ export function RightSidebar() {
                   {u.name.charAt(0)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-semibold text-white">{u.name}</p>
-                  <p className="truncate text-[12px] text-[#666]">@{u.username}</p>
+                <p className="truncate text-[13px] font-semibold text-app-fg">{u.name}</p>
+                <p className="truncate text-[12px] text-app-fg-muted">@{u.username}</p>
                 </div>
                 <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-[11px]">
                   Follow
@@ -46,10 +46,10 @@ export function RightSidebar() {
       </div>
 
       {/* Trending Topics */}
-      <div className="rounded-2xl border border-[#222] bg-[#111] p-4">
-        <h3 className="mb-3 text-[15px] font-bold text-white">Trending Topics</h3>
+      <div className="app-panel p-4">
+        <h3 className="mb-3 text-[15px] font-bold text-app-fg">Trending Topics</h3>
         {trendingTopics.length === 0 ? (
-          <p className="text-[12px] leading-relaxed text-[#666]">
+          <p className="text-[12px] leading-relaxed text-app-fg-muted">
             No trending topics yet. When the community is posting, popular tags will show
             up here.
           </p>
@@ -58,10 +58,10 @@ export function RightSidebar() {
             {trendingTopics.map((t) => (
               <button
                 key={t.tag}
-                className="-mx-2 block w-full rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-[#1a1a1a]"
+                className="-mx-2 block w-full rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-app-surface-2"
               >
                 <p className="text-[14px] font-semibold text-neon-light">{t.tag}</p>
-                <p className="text-[12px] text-[#666]">{t.count}</p>
+                <p className="text-[12px] text-app-fg-muted">{t.count}</p>
               </button>
             ))}
           </div>
@@ -69,7 +69,7 @@ export function RightSidebar() {
       </div>
 
       {/* Footer */}
-      <p className="px-2 text-[11px] text-[#444]">
+      <p className="px-2 text-[11px] text-app-fg-muted/70">
         Terms · Privacy · About
         <br />
         &copy; 2026 LockedIn

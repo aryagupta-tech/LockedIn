@@ -65,17 +65,17 @@ export function CreatePost({ communityId, onCreated }: { communityId?: string; o
             onFocus={() => setFocused(true)}
             placeholder="Share what you're building..."
             rows={focused ? 3 : 2}
-            className="w-full resize-none bg-transparent text-[15px] text-white placeholder-[#555] outline-none"
+            className="w-full resize-none bg-transparent text-[15px] text-app-fg placeholder:text-app-fg-muted outline-none"
           />
 
           {showCode && (
-            <div className="mt-2 overflow-hidden rounded-xl border border-[#222]">
-              <div className="border-b border-[#222] bg-[#0a0a0a] px-3 py-1.5">
+            <div className="mt-2 overflow-hidden rounded-app-md border border-app-border">
+              <div className="border-b border-app-border bg-app-code px-3 py-1.5">
                 <input
                   value={codeLanguage}
                   onChange={(e) => setCodeLanguage(e.target.value)}
                   placeholder="Language"
-                  className="w-full bg-transparent text-[12px] text-[#888] placeholder-[#444] outline-none"
+                  className="w-full bg-transparent text-[12px] text-app-fg-muted placeholder:text-app-fg-muted/60 outline-none"
                 />
               </div>
               <textarea
@@ -83,7 +83,7 @@ export function CreatePost({ communityId, onCreated }: { communityId?: string; o
                 onChange={(e) => setCodeSnippet(e.target.value)}
                 placeholder="Paste your code..."
                 rows={4}
-                className="w-full resize-none bg-[#0a0a0a] p-3 font-mono text-[13px] text-[#ccc] placeholder-[#444] outline-none"
+                className="w-full resize-none bg-app-code p-3 font-mono text-[13px] text-app-fg-secondary placeholder:text-app-fg-muted/60 outline-none"
               />
             </div>
           )}
@@ -95,7 +95,7 @@ export function CreatePost({ communityId, onCreated }: { communityId?: string; o
                 onClick={() => setShowCode(!showCode)}
                 className={cn(
                   "rounded-lg p-2 transition-colors",
-                  showCode ? "bg-neon/10 text-neon" : "text-[#555] hover:text-neon"
+                  showCode ? "bg-neon/10 text-neon" : "text-app-fg-muted hover:text-neon"
                 )}
               >
                 <Code2 className="h-[18px] w-[18px]" />

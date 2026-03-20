@@ -82,10 +82,12 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <Link href={`/u/${post.author.username}`} className="flex items-center gap-3">
-          <div className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-[13px] font-bold text-white",
-            avatarColor,
-          )}>
+          <div
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-[13px] font-bold text-white",
+              avatarColor,
+            )}
+          >
             {post.author.avatarUrl ? (
               <img src={post.author.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
             ) : (
@@ -93,25 +95,25 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
             )}
           </div>
           <div>
-            <p className="text-[14px] font-semibold text-white">{post.author.displayName}</p>
-            <p className="text-[12px] text-[#777]">@{post.author.username}</p>
+            <p className="text-[14px] font-semibold text-app-fg">{post.author.displayName}</p>
+            <p className="text-[12px] text-app-fg-muted">@{post.author.username}</p>
           </div>
         </Link>
 
         <div className="flex items-center gap-2">
-          <span className="text-[12px] text-[#555]">{timeAgo(post.createdAt)}</span>
+          <span className="text-[12px] text-app-fg-muted">{timeAgo(post.createdAt)}</span>
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="rounded-full p-1.5 text-[#555] transition-colors hover:text-white"
+              className="rounded-full p-1.5 text-app-fg-muted transition-colors hover:text-app-fg"
             >
               <MoreHorizontal className="h-4 w-4" />
             </button>
             {showMenu && isAuthor && (
-              <div className="absolute right-0 top-8 z-10 rounded-xl border border-[#222] bg-[#111] py-1 shadow-lg">
+              <div className="absolute right-0 top-8 z-10 rounded-xl border border-app-border bg-app-surface py-1 shadow-lg">
                 <button
                   onClick={handleDelete}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] text-red-400 hover:bg-[#1a1a1a]"
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] text-red-500 hover:bg-red-500/10 dark:text-red-400"
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Delete
                 </button>
@@ -123,23 +125,23 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
 
       {/* Content */}
       <Link href={`/post/${post.id}`} className="block px-4 pb-3">
-        <p className="whitespace-pre-wrap text-[15px] leading-[1.65] text-[#e4e4e4]">
+        <p className="whitespace-pre-wrap text-[15px] leading-[1.65] text-app-fg-secondary">
           {post.content}
         </p>
       </Link>
 
       {/* Code block */}
       {post.codeSnippet && (
-        <div className="mx-4 mb-3 overflow-hidden rounded-xl border border-[#222]">
+        <div className="mx-4 mb-3 overflow-hidden rounded-xl border border-app-border">
           {post.codeLanguage && (
-            <div className="border-b border-[#222] bg-[#0a0a0a] px-4 py-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#555]">
+            <div className="border-b border-app-border bg-app-code px-4 py-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-app-fg-muted">
                 {post.codeLanguage}
               </span>
             </div>
           )}
-          <div className="overflow-x-auto bg-[#0a0a0a] p-4">
-            <pre className="text-[13px] leading-relaxed text-[#ccc]">
+          <div className="overflow-x-auto bg-app-code p-4">
+            <pre className="text-[13px] leading-relaxed text-app-fg-secondary">
               <code>{post.codeSnippet}</code>
             </pre>
           </div>
@@ -147,18 +149,17 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-between border-t border-[#1a1a1a] px-4 py-2">
+      <div className="flex items-center justify-between border-t border-app-border px-4 py-2">
         <div className="flex items-center gap-4">
-          <button
-            onClick={toggleLike}
-            className="group flex items-center gap-1.5 transition-colors"
-          >
-            <Heart className={cn(
-              "h-[20px] w-[20px] transition-all",
-              liked ? "fill-red-500 text-red-500 scale-110" : "text-[#777] group-hover:text-red-400"
-            )} />
+          <button onClick={toggleLike} className="group flex items-center gap-1.5 transition-colors">
+            <Heart
+              className={cn(
+                "h-[20px] w-[20px] transition-all",
+                liked ? "scale-110 fill-red-500 text-red-500" : "text-app-fg-muted group-hover:text-red-400",
+              )}
+            />
             {likes > 0 && (
-              <span className={cn("text-[13px]", liked ? "text-red-400" : "text-[#777]")}>
+              <span className={cn("text-[13px]", liked ? "text-red-500 dark:text-red-400" : "text-app-fg-muted")}>
                 {formatCount(likes)}
               </span>
             )}
@@ -166,27 +167,24 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
 
           <Link
             href={`/post/${post.id}`}
-            className="group flex items-center gap-1.5 text-[#777] transition-colors hover:text-blue-400"
+            className="group flex items-center gap-1.5 text-app-fg-muted transition-colors hover:text-blue-500 dark:hover:text-blue-400"
           >
-            <MessageCircle className="h-[20px] w-[20px] transition-colors group-hover:text-blue-400" />
-            {post.commentsCount > 0 && (
-              <span className="text-[13px]">{formatCount(post.commentsCount)}</span>
-            )}
+            <MessageCircle className="h-[20px] w-[20px] transition-colors group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+            {post.commentsCount > 0 && <span className="text-[13px]">{formatCount(post.commentsCount)}</span>}
           </Link>
 
-          <button className="text-[#777] transition-colors hover:text-emerald-400">
+          <button className="text-app-fg-muted transition-colors hover:text-emerald-500 dark:hover:text-emerald-400">
             <Share2 className="h-[18px] w-[18px]" />
           </button>
         </div>
 
-        <button
-          onClick={() => setSaved(!saved)}
-          className="transition-colors"
-        >
-          <Bookmark className={cn(
-            "h-[20px] w-[20px]",
-            saved ? "fill-neon text-neon" : "text-[#777] hover:text-neon"
-          )} />
+        <button onClick={() => setSaved(!saved)} className="transition-colors">
+          <Bookmark
+            className={cn(
+              "h-[20px] w-[20px]",
+              saved ? "fill-neon text-neon" : "text-app-fg-muted hover:text-neon",
+            )}
+          />
         </button>
       </div>
     </div>

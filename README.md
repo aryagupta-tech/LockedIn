@@ -13,6 +13,7 @@ A private, gated social network for high-signal builders: developers, designers,
 - **Admin dashboard** - review applications, manage scoring weights, handle appeals
 - **Auth** - email/password registration, login, token refresh, GitHub OAuth
 - **Middleware** - route protection with automatic redirects for authenticated/unauthenticated users
+- **Themes** - system-aware **light** and **dark** UI (`next-themes`); toggle in the top bar (logged-in app) and on login/register/landing
 
 ## Tech Stack
 

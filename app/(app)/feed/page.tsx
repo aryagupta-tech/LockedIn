@@ -75,11 +75,11 @@ export default function FeedPage() {
   if (user.status === "PENDING") {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-neon/15 to-amber-600/15 ring-1 ring-[#222]">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-app bg-gradient-to-br from-neon/15 to-amber-600/15 ring-1 ring-app-border shadow-app">
           <Rocket className="h-9 w-9 text-neon" />
         </div>
-        <h1 className="mb-2 text-[22px] font-bold text-white">Welcome to LockedIn</h1>
-        <p className="mb-8 max-w-sm text-[15px] leading-relaxed text-[#888]">
+        <h1 className="mb-2 text-[22px] font-bold text-app-fg">Welcome to LockedIn</h1>
+        <p className="mb-8 max-w-sm text-[15px] leading-relaxed text-app-fg-muted">
           Submit your application to get verified and unlock full access to the network.
         </p>
         <Button asChild size="lg" className="rounded-full px-8">
@@ -92,8 +92,8 @@ export default function FeedPage() {
   if (user.status === "REJECTED") {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <h1 className="mb-2 text-[22px] font-bold text-white">Application Not Approved</h1>
-        <p className="mb-8 max-w-sm text-[15px] text-[#888]">
+        <h1 className="mb-2 text-[22px] font-bold text-app-fg">Application Not Approved</h1>
+        <p className="mb-8 max-w-sm text-[15px] text-app-fg-muted">
           You can submit an appeal for manual review.
         </p>
         <Button variant="outline" asChild className="rounded-full"><Link href="/apply">View Application</Link></Button>
@@ -114,8 +114,8 @@ export default function FeedPage() {
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-neon/15 to-blue-500/15">
             <PenLine className="h-7 w-7 text-neon" />
           </div>
-          <h2 className="mb-2 text-[17px] font-bold text-white">Your feed is empty</h2>
-          <p className="mx-auto max-w-[280px] text-[14px] leading-relaxed text-[#777]">
+          <h2 className="mb-2 text-[17px] font-bold text-app-fg">Your feed is empty</h2>
+          <p className="mx-auto max-w-[280px] text-[14px] leading-relaxed text-app-fg-muted">
             Follow builders and join communities to see their posts here.
           </p>
           <Button variant="outline" size="sm" asChild className="mt-5 rounded-full">
