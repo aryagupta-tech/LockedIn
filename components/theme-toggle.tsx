@@ -6,8 +6,8 @@ import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Looks like a **light** control when you’re switching to light (dark theme active);
- * looks like the **leather** control when you’re switching to dark (light theme active).
+ * Shows **Light** (sun + light pill) while the app is in light mode — click to go dark.
+ * Shows **Dark** (moon + leather pill) while the app is in dark mode — click to go light.
  */
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
@@ -32,20 +32,17 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className={cn(
         "relative inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full px-3.5 transition-transform active:scale-[0.97]",
-        isDark ? "theme-toggle-light" : "theme-toggle-leather",
+        isDark ? "theme-toggle-leather" : "theme-toggle-light",
         className,
       )}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Dark mode — click to use light mode" : "Light mode — click to use dark mode"}
+      aria-label={
+        isDark
+          ? "Dark theme active. Switch to light theme."
+          : "Light theme active. Switch to dark theme."
+      }
     >
       {isDark ? (
-        <>
-          <Sun className="h-4 w-4 text-[#f07828]" strokeWidth={2} aria-hidden />
-          <span className="theme-toggle-light-label hidden text-[11px] font-semibold tracking-wide sm:inline">
-            Light
-          </span>
-        </>
-      ) : (
         <>
           <Moon
             className="h-4 w-4 text-[#f0d9a0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]"
@@ -54,6 +51,13 @@ export function ThemeToggle({ className }: { className?: string }) {
           />
           <span className="theme-toggle-leather-gold hidden text-[11px] font-semibold tracking-wide sm:inline">
             Dark
+          </span>
+        </>
+      ) : (
+        <>
+          <Sun className="h-4 w-4 text-[#d65a08]" strokeWidth={2.25} aria-hidden />
+          <span className="theme-toggle-light-label hidden text-[11px] font-semibold tracking-wide sm:inline">
+            Light
           </span>
         </>
       )}
