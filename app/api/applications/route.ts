@@ -5,6 +5,10 @@ import { checkAnyPlatformPasses, PLATFORM_THRESHOLDS } from "@/lib/scoring/engin
 import type { SignalInput } from "@/lib/scoring/engine";
 import { fetchApplicationSignals } from "@/lib/scoring/fetch-application-signals";
 import { validatePlatformOwnership } from "@/lib/verification/platform-ownership";
+import {
+  normalizeCodeforcesHandle,
+  normalizeLeetCodeHandle,
+} from "@/lib/platform-handles";
 
 function buildScoreBreakdown(
   signals: SignalInput[],
@@ -43,8 +47,28 @@ export async function POST(request: Request) {
     const { githubUrl, codeforcesHandle, leetcodeHandle } = body;
 
     const gh = typeof githubUrl === "string" ? githubUrl.trim() : "";
-    const cf = typeof codeforcesHandle === "string" ? codeforcesHandle.trim() : "";
-    const lc = typeof leetcodeHandle === "string" ? leetcodeHandle.trim() : "";
+    const cfRaw =
+      typeof codeforcesHandle === "string" ? codeforcesHandle.trim() : "";
+    const lcRaw =
+      typeof leetcodeHandle === "string" ? leetcodeHandle.trim() : "";
+    const cf = cfRaw ? normalizeCodeforcesHandle(cfRaw) : "";
+    const lc = lcRaw ? normalizeLeetCodeHandle(lcRaw) : "";
+
+    if (lcRaw && !lc) {
+      return errorResponse(
+        "That doesn’t look like a valid LeetCode profile link or username. Open your LeetCode profile and copy the link (…/u/yourname) or type your handle only.",
+        "VALIDATION_ERROR",
+        400,
+      );
+    }
+
+    if (cfRaw && !cf) {
+      return errorResponse(
+        "That doesn’t look like a valid Codeforces profile link or handle. Use your profile URL (…/profile/yourhandle) or your handle only.",
+        "VALIDATION_ERROR",
+        400,
+      );
+    }
 
     if (!gh && !cf && !lc) {
       return errorResponse(
@@ -69,8 +93,8 @@ export async function POST(request: Request) {
     const ownershipViolation = await validatePlatformOwnership(
       {
         githubUrl: gh || undefined,
-        codeforcesHandle: cf || undefined,
-        leetcodeHandle: lc || undefined,
+        codeforcesHandle: cfRaw || undefined,
+        leetcodeHandle: lcRaw || undefined,
       },
       dbUser,
     );

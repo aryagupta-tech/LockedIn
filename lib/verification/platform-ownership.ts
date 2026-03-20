@@ -1,5 +1,9 @@
 import { createHmac } from "node:crypto";
 import { extractGitHubUsername } from "@/lib/github-username";
+import {
+  normalizeCodeforcesHandle,
+  normalizeLeetCodeHandle,
+} from "@/lib/platform-handles";
 import { fetchLeetCodeGithubUrl } from "@/lib/scoring/providers/leetcode";
 import { fetchCodeforcesProfile } from "@/lib/scoring/providers/codeforces";
 
@@ -62,8 +66,28 @@ export async function validatePlatformOwnership(
   user: DbUserForOwnership,
 ): Promise<OwnershipViolation | null> {
   const gh = body.githubUrl?.trim() || "";
-  const cf = body.codeforcesHandle?.trim() || "";
-  const lc = body.leetcodeHandle?.trim() || "";
+  const cfRaw = body.codeforcesHandle?.trim() || "";
+  const lcRaw = body.leetcodeHandle?.trim() || "";
+  const cf = cfRaw ? normalizeCodeforcesHandle(cfRaw) : "";
+  const lc = lcRaw ? normalizeLeetCodeHandle(lcRaw) : "";
+
+  if (lcRaw && !lc) {
+    return {
+      code: "VALIDATION_ERROR",
+      message:
+        "That doesn’t look like a valid LeetCode profile link or username. Open your LeetCode profile and copy the link (…/u/yourname) or type your handle only.",
+      status: 400,
+    };
+  }
+
+  if (cfRaw && !cf) {
+    return {
+      code: "VALIDATION_ERROR",
+      message:
+        "That doesn’t look like a valid Codeforces profile link or handle. Use your profile URL (…/profile/yourhandle) or your handle only.",
+      status: 400,
+    };
+  }
 
   if (!gh && !cf && !lc) {
     return {
