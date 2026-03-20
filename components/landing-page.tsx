@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LockedInMark } from "@/components/brand/locked-in-mark";
 
 const gateSteps = [
   { label: "Link GitHub + handles", icon: Github, desc: "Connect GitHub and add Codeforces / LeetCode" },
@@ -247,11 +248,12 @@ function Navbar() {
       <div className="section-shell flex h-16 items-center justify-between gap-3">
         <a
           href="#"
-          className={`flex items-center gap-2.5 font-[var(--font-geist)] text-lg font-bold transition-colors ${
+          className={`group flex items-center gap-2.5 font-[var(--font-geist)] text-lg font-bold transition-colors ${
             scrolled ? "text-app-fg" : "text-slate-900 dark:text-app-fg"
           }`}
         >
-          <BrandMark /> <span className="text-brand-logo">LockedIn</span>
+          <LockedInMark size={24} className="transition-transform duration-200 group-hover:scale-105" />{" "}
+          <span className="text-brand-logo">LockedIn</span>
         </a>
         <div className="flex items-center gap-2 sm:gap-3">
           <a
@@ -391,7 +393,8 @@ function Footer() {
     <footer className="border-t border-app-border py-12">
       <div className="section-shell flex flex-col items-start justify-between gap-6 text-sm text-app-fg-muted sm:flex-row sm:items-center">
         <div className="flex items-center gap-2.5 text-app-fg-secondary">
-          <BrandMark /> <span className="text-brand-logo font-[var(--font-geist)] font-bold">LockedIn</span>
+          <LockedInMark size={24} />{" "}
+          <span className="text-brand-logo font-[var(--font-geist)] font-bold">LockedIn</span>
         </div>
         <div className="flex flex-wrap items-center gap-6">
           {links.map((link) => (
@@ -405,15 +408,3 @@ function Footer() {
   );
 }
 
-/* ---------- Brand Mark ---------- */
-
-function BrandMark() {
-  return (
-    <span className="relative inline-flex h-6 w-6 items-center justify-center">
-      <span className="absolute inset-0 rounded-[9px] bg-gradient-to-br from-[#7b9dff] via-[#6e78ff] to-[#f3c680] opacity-90" />
-      <span className="absolute inset-[1.5px] rounded-[8px] bg-app-bg dark:bg-[#080d1e]" />
-      <span className="absolute h-2.5 w-2.5 rounded-full bg-gradient-to-br from-[#a5d4ff] to-[#f0c670]" />
-      <span className="absolute h-3.5 w-3.5 rounded-full border border-white/20" />
-    </span>
-  );
-}

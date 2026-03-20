@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+import { LockedInMark } from "@/components/brand/locked-in-mark";
 
 const AVATAR_COLORS = [
   "from-violet-500 to-fuchsia-500",
@@ -68,8 +69,8 @@ export function TopNavbar() {
       <header className="app-top-nav fixed inset-x-0 top-0 z-50">
         <div className="mx-auto flex h-[60px] max-w-[1200px] items-center justify-between px-5">
           {/* Logo */}
-          <Link href="/feed" className="flex items-center gap-2.5">
-            <BrandMark />
+          <Link href="/feed" className="group flex items-center gap-2.5">
+            <LockedInMark size={28} className="transition-transform duration-200 group-hover:scale-105" />
             <span className="text-brand-logo font-[var(--font-geist)] text-[19px] font-bold tracking-tight">
               LockedIn
             </span>
@@ -257,12 +258,3 @@ export function TopNavbar() {
   );
 }
 
-function BrandMark() {
-  return (
-    <span className="relative inline-flex h-7 w-7 items-center justify-center">
-      <span className="absolute inset-0 rounded-lg bg-gradient-to-br from-neon/80 via-[#c49450] to-amber-700 opacity-90" />
-      <span className="absolute inset-[1.5px] rounded-[6px] bg-app-bg" />
-      <span className="absolute h-2 w-2 rounded-full bg-gradient-to-br from-neon-light to-neon" />
-    </span>
-  );
-}

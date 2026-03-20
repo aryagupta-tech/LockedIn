@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LockedInMark } from "@/components/brand/locked-in-mark";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2.5 font-[var(--font-geist)] text-2xl font-semibold text-app-fg">
-            <BrandMark />
+            <LockedInMark size={28} />
             LockedIn
           </Link>
           <p className="mt-3 text-sm text-app-fg-muted">Sign in to your account</p>
@@ -120,13 +121,3 @@ export default function LoginPage() {
   );
 }
 
-function BrandMark() {
-  return (
-    <span className="relative inline-flex h-7 w-7 items-center justify-center">
-      <span className="absolute inset-0 rounded-[9px] bg-gradient-to-br from-[#7b9dff] via-[#6e78ff] to-[#f3c680] opacity-90" />
-      <span className="absolute inset-[1.5px] rounded-[8px] bg-app-bg" />
-      <span className="absolute h-2.5 w-2.5 rounded-full bg-gradient-to-br from-[#a5d4ff] to-[#f0c670]" />
-      <span className="absolute h-3.5 w-3.5 rounded-full border border-white/20" />
-    </span>
-  );
-}

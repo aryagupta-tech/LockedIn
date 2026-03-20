@@ -74,7 +74,7 @@ export const metadata: Metadata = {
     description: "Only the locked-in get in.",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
   },
 };
 
