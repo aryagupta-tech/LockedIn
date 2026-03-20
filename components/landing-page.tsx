@@ -23,8 +23,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 const gateSteps = [
   { label: "Link GitHub + handles", icon: Github, desc: "Connect GitHub and add Codeforces / LeetCode" },
   { label: "Submit application", icon: ClipboardCheck, desc: "Verification steps + the handles we score" },
-  { label: "Automated signal check", icon: BarChart3, desc: "Thresholds on public activity—no resume scoring" },
-  { label: "Unlock access", icon: CheckCircle2, desc: "Pass the bar or get a human review" }
+  { label: "Automated signal check", icon: BarChart3, desc: "Thresholds on your public GitHub, Codeforces, and LeetCode activity" },
+  { label: "Unlock access", icon: CheckCircle2, desc: "Meet the bar and join the network" }
 ];
 
 const stagger = {
@@ -110,8 +110,8 @@ export function LandingPage() {
                   <div>
                     <CardTitle className="text-xl text-app-fg">Apply to join</CardTitle>
                     <CardDescription className="text-app-fg-muted">
-                      Create an account, complete verification, and submit your application. We score public
-                      GitHub, Codeforces, and LeetCode signals—no AI resume review.
+                      Create an account, complete verification, and submit your application. We score public GitHub,
+                      Codeforces, and LeetCode signals.
                     </CardDescription>
                   </div>
                 </div>
