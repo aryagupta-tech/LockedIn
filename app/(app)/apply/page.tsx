@@ -19,7 +19,6 @@ export default function ApplyPage() {
     githubUrl: "",
     codeforcesHandle: "",
     leetcodeHandle: "",
-    portfolioUrl: "",
   });
 
   useEffect(() => {
@@ -66,7 +65,6 @@ export default function ApplyPage() {
         githubUrl: form.githubUrl || undefined,
         codeforcesHandle: form.codeforcesHandle || undefined,
         leetcodeHandle: form.leetcodeHandle || undefined,
-        portfolioUrl: form.portfolioUrl || undefined,
       });
       setApplication(result);
       // Auto-approval updates users.status in DB; refresh so Feed unlocks without re-login.
@@ -140,12 +138,6 @@ export default function ApplyPage() {
               <div>
                 <span className="text-app-fg-muted">LeetCode:</span>{" "}
                 <span className="text-app-fg-secondary">{application.leetcodeHandle}</span>
-              </div>
-            )}
-            {application.portfolioUrl && (
-              <div>
-                <span className="text-app-fg-muted">Portfolio:</span>{" "}
-                <span className="text-app-fg-secondary">{application.portfolioUrl}</span>
               </div>
             )}
             {application.score !== null && (
@@ -242,8 +234,7 @@ export default function ApplyPage() {
           can tie proofs to <em>your</em> identity. You need{" "}
           <strong className="text-app-fg-secondary">at least one</strong> of: GitHub URL (≥500
           contributions / year), LeetCode (≥100 solved, with the same GitHub linked on
-          LeetCode), or Codeforces (rating ≥900 + one-time org phrase below). Portfolio
-          is optional context only.
+          LeetCode), or Codeforces (rating ≥900 + one-time org phrase below).
         </p>
 
         <div className="neo-field mt-4 rounded-xl bg-app-surface-2 px-4 py-3 text-[12px] leading-relaxed text-app-fg-muted">
@@ -330,14 +321,6 @@ export default function ApplyPage() {
               settings (GitHub URL field). Signing into LeetCode with Google / Apple /
               email is fine — that&apos;s separate from this GitHub link.
             </p>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">Portfolio URL</label>
-            <Input
-              value={form.portfolioUrl}
-              onChange={update("portfolioUrl")}
-              placeholder="https://yoursite.com"
-            />
           </div>
 
           {error && (

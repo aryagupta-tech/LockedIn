@@ -14,7 +14,6 @@ interface AdminApplication {
   githubUrl: string | null;
   codeforcesHandle: string | null;
   leetcodeHandle: string | null;
-  portfolioUrl: string | null;
   createdAt: string;
 }
 
@@ -136,7 +135,6 @@ export default function AdminPage() {
                     {app.githubUrl && <span className="rounded bg-app-surface-2 px-2 py-0.5">GitHub</span>}
                     {app.codeforcesHandle && <span className="rounded bg-app-surface-2 px-2 py-0.5">CF: {app.codeforcesHandle}</span>}
                     {app.leetcodeHandle && <span className="rounded bg-app-surface-2 px-2 py-0.5">LC: {app.leetcodeHandle}</span>}
-                    {app.portfolioUrl && <span className="rounded bg-app-surface-2 px-2 py-0.5">Portfolio</span>}
                   </div>
                   {statusFilter === "PENDING" && (
                     <div className="flex gap-2">

@@ -51,8 +51,7 @@ CREATE POLICY "Anyone can view avatars"
 -- 3. Seed scoring weights (run only once)
 INSERT INTO scoring_weights (id, key, weight, description, threshold, minimum, "updatedAt")
 VALUES
-  (gen_random_uuid()::text, 'github', 0.4, 'GitHub activity and profile quality', 100, 0, NOW()),
-  (gen_random_uuid()::text, 'codeforces', 0.25, 'Codeforces rating and contest participation', 100, 0, NOW()),
-  (gen_random_uuid()::text, 'leetcode', 0.25, 'LeetCode problems solved and ranking', 100, 0, NOW()),
-  (gen_random_uuid()::text, 'portfolio', 0.1, 'Portfolio website quality', 100, 0, NOW())
+  (gen_random_uuid()::text, 'github', 0.45, 'GitHub activity and profile quality', 100, 0, NOW()),
+  (gen_random_uuid()::text, 'codeforces', 0.275, 'Codeforces rating and contest participation', 100, 0, NOW()),
+  (gen_random_uuid()::text, 'leetcode', 0.275, 'LeetCode problems solved and ranking', 100, 0, NOW())
 ON CONFLICT (key) DO NOTHING;

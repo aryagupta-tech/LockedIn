@@ -40,17 +40,15 @@ export async function POST(request: Request) {
     const userId = auth.user.id;
 
     const body = await request.json();
-    const { githubUrl, codeforcesHandle, leetcodeHandle, portfolioUrl } = body;
+    const { githubUrl, codeforcesHandle, leetcodeHandle } = body;
 
     const gh = typeof githubUrl === "string" ? githubUrl.trim() : "";
     const cf = typeof codeforcesHandle === "string" ? codeforcesHandle.trim() : "";
     const lc = typeof leetcodeHandle === "string" ? leetcodeHandle.trim() : "";
-    const pf =
-      typeof portfolioUrl === "string" ? portfolioUrl.trim() : "";
 
     if (!gh && !cf && !lc) {
       return errorResponse(
-        "Provide at least one of GitHub profile URL, Codeforces handle, or LeetCode username. Portfolio alone cannot be verified automatically.",
+        "Provide at least one of GitHub profile URL, Codeforces handle, or LeetCode username.",
         "VALIDATION_ERROR",
         400,
       );
@@ -109,7 +107,7 @@ export async function POST(request: Request) {
       githubUrl: gh || null,
       codeforcesHandle: cf || null,
       leetcodeHandle: lc || null,
-      portfolioUrl: pf || null,
+      portfolioUrl: null,
       score: null,
       scoreBreakdown: null,
       passingThreshold: null,

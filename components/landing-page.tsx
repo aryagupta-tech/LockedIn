@@ -3,14 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import {
+  Award,
   BarChart3,
-  Briefcase,
-  CalendarCheck2,
+  Bell,
   CheckCircle2,
   ClipboardCheck,
   Code2,
   Github,
-  Lock,
   ShieldCheck,
   Sparkles,
   Users2
@@ -152,22 +151,22 @@ export function LandingPage() {
             <motion.div variants={fadeUp}>
               <FeatureCard
                 icon={Users2}
-                title="Private communities by skill"
-                desc="System Design, UI Craft, Startup Grind, ML Ops, Growth Engineering, and more."
+                title="Topic communities"
+                desc="Create or join groups with moderated join requests—your space for focused discussion."
               />
             </motion.div>
             <motion.div variants={fadeUp}>
               <FeatureCard
-                icon={CalendarCheck2}
-                title="Elite events and live AMAs"
-                desc="Weekly sessions with operators, builders, and product leaders worth listening to."
+                icon={Award}
+                title="Builder levels & badges"
+                desc="Level up from real activity: posts, code snippets, comments, follows, and showing up week after week—visible on your profile."
               />
             </motion.div>
             <motion.div variants={fadeUp}>
               <FeatureCard
-                icon={Briefcase}
-                title="High-signal job board"
-                desc="Only vetted companies that pass the same gate can post opportunities."
+                icon={Bell}
+                title="Notifications that matter"
+                desc="Likes, comments, follows, and application updates—so you never miss the signal."
               />
             </motion.div>
           </div>
@@ -184,7 +183,7 @@ export function LandingPage() {
               Elite club protocol
             </h3>
           </motion.div>
-          <div className="grid gap-5 lg:grid-cols-3">
+          <div className="mx-auto grid max-w-4xl gap-5 md:grid-cols-2">
             {[
               {
                 icon: ShieldCheck,
@@ -193,15 +192,9 @@ export function LandingPage() {
                 gradient: "from-blue-500/20 to-blue-500/5"
               },
               {
-                icon: Lock,
-                title: "Privacy by default",
-                desc: "New members stay private until they choose visibility and discoverability.",
-                gradient: "from-purple-500/20 to-purple-500/5"
-              },
-              {
                 icon: Sparkles,
                 title: "Signal is status",
-                desc: "Reputation is earned by shipping, mentoring, and building with consistency.",
+                desc: "Builder level, XP, and badges reflect what you actually ship—posts with code, threads you join, and consistency over time.",
                 gradient: "from-neon/20 to-neon/5"
               }
             ].map((item) => (

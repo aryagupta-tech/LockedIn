@@ -36,7 +36,7 @@ export async function PATCH(request: Request) {
     if ("error" in auth) return auth.error;
 
     const body = await request.json();
-    const allowed = ["displayName", "bio", "avatarUrl", "codeforcesHandle", "leetcodeHandle", "portfolioUrl"];
+    const allowed = ["displayName", "bio", "avatarUrl", "codeforcesHandle", "leetcodeHandle"];
     const update: Record<string, unknown> = { updatedAt: now() };
     for (const key of allowed) {
       if (body[key] !== undefined) update[key] = body[key];
@@ -47,7 +47,7 @@ export async function PATCH(request: Request) {
       .from("users")
       .update(update)
       .eq("id", auth.user.id)
-      .select("id, username, displayName, avatarUrl, bio, githubUsername, codeforcesHandle, leetcodeHandle, portfolioUrl, role, createdAt")
+      .select("id, username, displayName, avatarUrl, bio, githubUsername, codeforcesHandle, leetcodeHandle, role, createdAt")
       .single();
 
     return NextResponse.json(user);
