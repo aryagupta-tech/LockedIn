@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireAuth, errorResponse, now } from "@/lib/api-utils";
+import { getBuilderProgressForUser } from "@/lib/gamification-queries";
 
 export async function GET(request: Request) {
   try {
@@ -10,12 +11,19 @@ export async function GET(request: Request) {
     const supabase = createServiceClient();
     const { data: user } = await supabase
       .from("users")
-      .select("id, email, username, displayName, avatarUrl, role, status")
+      .select("id, email, username, displayName, avatarUrl, role, status, createdAt")
       .eq("id", auth.user.id)
       .single();
 
     if (!user) return errorResponse("User not found", "NOT_FOUND", 404);
-    return NextResponse.json(user);
+
+    const builder = await getBuilderProgressForUser(
+      supabase,
+      user.id,
+      { status: user.status, createdAt: user.createdAt },
+    );
+
+    return NextResponse.json({ ...user, builder });
   } catch (e) {
     console.error("Get profile error:", e);
     return errorResponse("Internal server error", "INTERNAL_ERROR", 500);

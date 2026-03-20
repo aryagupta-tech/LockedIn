@@ -1,4 +1,7 @@
 import { supabase } from "./supabase";
+import type { BuilderProgress } from "./gamification";
+
+export type { BuilderProgress };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -97,6 +100,8 @@ export interface User {
   avatarUrl?: string | null;
   role: string;
   status: string;
+  createdAt?: string;
+  builder?: BuilderProgress;
 }
 
 export interface AuthResponse {
@@ -165,6 +170,7 @@ export interface Profile {
   postsCount: number;
   isFollowing?: boolean;
   createdAt: string;
+  builder?: BuilderProgress;
 }
 
 export interface FeedResponse {

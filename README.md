@@ -8,6 +8,7 @@ A private, gated social network for high-signal builders: developers, designers,
 - **Feed** - post text and code snippets, like and comment
 - **Communities** - create and join topic-based groups with moderated join requests
 - **Profiles** - follow builders, view post history
+- **Builder progress** - levels and badges from real activity (posts, code snippets, comments, follows, verification); computed on read (`lib/gamification.ts`, `lib/gamification-queries.ts`) — no gamification tables or migrations
 - **Notifications** - real-time alerts for likes, comments, follows, and application updates
 - **Appeals** - rejected applicants can submit appeals for re-review
 - **Admin dashboard** - review applications, manage scoring weights, handle appeals
@@ -68,6 +69,8 @@ lockedin/
 │   ├── supabase.ts           # Client-side Supabase client
 │   ├── supabase-server.ts    # Server-side Supabase client (service role)
 │   ├── notifications.ts      # Notification helpers
+│   ├── gamification.ts       # Builder XP + badge catalog (derived)
+│   ├── gamification-queries.ts # Aggregates from posts/comments/follows
 │   └── storage.ts            # Supabase storage helpers
 ├── middleware.ts              # Route protection
 ├── supabase-setup.sql         # Database setup (RLS, storage, seed data)

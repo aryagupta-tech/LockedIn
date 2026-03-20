@@ -7,6 +7,7 @@ import Link from "next/link";
 import { api, type Profile, type Post } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { PostCard } from "@/components/app/post-card";
+import { BuilderProgressCard } from "@/components/app/builder-progress-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -140,14 +141,24 @@ export default function ProfilePage() {
             </div>
 
             <div className="min-w-0 flex-1 text-center sm:text-left">
-              <h1 className="text-xl font-bold text-app-fg">{profile.displayName}</h1>
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                <h1 className="text-xl font-bold text-app-fg">{profile.displayName}</h1>
+                {profile.builder && (
+                  <span className="rounded-full bg-[color-mix(in_srgb,var(--app-accent-soft)_40%,transparent)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--app-accent)] dark:text-[#f0d9a8]">
+                    Lvl {profile.builder.level}
+                  </span>
+                )}
+              </div>
               <p className="mt-0.5 text-[15px] text-app-fg-muted">@{profile.username}</p>
 
               {profile.bio && (
                 <p className="mt-4 text-[15px] leading-relaxed text-app-fg-secondary">{profile.bio}</p>
               )}
 
-              <div className="mt-4 flex items-center justify-center gap-6 sm:justify-start">
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-6 sm:justify-start">
+                <span className="text-[14px] text-app-fg-muted">
+                  <strong className="font-semibold text-app-fg">{profile.postsCount}</strong> posts
+                </span>
                 <span className="text-[14px] text-app-fg-muted">
                   <strong className="font-semibold text-app-fg">{profile.followingCount}</strong> following
                 </span>
@@ -206,6 +217,8 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {profile.builder && <BuilderProgressCard progress={profile.builder} />}
 
         {/* Posts section */}
         <div>

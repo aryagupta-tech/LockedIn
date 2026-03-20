@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { getAuthUser, errorResponse } from "@/lib/api-utils";
+import { getBuilderProgressForUser } from "@/lib/gamification-queries";
 
 export async function GET(
   request: Request,
@@ -32,12 +33,20 @@ export async function GET(
       isFollowing = !!follow;
     }
 
+    const builder = await getBuilderProgressForUser(
+      supabase,
+      user.id,
+      { status: user.status, createdAt: user.createdAt },
+      postsRes.count ?? 0,
+    );
+
     return NextResponse.json({
       ...user,
       followersCount: followersRes.count || 0,
       followingCount: followingRes.count || 0,
       postsCount: postsRes.count || 0,
       isFollowing,
+      builder,
     });
   } catch (e) {
     console.error("Get profile error:", e);
