@@ -3,38 +3,28 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import {
-  ArrowRight,
+  BarChart3,
   Briefcase,
   CalendarCheck2,
   CheckCircle2,
+  ClipboardCheck,
   Code2,
   Github,
   Lock,
   ShieldCheck,
   Sparkles,
-  UploadCloud,
-  Users2,
-  Zap
+  Users2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const gateSteps = [
-  { label: "Connect GitHub + LeetCode", icon: Github, desc: "Link your coding profiles" },
-  { label: "Upload resume (PDF)", icon: UploadCloud, desc: "AI parses your experience" },
-  { label: "AI + human benchmark", icon: Zap, desc: "Multi-signal scoring" },
-  { label: "Unlock instant access", icon: CheckCircle2, desc: "Welcome to the inner circle" }
+  { label: "Link GitHub + handles", icon: Github, desc: "Connect GitHub and add Codeforces / LeetCode" },
+  { label: "Submit application", icon: ClipboardCheck, desc: "Verification steps + the handles we score" },
+  { label: "Automated signal check", icon: BarChart3, desc: "Thresholds on public activity—no resume scoring" },
+  { label: "Unlock access", icon: CheckCircle2, desc: "Pass the bar or get a human review" }
 ];
 
 const stagger = {
@@ -69,22 +59,6 @@ function AnimatedSection({
 }
 
 export function LandingPage() {
-  const [scoreProgress, setScoreProgress] = useState(0);
-  const [connected, setConnected] = useState(false);
-  const [uploadName, setUploadName] = useState<string | null>(null);
-  const [isScoring, setIsScoring] = useState(false);
-  useEffect(() => {
-    if (!isScoring) return;
-    if (scoreProgress >= 94) {
-      setIsScoring(false);
-      return;
-    }
-    const timer = setTimeout(() => {
-      setScoreProgress((prev) => Math.min(prev + 8, 94));
-    }, 180);
-    return () => clearTimeout(timer);
-  }, [isScoring, scoreProgress]);
-
   return (
     <main className="relative overflow-x-hidden bg-app-bg text-app-fg">
       <Navbar />
@@ -131,73 +105,24 @@ export function LandingPage() {
               <CardHeader className="relative">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--app-accent-soft)_25%,transparent)] text-[var(--app-accent)] dark:bg-neon/10 dark:text-neon">
-                    <Zap className="h-5 w-5" />
+                    <ClipboardCheck className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl text-app-fg">Try the Gate</CardTitle>
-                    <CardDescription className="text-app-fg-muted">Mock the full review flow in under a minute.</CardDescription>
+                    <CardTitle className="text-xl text-app-fg">Apply to join</CardTitle>
+                    <CardDescription className="text-app-fg-muted">
+                      Create an account, complete verification, and submit your application. We score public
+                      GitHub, Codeforces, and LeetCode signals—no AI resume review.
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="relative">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button className="animate-pulseGlow">
-                      Launch Simulator <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>LockedIn Gate Simulator</DialogTitle>
-                      <DialogDescription>
-                        Simulate identity proof, resume upload, and AI benchmark scoring.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="mt-6 space-y-4">
-                      <Button
-                        type="button"
-                        variant={connected ? "outline" : "default"}
-                        className="w-full"
-                        onClick={() => setConnected(true)}
-                      >
-                        <Github className="mr-2 h-4 w-4" />
-                        {connected ? "GitHub connected" : "Connect GitHub"}
-                      </Button>
-                      <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-app-border bg-app-surface-2/50 p-4 text-sm text-app-fg-muted transition-colors hover:border-[var(--app-accent-soft)] hover:text-app-fg-secondary">
-                        <input
-                          className="hidden"
-                          type="file"
-                          accept=".pdf"
-                          onChange={(e) => setUploadName(e.target.files?.[0]?.name ?? null)}
-                        />
-                        <UploadCloud className="h-4 w-4 text-[var(--app-accent)]/80 dark:text-neon/70" />
-                        {uploadName ?? "Upload resume (PDF)"}
-                      </label>
-                      <Button
-                        type="button"
-                        className="w-full"
-                        onClick={() => {
-                          setScoreProgress(0);
-                          setIsScoring(true);
-                        }}
-                        disabled={!connected || !uploadName || isScoring}
-                      >
-                        {isScoring ? "Scoring..." : "Run AI + human benchmark"}
-                      </Button>
-                      <div className="space-y-2">
-                        <Progress value={scoreProgress} />
-                        <p className="text-xs text-app-fg-muted">
-                          Live score: <span className="font-mono text-app-fg-secondary">{scoreProgress}</span>/100
-                        </p>
-                      </div>
-                      {scoreProgress >= 94 && (
-                        <div className="rounded-xl border border-[var(--app-accent-soft)] bg-[color-mix(in_srgb,var(--app-accent-soft)_12%,transparent)] p-4 text-sm text-[var(--app-accent)] dark:text-[#f0d9a8]">
-                          <CheckCircle2 className="mb-1 inline h-4 w-4 text-[var(--app-accent)] dark:text-neon" /> Congratulations, you&apos;re locked in.
-                        </div>
-                      )}
-                    </div>
-                  </DialogContent>
-                </Dialog>
+              <CardContent className="relative flex flex-wrap gap-3">
+                <Button className="animate-pulseGlow" asChild>
+                  <a href="/register">Get started</a>
+                </Button>
+                <Button variant="outline" asChild>
+                  <a href="/login">Sign in</a>
+                </Button>
               </CardContent>
             </Card>
           </motion.div>
