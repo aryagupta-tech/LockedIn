@@ -443,33 +443,7 @@ main {
   }
 }
 
-/* ─── Reference-inspired theme controls (light: neumorphic / dark: leather) ─── */
-.theme-toggle-neo-track {
-  background: linear-gradient(145deg, #e2dfe8 0%, #f0ecf4 100%);
-  box-shadow:
-    inset 3px 3px 8px rgba(0, 0, 0, 0.09),
-    inset -2px -2px 6px rgba(255, 255, 255, 0.96);
-}
-
-.theme-toggle-neo-glow {
-  background: radial-gradient(
-    80% 120% at 100% 50%,
-    rgba(240, 120, 40, 0.52) 0%,
-    rgba(240, 100, 30, 0.18) 45%,
-    transparent 70%
-  );
-  filter: blur(0.5px);
-  box-shadow: 0 0 14px rgba(240, 120, 40, 0.32);
-}
-
-.theme-toggle-neo-thumb {
-  background: linear-gradient(145deg, #faf9fc 0%, #e8e6ee 100%);
-  box-shadow:
-    3px 3px 10px rgba(0, 0, 0, 0.12),
-    -2px -2px 8px rgba(255, 255, 255, 0.95),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-
+/* ─── Theme control (leather pill — used in light and dark UI) ─── */
 .theme-toggle-leather {
   position: relative;
   background:
