@@ -6,8 +6,8 @@ import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Single leather-style pill for both themes: in light mode it offers “Dark”;
- * in dark mode it offers “Light”. No separate light-mode switch UI.
+ * Looks like a **light** control when you’re switching to light (dark theme active);
+ * looks like the **leather** control when you’re switching to dark (light theme active).
  */
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
@@ -31,7 +31,8 @@ export function ThemeToggle({ className }: { className?: string }) {
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className={cn(
-        "theme-toggle-leather relative inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full px-3.5 transition-transform active:scale-[0.97]",
+        "relative inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full px-3.5 transition-transform active:scale-[0.97]",
+        isDark ? "theme-toggle-light" : "theme-toggle-leather",
         className,
       )}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
@@ -39,12 +40,8 @@ export function ThemeToggle({ className }: { className?: string }) {
     >
       {isDark ? (
         <>
-          <Sun
-            className="h-4 w-4 text-[#f0d9a0] drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]"
-            strokeWidth={2}
-            aria-hidden
-          />
-          <span className="theme-toggle-leather-gold hidden text-[11px] font-semibold tracking-wide sm:inline">
+          <Sun className="h-4 w-4 text-[#f07828]" strokeWidth={2} aria-hidden />
+          <span className="theme-toggle-light-label hidden text-[11px] font-semibold tracking-wide sm:inline">
             Light
           </span>
         </>
