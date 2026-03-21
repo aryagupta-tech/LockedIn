@@ -204,7 +204,8 @@ body {
 .post-card {
   position: relative;
   border-radius: var(--app-r-lg);
-  overflow: hidden;
+  /* Allow author menu / popovers to extend past the card edge (dropdown was clipped). */
+  overflow: visible;
   transition: box-shadow 0.3s ease, transform 0.2s ease;
   background: linear-gradient(168deg, #2a1e18 0%, #140e0c 48%, #221a16 100%);
   border: 1px solid rgba(105, 72, 54, 0.52);

@@ -3,7 +3,11 @@ import { createServiceClient } from "@/lib/supabase-server";
 import { requireAuth, errorResponse, now } from "@/lib/api-utils";
 import { ensurePublicUserRow } from "@/lib/ensure-public-user";
 import { getBuilderProgressForUser } from "@/lib/gamification-queries";
-import { sessionHasGithubIdentity } from "@/lib/github-auth-metadata";
+import {
+  extractGitHubLoginFromSupabaseUser,
+  sessionHasGithubIdentity,
+} from "@/lib/github-auth-metadata";
+import { resolveGithubAvatarForUser } from "@/lib/github-avatar-resolve";
 import { validateUsername } from "@/lib/validation";
 import {
   canChangeUsernameNow,
@@ -50,16 +54,34 @@ export async function GET(request: Request) {
 
     if (!user) return errorResponse("User not found", "NOT_FOUND", 404);
 
+    let profile = user;
+    if (
+      (!profile.avatarUrl || !String(profile.avatarUrl).trim()) &&
+      sessionHasGithubIdentity(auth.user)
+    ) {
+      const url = await resolveGithubAvatarForUser(
+        auth.user,
+        extractGitHubLoginFromSupabaseUser(auth.user),
+      );
+      if (url) {
+        await supabase
+          .from("users")
+          .update({ avatarUrl: url, updatedAt: now() })
+          .eq("id", auth.user.id);
+        profile = { ...profile, avatarUrl: url };
+      }
+    }
+
     const builder = await getBuilderProgressForUser(
       supabase,
-      user.id,
-      { status: user.status, createdAt: user.createdAt },
+      profile.id,
+      { status: profile.status, createdAt: profile.createdAt },
     );
 
     return NextResponse.json({
-      ...user,
+      ...profile,
       builder,
-      ...profileExtras(auth.user, user.usernameChangedAt as string | null | undefined),
+      ...profileExtras(auth.user, profile.usernameChangedAt as string | null | undefined),
     });
   } catch (e) {
     console.error("Get profile error:", e);

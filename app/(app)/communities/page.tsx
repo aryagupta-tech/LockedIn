@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plus, Lock, Globe, Compass } from "lucide-react";
+import { Plus, Lock, Globe, Compass } from "lucide-react";
 import { api, type Community } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -49,8 +49,19 @@ export default function CommunitiesPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-app-fg-muted" />
+        <div className="space-y-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="app-panel animate-pulse p-6" aria-hidden>
+              <div className="flex gap-5">
+                <div className="h-14 w-14 flex-shrink-0 rounded-full bg-app-surface-2" />
+                <div className="min-w-0 flex-1 space-y-3">
+                  <div className="h-5 w-48 rounded bg-app-surface-2" />
+                  <div className="h-4 w-full rounded bg-app-surface-2/70" />
+                  <div className="h-4 w-[85%] rounded bg-app-surface-2/50" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : communities.length === 0 ? (
         <div className="app-panel px-8 py-20 text-center">

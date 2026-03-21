@@ -17,11 +17,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [loading, user, router]);
 
-  if (loading || !user) {
+  // Render the shell as soon as we have a user (including from localStorage hydrate).
+  if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-app-bg">
         <Loader2 className="h-8 w-8 animate-spin text-[var(--app-accent)]" />
-        <div className="hidden">{children}</div>
       </div>
     );
   }

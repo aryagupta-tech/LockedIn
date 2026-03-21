@@ -5,7 +5,11 @@ import {
   extractGitHubLoginFromSupabaseUser,
   extractGitHubNumericIdFromSupabaseUser,
 } from "@/lib/github-auth-metadata";
+import { resolveGithubAvatarForUser } from "@/lib/github-avatar-resolve";
 import { pickAvailableUsername } from "@/lib/username-holds";
+
+const USER_ROW_SELECT =
+  "id, email, username, displayName, avatarUrl, role, status, githubUsername";
 
 export async function POST(request: Request) {
   try {
@@ -30,9 +34,9 @@ export async function POST(request: Request) {
     const supaUser = session.user!;
     const { data: existingUser } = await supabase
       .from("users")
-      .select("id, email, username, displayName, avatarUrl, role, status, githubUsername")
+      .select(USER_ROW_SELECT)
       .eq("id", supaUser.id)
-      .single();
+      .maybeSingle();
 
     let user = existingUser;
 
@@ -40,6 +44,10 @@ export async function POST(request: Request) {
     const ghLoginRaw = extractGitHubLoginFromSupabaseUser(supaUser);
     const ghLogin = ghLoginRaw ? ghLoginRaw.toLowerCase() : null;
     const ghNumericId = extractGitHubNumericIdFromSupabaseUser(supaUser);
+    const ghAvatar = await resolveGithubAvatarForUser(
+      supaUser,
+      ghLoginRaw || meta.preferred_username || meta.user_name,
+    );
 
     if (!user) {
       const preferred =
@@ -55,7 +63,7 @@ export async function POST(request: Request) {
         email: (supaUser.email || `${username}@github.user`).toLowerCase(),
         username,
         displayName: meta.full_name || meta.name || username,
-        avatarUrl: meta.avatar_url || null,
+        avatarUrl: ghAvatar,
         githubId: ghNumericId,
         githubUsername: ghLogin,
         createdAt: ts,
@@ -65,25 +73,33 @@ export async function POST(request: Request) {
       await supabase.from("users").insert(newUser);
 
       user = {
-        id: newUser.id, email: newUser.email, username: newUser.username,
-        displayName: newUser.displayName, avatarUrl: newUser.avatarUrl,
-        role: "USER", status: "PENDING", githubUsername: newUser.githubUsername,
+        id: newUser.id,
+        email: newUser.email,
+        username: newUser.username,
+        displayName: newUser.displayName,
+        avatarUrl: newUser.avatarUrl,
+        role: "USER",
+        status: "PENDING",
+        githubUsername: newUser.githubUsername,
       };
     } else {
-      // Always sync GitHub identity on OAuth callback (not only when avatar was missing).
-      // DB trigger / RPC often creates public.users without githubUsername; avatar may already exist.
       const patch: Record<string, unknown> = { updatedAt: now() };
-      if (meta.avatar_url) patch.avatarUrl = meta.avatar_url;
+      if (ghAvatar) patch.avatarUrl = ghAvatar;
       if (ghLogin) patch.githubUsername = ghLogin;
       if (ghNumericId != null) patch.githubId = ghNumericId;
 
       if (Object.keys(patch).length > 1) {
         await supabase.from("users").update(patch).eq("id", user.id);
-        user = {
-          ...user,
-          ...(patch.avatarUrl ? { avatarUrl: patch.avatarUrl as string } : {}),
-          ...(ghLogin ? { githubUsername: ghLogin } : {}),
-        };
+      }
+
+      const { data: fresh } = await supabase
+        .from("users")
+        .select(USER_ROW_SELECT)
+        .eq("id", user.id)
+        .single();
+
+      if (fresh) {
+        user = fresh;
       }
     }
 
@@ -91,14 +107,30 @@ export async function POST(request: Request) {
       return errorResponse("This account has been suspended", "UNAUTHORIZED", 401);
     }
 
+    const metaPatch: Record<string, unknown> = { ...meta };
+    if (ghAvatar) {
+      metaPatch.avatar_url = ghAvatar;
+      metaPatch.picture = ghAvatar;
+    }
+    const { error: authMetaErr } = await supabase.auth.admin.updateUserById(supaUser.id, {
+      user_metadata: metaPatch,
+    });
+    if (authMetaErr) {
+      console.error("GitHub callback: auth user_metadata avatar sync failed:", authMetaErr);
+    }
+
     return NextResponse.json({
       accessToken: session.session.access_token,
       refreshToken: session.session.refresh_token,
       expiresIn: session.session.expires_in,
       user: {
-        id: user.id, email: user.email, username: user.username,
-        displayName: user.displayName, avatarUrl: user.avatarUrl,
-        role: user.role, status: user.status,
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+        status: user.status,
       },
     });
   } catch (e) {

@@ -68,7 +68,7 @@ export function TopNavbar() {
       <header className="app-top-nav fixed inset-x-0 top-0 z-50">
         <div className="mx-auto flex h-[60px] max-w-[1200px] items-center justify-between px-5">
           {/* Logo */}
-          <Link href="/feed" className="group flex items-center gap-2.5">
+          <Link href="/feed" prefetch className="group flex items-center gap-2.5">
             <LockedInMark size={28} className="transition-transform duration-200 group-hover:scale-105" />
             <span className="text-brand-logo font-[var(--font-geist)] text-[19px] font-bold tracking-tight">
               LockedIn
@@ -84,6 +84,7 @@ export function TopNavbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch
                   className={cn(
                     "relative flex items-center gap-1 px-4 py-2 text-[14px] font-medium transition-colors",
                     active ? "text-app-fg" : "text-app-fg-muted hover:text-app-fg",
@@ -149,6 +150,7 @@ export function TopNavbar() {
                     <div className="py-1.5">
                       <Link
                         href={`/u/${user.username}`}
+                        prefetch
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-app-fg-secondary transition-colors hover:bg-app-surface-2 hover:text-app-fg"
                       >
@@ -158,6 +160,7 @@ export function TopNavbar() {
                       {!isPending && (
                         <Link
                           href="/bookmarks"
+                          prefetch
                           onClick={() => setDropdownOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-app-fg-secondary transition-colors hover:bg-app-surface-2 hover:text-app-fg"
                         >
@@ -167,6 +170,7 @@ export function TopNavbar() {
                       )}
                       <Link
                         href="/settings"
+                        prefetch
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-app-fg-secondary transition-colors hover:bg-app-surface-2 hover:text-app-fg"
                       >
@@ -216,6 +220,7 @@ export function TopNavbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch
                   onClick={() => setMobileOpen(false)}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium",
@@ -236,6 +241,7 @@ export function TopNavbar() {
               <>
                 <Link
                   href={`/u/${user.username}`}
+                  prefetch
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-app-fg-muted hover:text-app-fg"
                 >
@@ -245,6 +251,7 @@ export function TopNavbar() {
                 {!isPending && (
                   <Link
                     href="/bookmarks"
+                    prefetch
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-app-fg-muted hover:text-app-fg"
                   >
@@ -254,6 +261,7 @@ export function TopNavbar() {
                 )}
                 <Link
                   href="/settings"
+                  prefetch
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-app-fg-muted hover:text-app-fg"
                 >

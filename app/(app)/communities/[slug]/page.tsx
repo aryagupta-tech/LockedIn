@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Lock, Globe, UserPlus, Users2 } from "lucide-react";
 import { api, type Community, type Post } from "@/lib/api";
 import { PostCard } from "@/components/app/post-card";
+import { FeedSkeleton } from "@/components/app/feed-skeleton";
 import { CreatePost } from "@/components/app/create-post";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -66,8 +67,24 @@ export default function CommunityDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-app-fg-muted" />
+      <div className="min-h-screen space-y-6 bg-app-bg">
+        <Link
+          href="/communities"
+          prefetch
+          className="inline-flex items-center gap-2 text-[14px] text-app-fg-muted transition-colors hover:text-app-fg"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Link>
+        <div className="app-panel animate-pulse p-6" aria-hidden>
+          <div className="flex items-start gap-4">
+            <div className="h-14 w-14 flex-shrink-0 rounded-full bg-app-surface-2" />
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="h-6 w-56 rounded bg-app-surface-2" />
+              <div className="h-4 w-full rounded bg-app-surface-2/60" />
+            </div>
+          </div>
+        </div>
+        <FeedSkeleton />
       </div>
     );
   }
@@ -93,6 +110,7 @@ export default function CommunityDetailPage() {
       {/* Back link */}
       <Link
         href="/communities"
+        prefetch
         className="mb-6 inline-flex items-center gap-2 text-[14px] text-app-fg-muted transition-colors hover:text-app-fg"
       >
         <ArrowLeft className="h-4 w-4" /> Communities

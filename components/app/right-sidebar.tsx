@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BuilderProgressCard } from "@/components/app/builder-progress-card";
-import { api, type User } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 /** Wire to API / recommendations when the network has active users. */
@@ -18,30 +16,10 @@ const trendingTopics: { tag: string; count: string }[] = [];
 
 export function RightSidebar() {
   const { user } = useAuth();
-  const [meBuilder, setMeBuilder] = useState<User["builder"]>(undefined);
-
-  useEffect(() => {
-    if (!user) {
-      setMeBuilder(undefined);
-      return;
-    }
-    let cancelled = false;
-    api
-      .get<User>("/profiles/me")
-      .then((u) => {
-        if (!cancelled) setMeBuilder(u.builder);
-      })
-      .catch(() => {
-        if (!cancelled) setMeBuilder(undefined);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
 
   return (
     <div className="sticky top-[calc(var(--app-nav-h)+12px)] space-y-5">
-      {user && meBuilder && <BuilderProgressCard progress={meBuilder} variant="compact" />}
+      {user?.builder && <BuilderProgressCard progress={user.builder} variant="compact" />}
 
       {/* Suggested Profiles */}
       <div className="app-panel p-4">

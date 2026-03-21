@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Github, Loader2, UserPlus, UserMinus, Calendar } from "lucide-react";
 import Link from "next/link";
 import { api, type Profile, type Post } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { PostCard } from "@/components/app/post-card";
+import { FeedSkeleton } from "@/components/app/feed-skeleton";
 import { BuilderProgressCard } from "@/components/app/builder-progress-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -34,42 +35,55 @@ export default function ProfilePage() {
   const username = params.username as string;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [postsLoading, setPostsLoading] = useState(true);
   const [following, setFollowing] = useState(false);
   const [toggling, setToggling] = useState(false);
 
   const isMe = user?.username === username;
   const avatarColor = username ? getAvatarColor(username) : AVATAR_COLORS[0];
 
-  const fetchProfile = useCallback(async () => {
-    try {
-      const p = await api.get<Profile>(`/profiles/${username}`);
-      setProfile(p);
-      setFollowing(p.isFollowing ?? false);
-    } catch {
-      /* ignore */
-    }
-    setLoading(false);
-  }, [username]);
-
-  const fetchPosts = useCallback(async () => {
-    try {
-      const data = await api.get<Post[]>(`/posts?author=${username}`);
-      setPosts(data);
-    } catch {
-      try {
-        const data = await api.get<{ items: Post[] }>(`/feed?author=${username}`);
-        setPosts(data.items || []);
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [username]);
-
   useEffect(() => {
-    fetchProfile();
-    fetchPosts();
-  }, [fetchProfile, fetchPosts]);
+    let cancelled = false;
+    setProfile(null);
+    setFollowing(false);
+    setPosts([]);
+    setProfileLoading(true);
+    setPostsLoading(true);
+
+    api
+      .get<Profile>(`/profiles/${username}`)
+      .then((p) => {
+        if (!cancelled) {
+          setProfile(p);
+          setFollowing(p.isFollowing ?? false);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setProfileLoading(false);
+      });
+
+    void (async () => {
+      try {
+        const data = await api.get<Post[]>(`/posts?author=${username}`);
+        if (!cancelled) setPosts(Array.isArray(data) ? data : []);
+      } catch {
+        try {
+          const data = await api.get<{ items: Post[] }>(`/feed?author=${username}`);
+          if (!cancelled) setPosts(data.items || []);
+        } catch {
+          if (!cancelled) setPosts([]);
+        }
+      } finally {
+        if (!cancelled) setPostsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [username]);
 
   const toggleFollow = async () => {
     if (!profile || toggling) return;
@@ -90,15 +104,7 @@ export default function ProfilePage() {
     setToggling(false);
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center bg-app-bg">
-        <Loader2 className="h-6 w-6 animate-spin text-app-fg-muted" />
-      </div>
-    );
-  }
-
-  if (!profile) {
+  if (!profileLoading && !profile) {
     return (
       <div className="min-h-[40vh] bg-app-bg px-4 py-20 text-center">
         <p className="text-app-fg-muted">User not found</p>
@@ -112,12 +118,39 @@ export default function ProfilePage() {
     );
   }
 
+  if (profileLoading || !profile) {
+    return (
+      <div className="min-h-screen bg-app-bg">
+        <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+          <Link
+            href="/feed"
+            className="inline-flex items-center gap-2 text-[14px] text-app-fg-muted transition-colors hover:text-app-fg"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Link>
+          <div className="app-panel animate-pulse p-6 sm:p-8" aria-hidden>
+            <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
+              <div className="h-20 w-20 flex-shrink-0 rounded-full bg-app-surface-2" />
+              <div className="min-w-0 flex-1 space-y-3 text-center sm:text-left">
+                <div className="mx-auto h-6 w-48 rounded bg-app-surface-2 sm:mx-0" />
+                <div className="mx-auto h-4 w-32 rounded bg-app-surface-2/70 sm:mx-0" />
+                <div className="mx-auto h-4 w-full max-w-md rounded bg-app-surface-2/50 sm:mx-0" />
+              </div>
+            </div>
+          </div>
+          <FeedSkeleton />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-app-bg">
       <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
         {/* Back link */}
         <Link
           href="/feed"
+          prefetch
           className="inline-flex items-center gap-2 text-[14px] text-app-fg-muted transition-colors hover:text-app-fg"
         >
           <ArrowLeft className="h-4 w-4" /> Back
@@ -211,7 +244,9 @@ export default function ProfilePage() {
                 </Button>
               ) : (
                 <Button variant="outline" size="sm" asChild className="rounded-full">
-                  <Link href="/settings">Edit Profile</Link>
+                  <Link href="/settings" prefetch>
+                    Edit Profile
+                  </Link>
                 </Button>
               )}
             </div>
@@ -224,7 +259,9 @@ export default function ProfilePage() {
         <div>
           <h2 className="mb-4 text-[15px] font-semibold text-app-fg">Posts</h2>
 
-          {posts.length === 0 ? (
+          {postsLoading && posts.length === 0 ? (
+            <FeedSkeleton />
+          ) : posts.length === 0 ? (
             <div className="app-panel py-16 text-center">
               <p className="text-[15px] text-app-fg-muted">No posts yet.</p>
             </div>

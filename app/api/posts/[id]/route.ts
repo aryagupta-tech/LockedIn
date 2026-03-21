@@ -19,6 +19,18 @@ export async function GET(
     let hasLiked: boolean | undefined;
     let hasBookmarked: boolean | undefined;
     const viewer = await getAuthUser(request);
+
+    const row = post as Record<string, unknown>;
+    let viewsCount = typeof row.viewsCount === "number" ? row.viewsCount : 0;
+    const skipViewBump = viewer?.id === post.authorId;
+    if (!skipViewBump) {
+      const { data: bumped, error: viewErr } = await supabase.rpc("lockedin_increment_post_views", {
+        p_post_id: id,
+      });
+      if (!viewErr && typeof bumped === "number") {
+        viewsCount = bumped;
+      }
+    }
     if (viewer) {
       const [likeRes, markRes] = await Promise.all([
         supabase
@@ -38,7 +50,7 @@ export async function GET(
       hasBookmarked = markRes.error ? false : !!markRes.data;
     }
 
-    return NextResponse.json({ ...post, author, hasLiked, hasBookmarked });
+    return NextResponse.json({ ...post, viewsCount, author, hasLiked, hasBookmarked });
   } catch (e) {
     console.error("Get post error:", e);
     return errorResponse("Internal server error", "INTERNAL_ERROR", 500);

@@ -2,10 +2,11 @@
 
 import { useState, useEffect, type MouseEvent } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, Trash2 } from "lucide-react";
 import { api, type Post } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
+import { formatRelativeTime } from "@/lib/utc-time";
 
 const AVATAR_COLORS = [
   "from-violet-500 to-fuchsia-500",
@@ -22,18 +23,6 @@ function getAvatarColor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-function timeAgo(date: string): string {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return "now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function formatCount(n: number): string {
@@ -55,7 +44,6 @@ export function PostCard({
   const [liked, setLiked] = useState(post.hasLiked ?? false);
   const [likes, setLikes] = useState(post.likesCount);
   const [saved, setSaved] = useState(post.hasBookmarked ?? false);
-  const [showMenu, setShowMenu] = useState(false);
 
   const isAuthor = user?.id === post.author.id;
   const avatarColor = getAvatarColor(post.author.username);
@@ -104,7 +92,6 @@ export function PostCard({
       await api.del(`/posts/${post.id}`);
       onDelete?.(post.id);
     } catch { /* ignore */ }
-    setShowMenu(false);
   };
 
   return (
@@ -130,26 +117,19 @@ export function PostCard({
           </div>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[12px] text-app-fg-muted">{timeAgo(post.createdAt)}</span>
-          <div className="relative">
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="text-[12px] text-app-fg-muted">{formatRelativeTime(post.createdAt)}</span>
+          {isAuthor && (
             <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="rounded-full p-1.5 text-app-fg-muted transition-colors hover:text-app-fg"
+              type="button"
+              onClick={handleDelete}
+              aria-label="Delete post"
+              title="Delete post"
+              className="rounded-full p-1.5 text-red-400 transition-colors hover:bg-red-500/15 hover:text-red-300"
             >
-              <MoreHorizontal className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
             </button>
-            {showMenu && isAuthor && (
-              <div className="absolute right-0 top-8 z-10 rounded-xl border border-app-border bg-app-surface py-1 shadow-lg">
-                <button
-                  onClick={handleDelete}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] text-red-400 hover:bg-red-500/10"
-                >
-                  <Trash2 className="h-3.5 w-3.5" /> Delete
-                </button>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
 

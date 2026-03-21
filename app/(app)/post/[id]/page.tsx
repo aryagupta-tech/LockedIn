@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Heart, Loader2, MessageCircle, Trash2, Share2, Bookmark } from "lucide-react";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { api, type Post, type Comment } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { formatPostAbsoluteDateTime, formatRelativeTime } from "@/lib/utc-time";
 
 export default function PostDetailPage() {
   const params = useParams();
@@ -15,7 +16,8 @@ export default function PostDetailPage() {
   const { user } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [postLoading, setPostLoading] = useState(true);
+  const [commentsLoading, setCommentsLoading] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -25,22 +27,54 @@ export default function PostDetailPage() {
 
   const postId = params.id as string;
 
-  const fetchPost = useCallback(async () => {
-    try {
-      const [p, c] = await Promise.all([
-        api.get<Post>(`/posts/${postId}`),
-        api.get<Comment[]>(`/posts/${postId}/comments?limit=50`),
-      ]);
-      setPost(p);
-      setLiked(p.hasLiked ?? false);
-      setLikes(p.likesCount);
-      setSaved(p.hasBookmarked ?? false);
-      setComments(Array.isArray(c) ? c : []);
-    } catch { /* ignore */ }
-    setLoading(false);
+  useEffect(() => {
+    let cancelled = false;
+    setPost(null);
+    setComments([]);
+    setPostLoading(true);
+    setCommentsLoading(true);
+
+    api
+      .get<Post>(`/posts/${postId}`)
+      .then((p) => {
+        if (cancelled) return;
+        setPost(p);
+        setLiked(p.hasLiked ?? false);
+        setLikes(p.likesCount);
+        setSaved(p.hasBookmarked ?? false);
+      })
+      .catch(() => {
+        if (!cancelled) setPost(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPostLoading(false);
+      });
+
+    api
+      .get<Comment[]>(`/posts/${postId}/comments?limit=50`)
+      .then((c) => {
+        if (!cancelled) setComments(Array.isArray(c) ? c : []);
+      })
+      .catch(() => {
+        if (!cancelled) setComments([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCommentsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [postId]);
 
-  useEffect(() => { fetchPost(); }, [fetchPost]);
+  useEffect(() => {
+    if (!post || postLoading) return;
+    if (typeof window === "undefined" || window.location.hash !== "#comment") return;
+    const id = requestAnimationFrame(() => {
+      document.getElementById("comment")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [post, postLoading]);
 
   const toggleLike = () => {
     if (!post || !user) return;
@@ -95,19 +129,62 @@ export default function PostDetailPage() {
     } catch { /* ignore */ }
   };
 
-  if (loading) {
+  if (!postLoading && !post) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-neon" />
+      <div>
+        <div className="flex items-center gap-4 border-b border-white/[0.06] pb-4">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-full p-2 text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-xl font-bold text-white">Post</h1>
+        </div>
+        <div className="py-20 text-center">
+          <p className="text-zinc-400">Post not found</p>
+          <Link href="/feed" className="mt-4 inline-block text-sm text-neon hover:underline">
+            Back to feed
+          </Link>
+        </div>
       </div>
     );
   }
 
-  if (!post) {
+  if (postLoading || !post) {
     return (
-      <div className="py-20 text-center">
-        <p className="text-zinc-400">Post not found</p>
-        <Link href="/feed" className="mt-4 inline-block text-sm text-neon hover:underline">Back to feed</Link>
+      <div>
+        <div className="flex items-center gap-4 border-b border-white/[0.06] pb-4">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-full p-2 text-zinc-400 hover:bg-white/[0.06] hover:text-white"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-xl font-bold text-white">Post</h1>
+        </div>
+        <div className="animate-pulse space-y-4 px-1 py-6">
+          <div className="flex gap-3">
+            <div className="h-11 w-11 flex-shrink-0 rounded-full bg-white/[0.08]" />
+            <div className="flex-1 space-y-2 pt-1">
+              <div className="h-4 w-40 rounded bg-white/[0.08]" />
+              <div className="h-3 w-28 rounded bg-white/[0.06]" />
+            </div>
+          </div>
+          <div className="space-y-2 pt-2">
+            <div className="h-4 w-full rounded bg-white/[0.07]" />
+            <div className="h-4 w-[94%] rounded bg-white/[0.06]" />
+            <div className="h-4 w-[78%] rounded bg-white/[0.05]" />
+          </div>
+        </div>
+        <div
+          id="comment"
+          className="scroll-mt-24 border-t border-white/[0.06] px-1 py-4 text-center text-sm text-zinc-500"
+        >
+          <Loader2 className="mx-auto h-5 w-5 animate-spin text-neon" />
+        </div>
       </div>
     );
   }
@@ -115,6 +192,9 @@ export default function PostDetailPage() {
   const isAuthor = user?.id === post.author.id;
   const topLevel = comments.filter((c) => !c.parentId);
   const repliesMap = comments.filter((c) => c.parentId);
+  const postedAt = formatPostAbsoluteDateTime(post.createdAt);
+  const views = post.viewsCount ?? 0;
+  const postedRelative = formatRelativeTime(post.createdAt, { subMinuteLabel: "just now" });
 
   return (
     <div>
@@ -147,7 +227,13 @@ export default function PostDetailPage() {
                 <p className="text-sm text-zinc-500">@{post.author.username}</p>
               </div>
               {isAuthor && (
-                <button onClick={handleDelete} className="rounded-lg p-1.5 text-zinc-600 hover:bg-red-500/10 hover:text-red-400">
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  aria-label="Delete post"
+                  title="Delete post"
+                  className="rounded-lg border border-red-500/35 bg-red-500/10 p-2 text-red-400 transition-colors hover:border-red-400/50 hover:bg-red-500/20 hover:text-red-300"
+                >
                   <Trash2 className="h-4 w-4" />
                 </button>
               )}
@@ -175,16 +261,30 @@ export default function PostDetailPage() {
           </div>
         )}
 
-        <p className="mt-4 text-sm text-zinc-500">
-          {new Date(post.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-          {" · "}
-          {new Date(post.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-        </p>
+        {postedAt ? (
+          <p className="mt-4 text-sm text-zinc-500">
+            <span className="text-zinc-400">{postedAt.date}</span>
+            {" · "}
+            <span>{postedAt.time}</span>
+            {" · "}
+            <span className="text-zinc-500">
+              {postedRelative === "just now" ? postedRelative : `${postedRelative} ago`}
+            </span>
+          </p>
+        ) : null}
 
         {/* Stats bar */}
-        <div className="mt-3 flex items-center gap-5 border-t border-white/[0.06] pt-3 text-[14px]">
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-white/[0.06] pt-3 text-[14px]">
           <span className="text-zinc-400"><strong className="font-semibold text-white">{likes}</strong> Likes</span>
-          <span className="text-zinc-400"><strong className="font-semibold text-white">{comments.length}</strong> Comments</span>
+          <span className="text-zinc-400">
+            <strong className="font-semibold text-white">
+              {commentsLoading ? "…" : comments.length}
+            </strong>{" "}
+            Comments
+          </span>
+          <span className="text-zinc-400">
+            <strong className="font-semibold text-white">{views}</strong> Views
+          </span>
         </div>
 
         {/* Action buttons */}
@@ -259,7 +359,12 @@ export default function PostDetailPage() {
           onReply={(id) => setReplyTo(id)}
         />
       ))}
-      {comments.length === 0 && (
+      {commentsLoading && comments.length === 0 && (
+        <div className="flex justify-center py-10">
+          <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+        </div>
+      )}
+      {!commentsLoading && comments.length === 0 && (
         <div className="py-12 text-center">
           <p className="text-[15px] text-zinc-500">No comments yet. Be the first to reply!</p>
         </div>
@@ -284,7 +389,9 @@ function CommentItem({ comment, replies, onReply }: { comment: Comment; replies:
             </Link>
             <span className="text-sm text-zinc-500">@{comment.author.username}</span>
             <span className="text-zinc-600">&middot;</span>
-            <span className="text-sm text-zinc-500">{timeAgo(comment.createdAt)}</span>
+            <span className="text-sm text-zinc-500">
+              {formatRelativeTime(comment.createdAt, { subMinuteLabel: "just now" })}
+            </span>
           </div>
           <p className="mt-0.5 text-[15px] text-zinc-200">{comment.content}</p>
           <button onClick={() => onReply(comment.id)} className="mt-1.5 text-[13px] text-zinc-500 hover:text-neon">
@@ -301,7 +408,9 @@ function CommentItem({ comment, replies, onReply }: { comment: Comment; replies:
                 <Link href={`/u/${r.author.username}`} className="text-[13px] font-semibold text-white hover:underline">
                   {r.author.displayName}
                 </Link>
-                <span className="text-xs text-zinc-500">{timeAgo(r.createdAt)}</span>
+                <span className="text-xs text-zinc-500">
+                  {formatRelativeTime(r.createdAt, { subMinuteLabel: "just now" })}
+                </span>
               </div>
               <p className="mt-0.5 text-[14px] text-zinc-300">{r.content}</p>
             </div>
@@ -310,16 +419,4 @@ function CommentItem({ comment, replies, onReply }: { comment: Comment; replies:
       )}
     </div>
   );
-}
-
-function timeAgo(date: string): string {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d`;
-  return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }

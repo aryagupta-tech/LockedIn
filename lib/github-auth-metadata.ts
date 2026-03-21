@@ -55,6 +55,30 @@ export function extractGitHubLoginFromSupabaseUser(user: User): string | null {
   return null;
 }
 
+/**
+ * Profile image URL from GitHub OAuth. Supabase may use user_metadata.avatar_url,
+ * OAuth-standard `picture`, or identities[].identity_data (especially on refresh / PKCE).
+ */
+export function extractGithubAvatarUrlFromSupabaseUser(user: User): string | null {
+  const meta = user.user_metadata || {};
+  const fromMeta = [meta.avatar_url, meta.picture, meta.image]
+    .find((v) => typeof v === "string" && v.trim().length > 0);
+  if (fromMeta) return String(fromMeta).trim();
+
+  const ids = user.identities;
+  if (!Array.isArray(ids)) return null;
+  for (const ident of ids) {
+    if (ident.provider !== "github") continue;
+    const d = (ident.identity_data || {}) as Record<string, unknown>;
+    const url = [d.avatar_url, d.picture, d.image].find(
+      (v) => typeof v === "string" && v.trim().length > 0,
+    );
+    if (url) return String(url).trim();
+  }
+
+  return null;
+}
+
 /** GitHub numeric user id from OAuth (for public.users.githubId). */
 export function extractGitHubNumericIdFromSupabaseUser(user: User): number | null {
   const meta = user.user_metadata || {};

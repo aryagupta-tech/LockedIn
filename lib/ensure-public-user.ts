@@ -6,6 +6,7 @@ import {
   extractGitHubLoginFromSupabaseUser,
   extractGitHubNumericIdFromSupabaseUser,
 } from "@/lib/github-auth-metadata";
+import { resolveGithubAvatarForUser } from "@/lib/github-avatar-resolve";
 import { pickAvailableUsername } from "@/lib/username-holds";
 
 /**
@@ -79,8 +80,9 @@ export async function ensurePublicUserRow(
     updatedAt: ts,
   };
 
-  if (meta.avatar_url) {
-    newRow.avatarUrl = meta.avatar_url;
+  const resolvedAvatar = await resolveGithubAvatarForUser(authUser, ghLoginFromOAuth);
+  if (resolvedAvatar) {
+    newRow.avatarUrl = resolvedAvatar;
   }
 
   if (ghNumericId != null) {

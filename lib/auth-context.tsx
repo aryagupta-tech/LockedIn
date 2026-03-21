@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { supabase } from "./supabase";
 import { api, type User, type AuthResponse } from "./api";
 import type { Session } from "@supabase/supabase-js";
@@ -21,6 +29,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Hydrate from localStorage before paint so the app shell renders immediately on navigation.
+  useLayoutEffect(() => {
+    const stored = localStorage.getItem("lockedin_user");
+    if (!stored) return;
+    try {
+      setUser(JSON.parse(stored) as User);
+      setLoading(false);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     // Only restore session if the user explicitly logged in/registered
     // (indicated by the lockedin_logged_in cookie), unless they are currently in the middle of an OAuth callback
@@ -31,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // No login cookie — clear any stale Supabase session
       supabase.auth.signOut().catch(() => {});
       localStorage.removeItem("lockedin_user");
+      setUser(null);
       setLoading(false);
       return;
     }
@@ -42,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Cookie exists but session expired — clear cookie
         document.cookie = "lockedin_logged_in=; path=/; max-age=0";
         localStorage.removeItem("lockedin_user");
+        setUser(null);
         setLoading(false);
       }
     });
@@ -59,19 +81,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function restoreProfile(session: Session) {
     api.setAccessToken(session.access_token);
     const stored = localStorage.getItem("lockedin_user");
+    let hadCached = false;
     if (stored) {
       try {
-        setUser(JSON.parse(stored));
-      } catch { /* ignore */ }
+        setUser(JSON.parse(stored) as User);
+        hadCached = true;
+        setLoading(false);
+      } catch {
+        /* ignore */
+      }
     }
 
     try {
       const profile = await api.get<User>("/profiles/me");
       localStorage.setItem("lockedin_user", JSON.stringify(profile));
       setUser(profile);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
-    setLoading(false);
+    if (!hadCached) {
+      setLoading(false);
+    }
   }
 
   const setAuth = useCallback((data: AuthResponse) => {

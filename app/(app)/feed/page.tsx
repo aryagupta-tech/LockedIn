@@ -5,6 +5,7 @@ import { Loader2, Sparkles, PenLine, Rocket } from "lucide-react";
 import { api, type Post, type FeedResponse } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { PostCard } from "@/components/app/post-card";
+import { FeedSkeleton } from "@/components/app/feed-skeleton";
 import { CreatePost } from "@/components/app/create-post";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -106,9 +107,7 @@ export default function FeedPage() {
       <CreatePost onCreated={handlePostCreated} />
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-neon" />
-        </div>
+        <FeedSkeleton />
       ) : posts.length === 0 ? (
         <div className="post-card px-6 py-16 text-center">
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-neon/15 to-blue-500/15">

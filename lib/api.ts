@@ -137,6 +137,8 @@ export interface Post {
   communityId: string | null;
   likesCount: number;
   commentsCount: number;
+  /** Populated after running scripts/post-views-count.sql; incremented on post GET (non-author). */
+  viewsCount?: number;
   author: {
     id: string;
     username: string;
