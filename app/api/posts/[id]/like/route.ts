@@ -58,6 +58,21 @@ export async function DELETE(
 
     if (!count) return NextResponse.json({ unliked: false });
 
+    const { data: postRow } = await supabase
+      .from("posts")
+      .select("authorId")
+      .eq("id", postId)
+      .single();
+    if (postRow?.authorId) {
+      await supabase
+        .from("notifications")
+        .delete()
+        .eq("type", "like")
+        .eq("user_id", postRow.authorId)
+        .eq("actor_id", auth.user.id)
+        .eq("resource_id", postId);
+    }
+
     await bumpPostLikes(supabase, postId, -1, () => syncLikeCount(supabase, postId));
     return NextResponse.json({ unliked: true });
   } catch (e) {

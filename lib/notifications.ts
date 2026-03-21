@@ -57,7 +57,28 @@ export function useNotifications(userId: string | undefined) {
         (payload) => {
           const newNotif = payload.new as Notification;
           setNotifications((prev) => [newNotif, ...prev]);
-          setUnreadCount((c) => c + 1);
+          setUnreadCount((c) => c + (newNotif.read ? 0 : 1));
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const oldRow = payload.old as Partial<Notification>;
+          if (!oldRow?.id) {
+            void fetchNotifications();
+            return;
+          }
+          setNotifications((prev) => prev.filter((n) => n.id !== oldRow.id));
+          setUnreadCount((c) => {
+            if (oldRow.read === false) return Math.max(0, c - 1);
+            return c;
+          });
         },
       )
       .subscribe();
@@ -65,7 +86,7 @@ export function useNotifications(userId: string | undefined) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, fetchNotifications]);
 
   const markAsRead = useCallback(async (id: string) => {
     await supabase

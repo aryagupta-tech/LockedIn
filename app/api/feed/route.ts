@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireApproved, errorResponse } from "@/lib/api-utils";
+import { isInternalStaffEmail } from "@/lib/internal-account";
 
 export async function GET(request: Request) {
   try {
@@ -8,6 +9,7 @@ export async function GET(request: Request) {
     if ("error" in auth) return auth.error;
 
     const userId = auth.user.id;
+    const viewerSeesInternal = isInternalStaffEmail(auth.user.email);
     const url = new URL(request.url);
     const cursor = url.searchParams.get("cursor");
     const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit")) || 20));
@@ -60,7 +62,10 @@ export async function GET(request: Request) {
 
     const postIds = items.map((p) => p.id);
     const [authorsRes, communitiesRes, likesRes, bookmarksRes] = await Promise.all([
-      supabase.from("users").select("id, username, displayName, avatarUrl, status").in("id", postAuthorIds),
+      supabase
+        .from("users")
+        .select("id, username, displayName, avatarUrl, status, email")
+        .in("id", postAuthorIds),
       postCommunityIds.length > 0
         ? supabase.from("communities").select("id, name, slug").in("id", postCommunityIds)
         : Promise.resolve({ data: [] }),
@@ -83,6 +88,8 @@ export async function GET(request: Request) {
         const author = authorMap.get(p.authorId);
         if (!author) return false;
         if (p.authorId === userId) return true;
+        const authorEmail = (author as { email?: string | null }).email;
+        if (isInternalStaffEmail(authorEmail) && !viewerSeesInternal) return false;
         const st = (author as { status?: string }).status;
         if (st === "APPROVED") return true;
         if (inFollowScope.has(p.authorId)) return true;
@@ -93,7 +100,10 @@ export async function GET(request: Request) {
         const raw = authorMap.get(p.authorId);
         const author = raw
           ? (() => {
-              const { status: _st, ...pub } = raw as typeof raw & { status?: string };
+              const { status: _st, email: _em, ...pub } = raw as typeof raw & {
+                status?: string;
+                email?: string | null;
+              };
               return pub;
             })()
           : null;

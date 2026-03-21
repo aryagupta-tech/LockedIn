@@ -50,6 +50,15 @@ export async function DELETE(
       .from("follows").delete({ count: "exact" })
       .eq("followerId", auth.user.id).eq("followingId", targetId);
 
+    if (count) {
+      await supabase
+        .from("notifications")
+        .delete()
+        .eq("type", "follow")
+        .eq("user_id", targetId)
+        .eq("actor_id", auth.user.id);
+    }
+
     return NextResponse.json({ unfollowed: (count || 0) > 0 });
   } catch (e) {
     console.error("Unfollow error:", e);

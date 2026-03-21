@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireApproved, errorResponse } from "@/lib/api-utils";
+import { isInternalStaffEmail } from "@/lib/internal-account";
 
 /**
  * Approved members the viewer does not follow yet (home sidebar).
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
 
     const { data: rows, error } = await supabase
       .from("users")
-      .select("id, username, displayName, avatarUrl")
+      .select("id, username, displayName, avatarUrl, email")
       .eq("status", "APPROVED")
       .neq("id", auth.user.id)
       .order("createdAt", { ascending: false })
@@ -35,7 +36,13 @@ export async function GET(request: Request) {
     }
 
     const items = (rows || [])
-      .filter((u) => !followingIds.has(u.id))
+      .filter((u) => !followingIds.has(u.id) && !isInternalStaffEmail(u.email))
+      .map(({ id, username, displayName, avatarUrl }) => ({
+        id,
+        username,
+        displayName,
+        avatarUrl,
+      }))
       .slice(0, limit);
 
     return NextResponse.json({ items });
