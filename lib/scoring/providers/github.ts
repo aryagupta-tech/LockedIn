@@ -17,9 +17,10 @@ function githubRestHeaders(): Record<string, string> {
 }
 
 /**
- * Fetches GitHub contribution count for the last ~year shown on the public
- * contributions page (sums per-day tooltips). Optionally uses GITHUB_TOKEN
- * with GraphQL for the same total when a token is configured.
+ * Fetches GitHub contributions in a **rolling ~365-day window** (GraphQL with
+ * explicit `from`/`to` when `GITHUB_TOKEN` is set — matches the profile grid,
+ * not “calendar year only”). Without a token, scrapes the public contributions
+ * page (data-count cells + tooltip fallback).
  */
 export async function fetchGitHubSignal(
   username: string,
@@ -62,11 +63,26 @@ async function assertGitHubUserExists(login: string): Promise<void> {
   }
 }
 
+/**
+ * Rolling window aligned with the green grid on GitHub profiles (~last 53 weeks).
+ * Without `from`/`to`, GitHub defaults to the *calendar year* only — wildly wrong
+ * outside Jan–Dec and does not match what users see on their profile.
+ */
+function githubRollingContributionsWindow(): { from: string; to: string } {
+  const to = new Date();
+  const from = new Date(to.getTime());
+  // Rolling year (≤365d) — GitHub allows at most ~1 year per contributionsCollection.
+  from.setTime(from.getTime() - 364 * 24 * 60 * 60 * 1000);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
 async function fetchViaGraphQL(login: string, token: string): Promise<SignalInput> {
+  const { from, to } = githubRollingContributionsWindow();
+
   const query = `
-    query($login: String!) {
+    query($login: String!, $from: DateTime!, $to: DateTime!) {
       user(login: $login) {
-        contributionsCollection {
+        contributionsCollection(from: $from, to: $to) {
           contributionCalendar { totalContributions }
         }
       }
@@ -80,7 +96,7 @@ async function fetchViaGraphQL(login: string, token: string): Promise<SignalInpu
       "Content-Type": "application/json",
       "User-Agent": USER_AGENT,
     },
-    body: JSON.stringify({ query, variables: { login } }),
+    body: JSON.stringify({ query, variables: { login, from, to } }),
   });
 
   if (!res.ok) {
@@ -110,8 +126,8 @@ async function fetchViaGraphQL(login: string, token: string): Promise<SignalInpu
 }
 
 /**
- * Parses https://github.com/users/{login}/contributions HTML. GitHub encodes
- * per-day counts in accessible tooltips like "4 contributions on March 16th."
+ * Parses https://github.com/users/{login}/contributions HTML.
+ * Prefer `data-count` on calendar cells (matches the profile grid); fall back to tooltips.
  */
 async function fetchContributionsFromProfilePage(login: string): Promise<number> {
   const url = `https://github.com/users/${encodeURIComponent(login)}/contributions`;
@@ -128,6 +144,22 @@ async function fetchContributionsFromProfilePage(login: string): Promise<number>
   }
 
   const html = await res.text();
+
+  const calIdx = html.indexOf("ContributionCalendar");
+  let sumCells = 0;
+  let cellMatches = 0;
+  if (calIdx !== -1) {
+    const slice = html.slice(calIdx, calIdx + 600_000);
+    for (const m of slice.matchAll(/\bdata-count="(\d+)"/g)) {
+      cellMatches++;
+      sumCells += parseInt(m[1], 10);
+    }
+  }
+
+  // Expect roughly one year of days on the contributions-only page
+  if (cellMatches >= 200) {
+    return sumCells;
+  }
 
   const tooltipRe =
     />(?:No contributions|(\d+) contributions?) on[^<]+<\/tool-tip>/gi;

@@ -67,26 +67,48 @@ async function getLeetCodeCsrfToken(): Promise<string | undefined> {
   return undefined;
 }
 
-/**
- * Fetches total LeetCode problems solved (accepted) for a given username.
- */
-export async function fetchLeetCodeSignal(username: string): Promise<SignalInput> {
-  const handle = username.trim();
-  if (!handle) throw new Error("LeetCode username is empty");
+function uniqueSolvedFromAcSubmissionNum(
+  stats: Array<{ difficulty: string; count: number }>,
+): number {
+  const allEntry = stats.find((s) => s.difficulty.toLowerCase() === "all");
+  if (allEntry !== undefined) return allEntry.count;
+  return stats.reduce((sum, s) => {
+    const d = s.difficulty.toLowerCase();
+    if (d === "all") return sum;
+    return sum + s.count;
+  }, 0);
+}
 
-  const query = `
-    query userStats($username: String!) {
-      matchedUser(username: $username) {
-        submitStats {
-          acSubmissionNum {
-            difficulty
-            count
-          }
+const QUERY_SUBMIT_STATS_GLOBAL = `
+  query userStats($username: String!) {
+    matchedUser(username: $username) {
+      submitStats: submitStatsGlobal {
+        acSubmissionNum {
+          difficulty
+          count
         }
       }
     }
-  `;
+  }
+`;
 
+const QUERY_SUBMIT_STATS_LEGACY = `
+  query userStats($username: String!) {
+    matchedUser(username: $username) {
+      submitStats {
+        acSubmissionNum {
+          difficulty
+          count
+        }
+      }
+    }
+  }
+`;
+
+async function fetchLeetCodeAcStatsGraphQL(
+  handle: string,
+  query: string,
+): Promise<LeetCodeResponse> {
   const csrftoken = await getLeetCodeCsrfToken();
 
   const requestHeaders: Record<string, string> = {
@@ -127,27 +149,43 @@ export async function fetchLeetCodeSignal(username: string): Promise<SignalInput
   }
 
   if (json.errors?.length) {
-    throw new Error(json.errors[0].message);
+    throw new Error(json.errors.map((e) => e.message).join("; "));
   }
 
-  const stats = json.data?.matchedUser?.submitStats?.acSubmissionNum;
+  return json;
+}
 
-  if (!stats) {
-    throw new Error(`LeetCode user '${handle}' not found or has no stats`);
+/**
+ * Fetches **unique** problems solved (same notion as the LeetCode profile),
+ * using `submitStatsGlobal` when available. The legacy `submitStats` field can
+ * reflect accepted *submissions* more than unique solves — we prefer global stats.
+ */
+export async function fetchLeetCodeSignal(username: string): Promise<SignalInput> {
+  const handle = username.trim();
+  if (!handle) throw new Error("LeetCode username is empty");
+
+  let lastErr: Error | null = null;
+
+  for (const q of [QUERY_SUBMIT_STATS_GLOBAL, QUERY_SUBMIT_STATS_LEGACY]) {
+    try {
+      const json = await fetchLeetCodeAcStatsGraphQL(handle, q);
+      const stats = json.data?.matchedUser?.submitStats?.acSubmissionNum;
+
+      if (!stats?.length) {
+        throw new Error(`LeetCode user '${handle}' not found or has no stats`);
+      }
+
+      const total = uniqueSolvedFromAcSubmissionNum(stats);
+      return { key: "leetcode_problems", rawValue: total };
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+    }
   }
 
-  const allEntry = stats.find(
-    (s) => s.difficulty.toLowerCase() === "all",
+  throw new Error(
+    lastErr?.message ||
+      `LeetCode stats failed for '${handle}'. Set LEETCODE_CSRF_TOKEN if requests are blocked.`,
   );
-  const total =
-    allEntry?.count ??
-    stats.reduce((sum, s) => {
-      const d = s.difficulty.toLowerCase();
-      if (d === "all") return sum;
-      return sum + s.count;
-    }, 0);
-
-  return { key: "leetcode_problems", rawValue: total };
 }
 
 interface LeetCodeGithubResponse {

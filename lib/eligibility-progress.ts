@@ -27,21 +27,22 @@ const DEFS: Record<
     signalKey: "github_contributions",
     errorKey: "github",
     label: "GitHub",
-    metricLabel: "Contributions (last year on profile)",
+    metricLabel:
+      "Contributions in rolling ~12 months (matches the green grid when token or scrape works)",
     unit: "contributions",
   },
   leetcode: {
     signalKey: "leetcode_problems",
     errorKey: "leetcode",
     label: "LeetCode",
-    metricLabel: "Problems solved (all difficulties)",
+    metricLabel: "Unique problems solved (profile-style count via submitStatsGlobal)",
     unit: "problems",
   },
   codeforces: {
     signalKey: "codeforces_rating",
     errorKey: "codeforces",
     label: "Codeforces",
-    metricLabel: "Rating (current vs peak, we use the higher)",
+    metricLabel: "Rating for gate = max(current, maxRating) from official API",
     unit: "rating",
   },
 };

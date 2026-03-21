@@ -59,14 +59,17 @@ export async function fetchCodeforcesProfile(
 }
 
 /**
- * Fetches peak Codeforces rating for a handle.
- * Uses the public Codeforces API — no auth required.
+ * Rating used for gating: **max of current and max (peak) rating** from
+ * `user.info` — same idea as “best rating shown” on a Codeforces profile.
+ * (Unrated users: both are 0 until they compete in rated contests.)
  */
 export async function fetchCodeforcesSignal(
   handle: string,
 ): Promise<SignalInput> {
   const p = await fetchCodeforcesProfile(handle);
-  const rating = Math.max(p.rating, p.maxRating);
+  const current = Number.isFinite(p.rating) ? p.rating : 0;
+  const peak = Number.isFinite(p.maxRating) ? p.maxRating : 0;
+  const ratingForGate = Math.max(current, peak);
 
-  return { key: "codeforces_rating", rawValue: rating };
+  return { key: "codeforces_rating", rawValue: ratingForGate };
 }
