@@ -3,6 +3,12 @@ import { createServiceClient } from "@/lib/supabase-server";
 import { getServiceRoleKeyMisconfigurationError } from "@/lib/supabase-service-key";
 import { errorResponse } from "@/lib/api-utils";
 import {
+  isValidEmail,
+  validateDisplayName,
+  validatePassword,
+  validateUsername,
+} from "@/lib/validation";
+import {
   ensurePublicUserProfileWithUserJwt,
   ensurePublicUserRow,
 } from "@/lib/ensure-public-user";
@@ -17,6 +23,25 @@ export async function POST(request: Request) {
       return errorResponse("Missing required fields", "VALIDATION_ERROR", 400);
     }
 
+    if (!isValidEmail(email)) {
+      return errorResponse("Enter a valid email address.", "VALIDATION_ERROR", 400);
+    }
+
+    const userCheck = validateUsername(username);
+    if (!userCheck.ok) {
+      return errorResponse(userCheck.error, "VALIDATION_ERROR", 400);
+    }
+
+    const pwErr = validatePassword(password);
+    if (pwErr) {
+      return errorResponse(pwErr, "VALIDATION_ERROR", 400);
+    }
+
+    const dnErr = validateDisplayName(displayName);
+    if (dnErr) {
+      return errorResponse(dnErr, "VALIDATION_ERROR", 400);
+    }
+
     const keyMisconfig = getServiceRoleKeyMisconfigurationError();
     if (keyMisconfig) {
       return errorResponse(keyMisconfig, "SUPABASE_KEY_MISCONFIGURED", 500, {
@@ -26,24 +51,37 @@ export async function POST(request: Request) {
 
     const supabase = createServiceClient();
 
-    const { data: existing } = await supabase
+    const emailLower = email.trim().toLowerCase();
+    const usernameNorm = userCheck.username;
+
+    const { data: emailTaken } = await supabase
       .from("users")
-      .select("email, username")
-      .or(`email.eq.${email.toLowerCase()},username.eq.${username.toLowerCase()}`)
-      .limit(1)
+      .select("id")
+      .eq("email", emailLower)
       .maybeSingle();
 
-    if (existing) {
-      const field = existing.email === email.toLowerCase() ? "email" : "username";
-      return errorResponse(`A user with this ${field} already exists`, "CONFLICT", 409);
+    if (emailTaken) {
+      return errorResponse("This email is already registered.", "CONFLICT", 409);
     }
+
+    const { data: usernameTaken } = await supabase
+      .from("users")
+      .select("id")
+      .eq("username", usernameNorm)
+      .maybeSingle();
+
+    if (usernameTaken) {
+      return errorResponse("This username is already taken. Choose another.", "CONFLICT", 409);
+    }
+
+    const displayTrimmed = displayName.trim();
 
     const { data: authData, error: authError } =
       await supabase.auth.admin.createUser({
-        email: email.toLowerCase(),
+        email: emailLower,
         password,
         email_confirm: true,
-        user_metadata: { username: username.toLowerCase(), displayName },
+        user_metadata: { username: usernameNorm, displayName: displayTrimmed },
       });
 
     if (authError) {
@@ -52,7 +90,7 @@ export async function POST(request: Request) {
 
     const { data: session, error: signInError } =
       await supabase.auth.signInWithPassword({
-        email: email.toLowerCase(),
+        email: emailLower,
         password,
       });
 
@@ -81,11 +119,7 @@ export async function POST(request: Request) {
       );
     }
 
-    await applySeedAccessRules(
-      supabase,
-      authData.user.id,
-      email.toLowerCase(),
-    );
+    await applySeedAccessRules(supabase, authData.user.id, emailLower);
 
     const { data: userRow, error: userFetchErr } = await supabase
       .from("users")
@@ -101,9 +135,9 @@ export async function POST(request: Request) {
           expiresIn: session.session.expires_in,
           user: {
             id: authData.user.id,
-            email: email.toLowerCase(),
-            username: username.toLowerCase(),
-            displayName,
+            email: emailLower,
+            username: usernameNorm,
+            displayName: displayTrimmed,
             avatarUrl: null,
             role: "USER",
             status: "PENDING",

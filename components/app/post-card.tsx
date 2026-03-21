@@ -125,9 +125,22 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
 
       {/* Content */}
       <Link href={`/post/${post.id}`} className="block px-4 pb-3">
-        <p className="whitespace-pre-wrap text-[15px] leading-[1.65] text-app-fg-secondary">
-          {post.content}
-        </p>
+        {post.content ? (
+          <p className="whitespace-pre-wrap text-[15px] leading-[1.65] text-app-fg-secondary">
+            {post.content}
+          </p>
+        ) : null}
+        {post.imageUrl ? (
+          <div className={cn(post.content ? "mt-3" : "", "overflow-hidden rounded-xl border border-app-border")}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={post.imageUrl}
+              alt=""
+              className="max-h-96 w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        ) : null}
       </Link>
 
       {/* Code block */}

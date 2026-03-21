@@ -106,6 +106,8 @@ Fill in your Supabase project URL, anon key, and service role key. See `.env.exa
 
 Run `supabase-setup.sql` in the Supabase SQL Editor to enable RLS, create the storage bucket, and seed scoring weights.
 
+For **image attachments on posts**, also run `scripts/add-post-images.sql` once (adds `posts.imageUrl` + `post-images` storage bucket + policies).
+
 ### 4. Start the dev server
 
 ```bash

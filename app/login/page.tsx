@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { LockedInMark } from "@/components/brand/locked-in-mark";
+import { isValidEmail } from "@/lib/validation";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,9 +23,13 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
       router.push("/feed");
     } catch (err) {
@@ -88,6 +93,8 @@ export default function LoginPage() {
               <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">Email</label>
               <Input
                 type="email"
+                inputMode="email"
+                autoComplete="email"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

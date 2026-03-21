@@ -9,6 +9,12 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { LockedInMark } from "@/components/brand/locked-in-mark";
+import {
+  isValidEmail,
+  validateDisplayName,
+  validatePassword,
+  validateUsername,
+} from "@/lib/validation";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -17,15 +23,45 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const update =
+    (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      let v = e.target.value;
+      if (field === "username") v = v.toLowerCase().replace(/[^a-z0-9_]/g, "");
+      setForm((prev) => ({ ...prev, [field]: v }));
+    };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!isValidEmail(form.email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    const u = validateUsername(form.username);
+    if (!u.ok) {
+      setError(u.error);
+      return;
+    }
+    const pw = validatePassword(form.password);
+    if (pw) {
+      setError(pw);
+      return;
+    }
+    const dn = validateDisplayName(form.displayName);
+    if (dn) {
+      setError(dn);
+      return;
+    }
+
     setLoading(true);
     try {
-      await register(form);
+      await register({
+        email: form.email.trim(),
+        username: u.username,
+        displayName: form.displayName.trim(),
+        password: form.password,
+      });
       document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
       router.push("/feed");
     } catch (err) {
@@ -54,19 +90,51 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">Display Name</label>
-              <Input placeholder="John Doe" value={form.displayName} onChange={update("displayName")} required />
+              <Input placeholder="John Doe" value={form.displayName} onChange={update("displayName")} required maxLength={80} />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">Username</label>
-              <Input placeholder="johndoe" value={form.username} onChange={update("username")} required />
+              <Input
+                placeholder="john_doe"
+                value={form.username}
+                onChange={update("username")}
+                required
+                minLength={3}
+                maxLength={30}
+                autoComplete="username"
+                spellCheck={false}
+              />
+              <p className="mt-1 text-[11px] text-app-fg-muted">
+                3–30 characters: lowercase letters, numbers, underscores only. Must be unique.
+              </p>
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">Email</label>
-              <Input type="email" placeholder="you@example.com" value={form.email} onChange={update("email")} required />
+              <Input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={update("email")}
+                required
+              />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">Password</label>
-              <Input type="password" placeholder="Min 8 characters" value={form.password} onChange={update("password")} required minLength={8} />
+              <Input
+                type="password"
+                autoComplete="new-password"
+                placeholder="Strong password"
+                value={form.password}
+                onChange={update("password")}
+                required
+                minLength={10}
+              />
+              <ul className="mt-1.5 list-inside list-disc text-[11px] text-app-fg-muted">
+                <li>At least 10 characters</li>
+                <li>Lowercase, uppercase, number, and a special character</li>
+              </ul>
             </div>
 
             {error && (
@@ -92,4 +160,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

@@ -122,6 +122,8 @@ export interface AuthResponse {
 export interface Post {
   id: string;
   content: string;
+  /** Public Supabase storage URL for an attached image (optional). */
+  imageUrl?: string | null;
   codeSnippet: string | null;
   codeLanguage: string | null;
   communityId: string | null;

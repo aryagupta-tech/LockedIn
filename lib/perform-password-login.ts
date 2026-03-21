@@ -5,6 +5,7 @@ import {
   createUserAuthedClient,
 } from "@/lib/supabase-server";
 import { errorResponse } from "@/lib/api-utils";
+import { isValidEmail } from "@/lib/validation";
 import {
   ensurePublicUserProfileWithUserJwt,
   ensurePublicUserRow,
@@ -19,7 +20,11 @@ export async function performPasswordLogin(
   password: string,
 ): Promise<NextResponse> {
   try {
-    const emailLower = email.toLowerCase();
+    if (!isValidEmail(email)) {
+      return errorResponse("Enter a valid email address.", "VALIDATION_ERROR", 400);
+    }
+
+    const emailLower = email.trim().toLowerCase();
 
     if (
       !process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||

@@ -138,7 +138,16 @@ export default function PostDetailPage() {
           </div>
         </div>
 
-        <p className="mt-4 whitespace-pre-wrap text-[17px] leading-relaxed text-zinc-100">{post.content}</p>
+        {post.content ? (
+          <p className="mt-4 whitespace-pre-wrap text-[17px] leading-relaxed text-zinc-100">{post.content}</p>
+        ) : null}
+
+        {post.imageUrl ? (
+          <div className={cn("overflow-hidden rounded-xl border border-white/[0.08]", post.content ? "mt-4" : "mt-2")}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={post.imageUrl} alt="" className="max-h-[480px] w-full object-contain bg-black/20" />
+          </div>
+        ) : null}
 
         {post.codeSnippet && (
           <div className="mt-4 overflow-x-auto rounded-xl border border-white/[0.08] bg-[#0d1117] p-4">
