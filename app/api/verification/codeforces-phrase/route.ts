@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireAuth, errorResponse } from "@/lib/api-utils";
 import { ensurePublicUserRow } from "@/lib/ensure-public-user";
+import { ensureGithubUsernameSyncedFromAuth } from "@/lib/github-profile-sync";
 import { getCodeforcesVerificationPhrase } from "@/lib/verification/platform-ownership";
 
 /**
@@ -18,11 +19,15 @@ export async function GET(request: Request) {
 
     const { data: row } = await supabase
       .from("users")
-      .select("githubUsername")
+      .select("id, githubUsername")
       .eq("id", auth.user.id)
       .single();
 
-    if (!row?.githubUsername?.trim()) {
+    const synced = row
+      ? await ensureGithubUsernameSyncedFromAuth(supabase, auth.user, row)
+      : null;
+
+    if (!synced?.githubUsername?.trim()) {
       return errorResponse(
         "Sign in with GitHub to verify with Codeforces.",
         "GITHUB_IDENTITY_REQUIRED",
@@ -33,7 +38,7 @@ export async function GET(request: Request) {
     try {
       const phrase = getCodeforcesVerificationPhrase(
         auth.user.id,
-        row.githubUsername.trim(),
+        synced.githubUsername.trim(),
       );
       return NextResponse.json({ phrase });
     } catch (e) {

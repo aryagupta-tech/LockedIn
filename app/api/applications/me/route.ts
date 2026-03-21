@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase-server";
 import { requireAuth, errorResponse, now } from "@/lib/api-utils";
 import { parseApplicationProofBody } from "@/lib/application-body";
 import { ensurePublicUserRow } from "@/lib/ensure-public-user";
+import { ensureGithubUsernameSyncedFromAuth } from "@/lib/github-profile-sync";
 import { validatePlatformOwnership } from "@/lib/verification/platform-ownership";
 import {
   APPLICATION_UPDATABLE_STATUSES,
@@ -81,13 +82,19 @@ export async function PATCH(request: Request) {
       );
     }
 
+    const dbUserSynced = await ensureGithubUsernameSyncedFromAuth(
+      supabase,
+      auth.user,
+      dbUser,
+    );
+
     const ownershipViolation = await validatePlatformOwnership(
       {
         githubUrl: gh || undefined,
         codeforcesHandle: cfRaw || undefined,
         leetcodeHandle: lcRaw || undefined,
       },
-      dbUser,
+      dbUserSynced,
     );
     if (ownershipViolation) {
       return errorResponse(

@@ -5,6 +5,7 @@ import { validatePlatformOwnership } from "@/lib/verification/platform-ownership
 import { scoreAndPersistApplication } from "@/lib/application-scoring";
 import { parseApplicationProofBody } from "@/lib/application-body";
 import { ensurePublicUserRow } from "@/lib/ensure-public-user";
+import { ensureGithubUsernameSyncedFromAuth } from "@/lib/github-profile-sync";
 
 export async function POST(request: Request) {
   try {
@@ -35,13 +36,19 @@ export async function POST(request: Request) {
       );
     }
 
+    const dbUserSynced = await ensureGithubUsernameSyncedFromAuth(
+      supabase,
+      auth.user,
+      dbUser,
+    );
+
     const ownershipViolation = await validatePlatformOwnership(
       {
         githubUrl: gh || undefined,
         codeforcesHandle: cfRaw || undefined,
         leetcodeHandle: lcRaw || undefined,
       },
-      dbUser,
+      dbUserSynced,
     );
     if (ownershipViolation) {
       return errorResponse(

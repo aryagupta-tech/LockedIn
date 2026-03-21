@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 import { now } from "@/lib/api-utils";
 import { createUserAuthedClient } from "@/lib/supabase-server";
+import {
+  extractGitHubLoginFromSupabaseUser,
+  extractGitHubNumericIdFromSupabaseUser,
+} from "@/lib/github-auth-metadata";
 
 /**
  * Creates `public.users` via SECURITY DEFINER RPC using the logged-in user's JWT.
@@ -46,7 +50,9 @@ export async function ensurePublicUserRow(
   if (existing) return null;
 
   const meta = authUser.user_metadata || {};
+  const ghLoginFromOAuth = extractGitHubLoginFromSupabaseUser(authUser);
   let username = (
+    ghLoginFromOAuth ||
     meta.user_name ||
     meta.preferred_username ||
     meta.username ||
@@ -66,7 +72,7 @@ export async function ensurePublicUserRow(
   if (taken) username = `${username}_${authUser.id.slice(0, 6)}`;
 
   const ts = now();
-  const providerId = meta.provider_id;
+  const ghNumericId = extractGitHubNumericIdFromSupabaseUser(authUser);
 
   const newRow: Record<string, unknown> = {
     id: authUser.id,
@@ -86,15 +92,14 @@ export async function ensurePublicUserRow(
     newRow.avatarUrl = meta.avatar_url;
   }
 
-  if (providerId !== undefined && providerId !== null) {
-    const n = parseInt(String(providerId), 10);
-    if (!Number.isNaN(n)) {
-      newRow.githubId = n;
-    }
+  if (ghNumericId != null) {
+    newRow.githubId = ghNumericId;
   }
 
-  if (meta.user_name) {
-    newRow.githubUsername = meta.user_name;
+  if (ghLoginFromOAuth) {
+    newRow.githubUsername = ghLoginFromOAuth.toLowerCase();
+  } else if (meta.user_name) {
+    newRow.githubUsername = String(meta.user_name).toLowerCase();
   }
 
   const { error: insErr } = await supabase.from("users").insert(newRow);

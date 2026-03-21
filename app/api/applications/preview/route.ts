@@ -6,6 +6,7 @@ import { fetchApplicationSignals } from "@/lib/scoring/fetch-application-signals
 import { validatePlatformOwnership } from "@/lib/verification/platform-ownership";
 import { parseApplicationProofBody } from "@/lib/application-body";
 import { ensurePublicUserRow } from "@/lib/ensure-public-user";
+import { ensureGithubUsernameSyncedFromAuth } from "@/lib/github-profile-sync";
 import { buildPlatformProgressFromSignals } from "@/lib/eligibility-progress";
 
 /**
@@ -39,13 +40,19 @@ export async function POST(request: Request) {
       );
     }
 
+    const dbUserSynced = await ensureGithubUsernameSyncedFromAuth(
+      supabase,
+      auth.user,
+      dbUser,
+    );
+
     const ownershipViolation = await validatePlatformOwnership(
       {
         githubUrl: gh || undefined,
         codeforcesHandle: cfRaw || undefined,
         leetcodeHandle: lcRaw || undefined,
       },
-      dbUser,
+      dbUserSynced,
     );
     if (ownershipViolation) {
       return errorResponse(

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { errorResponse, now } from "@/lib/api-utils";
+import {
+  extractGitHubLoginFromSupabaseUser,
+  extractGitHubNumericIdFromSupabaseUser,
+} from "@/lib/github-auth-metadata";
 
 export async function POST(request: Request) {
   try {
@@ -31,11 +35,21 @@ export async function POST(request: Request) {
 
     let user = existingUser;
 
+    const meta = supaUser.user_metadata || {};
+    const ghLoginRaw = extractGitHubLoginFromSupabaseUser(supaUser);
+    const ghLogin = ghLoginRaw ? ghLoginRaw.toLowerCase() : null;
+    const ghNumericId = extractGitHubNumericIdFromSupabaseUser(supaUser);
+
     if (!user) {
-      const meta = supaUser.user_metadata || {};
       let username = (
-        meta.user_name || meta.preferred_username || supaUser.email?.split("@")[0] || "user"
-      ).toLowerCase().replace(/[^a-z0-9_]/g, "_");
+        ghLoginRaw ||
+        meta.preferred_username ||
+        supaUser.email?.split("@")[0] ||
+        "user"
+      )
+        .toString()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "_");
 
       const { data: taken } = await supabase
         .from("users").select("id").eq("username", username).maybeSingle();
@@ -48,8 +62,8 @@ export async function POST(request: Request) {
         username,
         displayName: meta.full_name || meta.name || username,
         avatarUrl: meta.avatar_url || null,
-        githubId: meta.provider_id ? parseInt(meta.provider_id) : null,
-        githubUsername: meta.user_name || null,
+        githubId: ghNumericId,
+        githubUsername: ghLogin,
         createdAt: ts,
         updatedAt: ts,
       };
@@ -62,12 +76,20 @@ export async function POST(request: Request) {
         role: "USER", status: "PENDING", githubUsername: newUser.githubUsername,
       };
     } else {
-      const meta = supaUser.user_metadata || {};
-      if (meta.avatar_url && !user.avatarUrl) {
-        await supabase.from("users")
-          .update({ avatarUrl: meta.avatar_url, githubUsername: meta.user_name || user.githubUsername, updatedAt: now() })
-          .eq("id", user.id);
-        user = { ...user, avatarUrl: meta.avatar_url };
+      // Always sync GitHub identity on OAuth callback (not only when avatar was missing).
+      // DB trigger / RPC often creates public.users without githubUsername; avatar may already exist.
+      const patch: Record<string, unknown> = { updatedAt: now() };
+      if (meta.avatar_url) patch.avatarUrl = meta.avatar_url;
+      if (ghLogin) patch.githubUsername = ghLogin;
+      if (ghNumericId != null) patch.githubId = ghNumericId;
+
+      if (Object.keys(patch).length > 1) {
+        await supabase.from("users").update(patch).eq("id", user.id);
+        user = {
+          ...user,
+          ...(patch.avatarUrl ? { avatarUrl: patch.avatarUrl as string } : {}),
+          ...(ghLogin ? { githubUsername: ghLogin } : {}),
+        };
       }
     }
 
