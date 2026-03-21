@@ -1,21 +1,80 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { BuilderProgressCard } from "@/components/app/builder-progress-card";
 import { useAuth } from "@/lib/auth-context";
+import { api } from "@/lib/api";
 
-/** Wire to API / recommendations when the network has active users. */
-const suggestedUsers: {
-  name: string;
+type SuggestedUser = {
+  id: string;
   username: string;
-  color: string;
-}[] = [];
+  displayName: string;
+  avatarUrl: string | null;
+};
+
+const AVATAR_COLORS = [
+  "from-violet-500 to-fuchsia-500",
+  "from-blue-500 to-cyan-400",
+  "from-orange-500 to-rose-500",
+  "from-emerald-500 to-teal-400",
+  "from-pink-500 to-rose-400",
+  "from-amber-500 to-orange-400",
+  "from-indigo-500 to-blue-400",
+  "from-teal-500 to-emerald-400",
+];
+
+function getAvatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 /** Wire to real trending tags / analytics when there is usage. */
 const trendingTopics: { tag: string; count: string }[] = [];
 
 export function RightSidebar() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const [suggested, setSuggested] = useState<SuggestedUser[]>([]);
+  const [loadingSuggested, setLoadingSuggested] = useState(false);
+  const [followBusy, setFollowBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setSuggested([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingSuggested(true);
+    api
+      .get<{ items: SuggestedUser[] }>("/profiles/suggested")
+      .then((r) => {
+        if (!cancelled) setSuggested(Array.isArray(r.items) ? r.items : []);
+      })
+      .catch(() => {
+        if (!cancelled) setSuggested([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSuggested(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const followOne = async (target: SuggestedUser) => {
+    if (followBusy) return;
+    setFollowBusy(target.id);
+    try {
+      await api.post(`/profiles/${target.id}/follow`);
+      setSuggested((prev) => prev.filter((u) => u.id !== target.id));
+      void refreshUser();
+    } catch {
+      /* ignore */
+    }
+    setFollowBusy(null);
+  };
 
   return (
     <div className="sticky top-[calc(var(--app-nav-h)+12px)] space-y-5">
@@ -24,25 +83,43 @@ export function RightSidebar() {
       {/* Suggested Profiles */}
       <div className="app-panel p-4">
         <h3 className="mb-3 text-[15px] font-bold text-app-fg">Suggested Profiles</h3>
-        {suggestedUsers.length === 0 ? (
+        {!user ? (
+          <p className="text-[12px] leading-relaxed text-app-fg-muted">Sign in to see builders you can follow.</p>
+        ) : loadingSuggested ? (
+          <p className="text-[12px] text-app-fg-muted">Loading…</p>
+        ) : suggested.length === 0 ? (
           <p className="text-[12px] leading-relaxed text-app-fg-muted">
-            No suggestions yet. Once more builders join, we&apos;ll surface people you may
-            want to follow here.
+            No suggestions right now — you may already follow everyone, or other members are still pending
+            approval.
           </p>
         ) : (
           <div className="space-y-3">
-            {suggestedUsers.map((u) => (
-              <div key={u.username} className="flex items-center gap-3">
-                <div
-                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${u.color} text-[11px] font-bold text-white`}
+            {suggested.map((u) => (
+              <div key={u.id} className="flex items-center gap-3">
+                <Link href={`/u/${u.username}`} className="flex min-w-0 flex-1 items-center gap-3">
+                  <div
+                    className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarColor(u.displayName || u.username)} text-[11px] font-bold text-white overflow-hidden`}
+                  >
+                    {u.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={u.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      (u.displayName || u.username).charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-semibold text-app-fg">{u.displayName}</p>
+                    <p className="truncate text-[12px] text-app-fg-muted">@{u.username}</p>
+                  </div>
+                </Link>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 flex-shrink-0 rounded-full px-3 text-[11px]"
+                  disabled={followBusy === u.id}
+                  onClick={() => void followOne(u)}
                 >
-                  {u.name.charAt(0)}
-                </div>
-                <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-semibold text-app-fg">{u.name}</p>
-                <p className="truncate text-[12px] text-app-fg-muted">@{u.username}</p>
-                </div>
-                <Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-[11px]">
                   Follow
                 </Button>
               </div>
@@ -56,8 +133,7 @@ export function RightSidebar() {
         <h3 className="mb-3 text-[15px] font-bold text-app-fg">Trending Topics</h3>
         {trendingTopics.length === 0 ? (
           <p className="text-[12px] leading-relaxed text-app-fg-muted">
-            No trending topics yet. When the community is posting, popular tags will show
-            up here.
+            No trending topics yet. When the community is posting, popular tags will show up here.
           </p>
         ) : (
           <div className="space-y-2.5">

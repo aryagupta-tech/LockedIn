@@ -47,6 +47,7 @@ export async function POST(request: Request) {
     const ghAvatar = await resolveGithubAvatarForUser(
       supaUser,
       ghLoginRaw || meta.preferred_username || meta.user_name,
+      ghNumericId,
     );
 
     if (!user) {

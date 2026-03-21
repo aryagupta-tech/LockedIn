@@ -10,7 +10,7 @@ import type { Session } from "@supabase/supabase-js";
 
 function GitHubCallbackInner() {
   const router = useRouter();
-  const { setAuth } = useAuth();
+  const { setAuth, refreshUser } = useAuth();
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -24,6 +24,7 @@ function GitHubCallbackInner() {
         );
         setAuth(result);
         document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
+        await refreshUser();
         router.push("/feed");
       } catch (err) {
         setError((err as Error).message || "GitHub backend sync failed");
@@ -40,7 +41,7 @@ function GitHubCallbackInner() {
         syncBackend(data.session);
       });
     }, 1000);
-  }, [router, setAuth]);
+  }, [router, refreshUser, setAuth]);
 
   if (error) {
     return (

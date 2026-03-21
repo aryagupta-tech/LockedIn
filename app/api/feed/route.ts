@@ -36,12 +36,10 @@ export async function GET(request: Request) {
     if (communityIds.length > 0) {
       filters.push(`communityId.in.(${communityIds.join(",")})`);
     }
+    // Public timeline: posts not scoped to a private community are visible to all approved members.
+    filters.push("communityId.is.null");
 
-    if (filters.length > 0) {
-      query = query.or(filters.join(","));
-    } else {
-      query = query.eq("authorId", userId);
-    }
+    query = query.or(filters.join(","));
 
     if (cursor) {
       query = query.lt("createdAt", cursor);
@@ -62,7 +60,7 @@ export async function GET(request: Request) {
 
     const postIds = items.map((p) => p.id);
     const [authorsRes, communitiesRes, likesRes, bookmarksRes] = await Promise.all([
-      supabase.from("users").select("id, username, displayName, avatarUrl").in("id", postAuthorIds),
+      supabase.from("users").select("id, username, displayName, avatarUrl, status").in("id", postAuthorIds),
       postCommunityIds.length > 0
         ? supabase.from("communities").select("id, name, slug").in("id", postCommunityIds)
         : Promise.resolve({ data: [] }),
@@ -77,13 +75,36 @@ export async function GET(request: Request) {
       ? new Set<string>()
       : new Set((bookmarksRes.data || []).map((b) => b.postId));
 
-    const enriched = items.map((p) => ({
-      ...p,
-      author: authorMap.get(p.authorId) || null,
-      community: p.communityId ? communityMap.get(p.communityId) || null : null,
-      hasLiked: likedSet.has(p.id),
-      hasBookmarked: bookmarkedSet.has(p.id),
-    }));
+    const inFollowScope = new Set(authorIds);
+    const inCommunityScope = new Set(communityIds);
+
+    const enriched = items
+      .filter((p) => {
+        const author = authorMap.get(p.authorId);
+        if (!author) return false;
+        if (p.authorId === userId) return true;
+        const st = (author as { status?: string }).status;
+        if (st === "APPROVED") return true;
+        if (inFollowScope.has(p.authorId)) return true;
+        if (p.communityId && inCommunityScope.has(p.communityId)) return true;
+        return false;
+      })
+      .map((p) => {
+        const raw = authorMap.get(p.authorId);
+        const author = raw
+          ? (() => {
+              const { status: _st, ...pub } = raw as typeof raw & { status?: string };
+              return pub;
+            })()
+          : null;
+        return {
+          ...p,
+          author,
+          community: p.communityId ? communityMap.get(p.communityId) || null : null,
+          hasLiked: likedSet.has(p.id),
+          hasBookmarked: bookmarkedSet.has(p.id),
+        };
+      });
 
     return NextResponse.json({ items: enriched, nextCursor, hasMore });
   } catch (e) {

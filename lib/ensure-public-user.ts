@@ -80,7 +80,11 @@ export async function ensurePublicUserRow(
     updatedAt: ts,
   };
 
-  const resolvedAvatar = await resolveGithubAvatarForUser(authUser, ghLoginFromOAuth);
+  const resolvedAvatar = await resolveGithubAvatarForUser(
+    authUser,
+    ghLoginFromOAuth,
+    ghNumericId,
+  );
   if (resolvedAvatar) {
     newRow.avatarUrl = resolvedAvatar;
   }

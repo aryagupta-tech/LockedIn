@@ -8,6 +8,7 @@ import {
   sessionHasGithubIdentity,
 } from "@/lib/github-auth-metadata";
 import { resolveGithubAvatarForUser } from "@/lib/github-avatar-resolve";
+import { ensureGithubUsernameSyncedFromAuth } from "@/lib/github-profile-sync";
 import { validateUsername } from "@/lib/validation";
 import {
   canChangeUsernameNow,
@@ -17,7 +18,7 @@ import {
 } from "@/lib/username-holds";
 
 const USER_SELECT =
-  "id, email, username, displayName, avatarUrl, role, status, createdAt, usernameChangedAt";
+  "id, email, username, displayName, avatarUrl, role, status, createdAt, usernameChangedAt, githubUsername, githubId";
 
 const PATCH_SELECT =
   "id, email, username, displayName, avatarUrl, bio, githubUsername, codeforcesHandle, leetcodeHandle, role, status, createdAt, usernameChangedAt";
@@ -55,13 +56,39 @@ export async function GET(request: Request) {
     if (!user) return errorResponse("User not found", "NOT_FOUND", 404);
 
     let profile = user;
+
+    if (sessionHasGithubIdentity(auth.user)) {
+      await ensureGithubUsernameSyncedFromAuth(supabase, auth.user, {
+        id: profile.id,
+        githubUsername: profile.githubUsername ?? null,
+        githubId: profile.githubId ?? null,
+      });
+      const { data: refreshed } = await supabase
+        .from("users")
+        .select(USER_SELECT)
+        .eq("id", auth.user.id)
+        .single();
+      if (refreshed) profile = refreshed;
+    }
+
     if (
       (!profile.avatarUrl || !String(profile.avatarUrl).trim()) &&
       sessionHasGithubIdentity(auth.user)
     ) {
+      const loginHint =
+        extractGitHubLoginFromSupabaseUser(auth.user) ||
+        (profile.githubUsername?.trim() || null);
+      const rawId = profile.githubId;
+      const ghNum =
+        rawId != null && rawId !== ""
+          ? typeof rawId === "number"
+            ? rawId
+            : parseInt(String(rawId), 10)
+          : NaN;
       const url = await resolveGithubAvatarForUser(
         auth.user,
-        extractGitHubLoginFromSupabaseUser(auth.user),
+        loginHint,
+        Number.isFinite(ghNum) && ghNum > 0 ? ghNum : null,
       );
       if (url) {
         await supabase
