@@ -11,10 +11,7 @@ export type LockedInMarkProps = {
   decorative?: boolean;
 };
 
-/**
- * LockedIn wordmark icon — gradient frame + lock silhouette. Uses theme-friendly
- * contrast for the lock body in light vs dark mode.
- */
+/** LockedIn wordmark icon — gradient frame + lock silhouette (dark UI). */
 export function LockedInMark({ size = 28, className, decorative = true }: LockedInMarkProps) {
   const uid = useId().replace(/:/g, "");
   const gradId = `li-grad-${uid}`;
@@ -26,7 +23,7 @@ export function LockedInMark({ size = 28, className, decorative = true }: Locked
       height={size}
       viewBox="0 0 32 32"
       className={cn(
-        "shrink-0 overflow-visible [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.12))] dark:[filter:drop-shadow(0_2px_10px_rgba(0,0,0,0.55))]",
+        "shrink-0 overflow-visible [filter:drop-shadow(0_2px_10px_rgba(0,0,0,0.55))]",
         className,
       )}
       role={decorative ? undefined : "img"}
@@ -52,11 +49,11 @@ export function LockedInMark({ size = 28, className, decorative = true }: Locked
       {/* Lock silhouette (shackle + body), centered */}
       <path
         fill="#faf7f2"
-        className="dark:fill-[#0c0805]"
+        className="fill-[#0c0805]"
         d="M12 17V14A4 4 0 1 0 20 14V17H21.5A1.5 1.5 0 0 1 23 18.5V27A1.5 1.5 0 0 1 21.5 28.5H10.5A1.5 1.5 0 0 1 9 27V18.5A1.5 1.5 0 0 1 10.5 17H12z"
       />
-      <circle cx="16" cy="22.5" r="1.35" className="fill-[#c45a10]/40 dark:fill-[#e9a85a]/45" />
-      <rect x="15" y="23.5" width="2" height="3.5" rx="0.45" className="fill-[#c45a10]/40 dark:fill-[#e9a85a]/45" />
+      <circle cx="16" cy="22.5" r="1.35" className="fill-[#e9a85a]/45" />
+      <rect x="15" y="23.5" width="2" height="3.5" rx="0.45" className="fill-[#e9a85a]/45" />
     </svg>
   );
 }

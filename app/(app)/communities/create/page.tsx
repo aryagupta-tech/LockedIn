@@ -99,7 +99,7 @@ export default function CreateCommunityPage() {
           </label>
 
           {error && (
-            <div className="rounded-app-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-[14px] text-red-600 dark:text-red-400">
+            <div className="rounded-app-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-[14px] text-red-400">
               {error}
             </div>
           )}

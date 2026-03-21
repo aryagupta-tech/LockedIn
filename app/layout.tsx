@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
-import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeCookieSync, THEME_PREF_COOKIE } from "@/components/theme-cookie-sync";
 import "./globals.css";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-inter" });
@@ -13,37 +10,17 @@ const cormorant = Cormorant_Garamond({
   weight: ["500", "600", "700"],
 });
 
-/** Persisted theme preference — localStorage key (next-themes) + cookie for SSR (Vercel full loads) */
-const THEME_STORAGE_KEY = THEME_PREF_COOKIE;
-
+/** Force dark UI only; clear legacy theme preference from storage */
 const themeHeadScript = `
 (function(){
   try {
-    var k = "${THEME_STORAGE_KEY}";
-    function getCookie(name) {
-      var p = ("; " + document.cookie).split("; " + name + "=");
-      if (p.length !== 2) return null;
-      return decodeURIComponent(p.pop().split(";").shift() || "");
-    }
-    var t = localStorage.getItem(k) || localStorage.getItem("theme") || getCookie(k);
-    if (t && !localStorage.getItem(k)) {
-      try { localStorage.setItem(k, t); } catch (e) {}
-    }
-    if (!t) t = "system";
     var d = document.documentElement;
-    var resolved = t === "system"
-      ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-      : t;
-    if (resolved === "dark") {
-      d.classList.add("dark");
-      d.style.colorScheme = "dark";
-    } else {
-      d.classList.remove("dark");
-      d.style.colorScheme = "light";
-    }
+    d.classList.add("dark");
+    d.style.colorScheme = "dark";
+    document.cookie = "lockedin-theme=; Path=/; Max-Age=0; SameSite=Lax";
     try {
-      var sec = location.protocol === "https:" ? "; Secure" : "";
-      document.cookie = k + "=" + encodeURIComponent(t) + "; Path=/; Max-Age=31536000; SameSite=Lax" + sec;
+      localStorage.removeItem("lockedin-theme");
+      localStorage.removeItem("theme");
     } catch (e) {}
   } catch (e) {}
 })();`;
@@ -78,39 +55,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const jar = await cookies();
-  const pref = jar.get(THEME_PREF_COOKIE)?.value;
-  const htmlDark = pref === "dark";
-  const htmlLight = pref === "light";
-
   return (
-    <html
-      lang="en"
-      className={htmlDark ? "dark" : undefined}
-      style={htmlDark ? { colorScheme: "dark" } : htmlLight ? { colorScheme: "light" } : undefined}
-      suppressHydrationWarning
-    >
+    <html lang="en" className="dark" style={{ colorScheme: "dark" }} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeHeadScript }} />
       </head>
       <body
         className={`${manrope.variable} ${cormorant.variable} min-h-screen bg-app-bg font-[var(--font-inter)] text-app-fg antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          storageKey={THEME_STORAGE_KEY}
-        >
-          <ThemeCookieSync />
-          <AuthProvider>{children}</AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

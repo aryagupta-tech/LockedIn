@@ -137,7 +137,7 @@ export function CreatePost({ communityId, onCreated }: { communityId?: string; o
           )}
 
           {error && (
-            <p className="mt-2 text-[13px] text-red-700 dark:text-red-400">{error}</p>
+            <p className="mt-2 text-[13px] text-red-400">{error}</p>
           )}
 
           {(focused || content || imageFile) && (

@@ -113,7 +113,7 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
               <div className="absolute right-0 top-8 z-10 rounded-xl border border-app-border bg-app-surface py-1 shadow-lg">
                 <button
                   onClick={handleDelete}
-                  className="flex items-center gap-2 px-4 py-2 text-[13px] text-red-500 hover:bg-red-500/10 dark:text-red-400"
+                  className="flex items-center gap-2 px-4 py-2 text-[13px] text-red-400 hover:bg-red-500/10"
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Delete
                 </button>
@@ -172,7 +172,7 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
               )}
             />
             {likes > 0 && (
-              <span className={cn("text-[13px]", liked ? "text-red-500 dark:text-red-400" : "text-app-fg-muted")}>
+              <span className={cn("text-[13px]", liked ? "text-red-400" : "text-app-fg-muted")}>
                 {formatCount(likes)}
               </span>
             )}
@@ -180,13 +180,13 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
 
           <Link
             href={`/post/${post.id}`}
-            className="group flex items-center gap-1.5 text-app-fg-muted transition-colors hover:text-blue-500 dark:hover:text-blue-400"
+            className="group flex items-center gap-1.5 text-app-fg-muted transition-colors hover:text-blue-400"
           >
-            <MessageCircle className="h-[20px] w-[20px] transition-colors group-hover:text-blue-500 dark:group-hover:text-blue-400" />
+            <MessageCircle className="h-[20px] w-[20px] transition-colors group-hover:text-blue-400" />
             {post.commentsCount > 0 && <span className="text-[13px]">{formatCount(post.commentsCount)}</span>}
           </Link>
 
-          <button className="text-app-fg-muted transition-colors hover:text-emerald-500 dark:hover:text-emerald-400">
+          <button className="text-app-fg-muted transition-colors hover:text-emerald-400">
             <Share2 className="h-[18px] w-[18px]" />
           </button>
         </div>

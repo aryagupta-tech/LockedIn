@@ -41,7 +41,7 @@ function NotifItem({ n, onRead }: { n: Notification; onRead: (id: string) => voi
     <div
       className={cn(
         "flex items-start gap-3 rounded-app-md px-4 py-3.5 transition-colors",
-        !n.read ? "bg-app-surface-2/80 dark:bg-app-surface-2/50" : "bg-transparent hover:bg-app-surface-2/40",
+        !n.read ? "bg-app-surface-2/50" : "bg-transparent hover:bg-app-surface-2/40",
       )}
       onClick={() => !n.read && onRead(n.id)}
     >

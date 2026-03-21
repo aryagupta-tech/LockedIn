@@ -21,7 +21,6 @@
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.511.0",
     "next": "15.5.12",
-    "next-themes": "^0.4.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.56.1",
@@ -29,11 +28,11 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "cross-env": "^7.0.3",
     "@types/node": "^22.13.10",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^7.0.3",
     "eslint": "^9.21.0",
     "eslint-config-next": "15.5.12",
     "postcss": "^8.5.3",

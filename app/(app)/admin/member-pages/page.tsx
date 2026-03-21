@@ -61,7 +61,7 @@ export default function AdminMemberPagesPage() {
       href: "/settings",
       label: "Settings",
       icon: Settings,
-      note: "Profile, theme, account.",
+      note: "Profile, account.",
     },
     {
       href: profileHref,

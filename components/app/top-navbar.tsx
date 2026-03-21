@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Compass, Bell, Shield, FileCheck, Menu, X, Search, Settings, LogOut, User } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications";
@@ -92,7 +91,7 @@ export function TopNavbar() {
                 >
                   {item.label}
                   {!!badge && badge > 0 && (
-                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--app-accent)] px-1 text-[10px] font-bold text-white shadow-[0_2px_8px_var(--app-accent-soft)] dark:text-[#1a0c06]">
+                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--app-accent)] px-1 text-[10px] font-bold text-[#1a0c06] shadow-[0_2px_8px_var(--app-accent-soft)]">
                       {badge > 99 ? "99+" : badge}
                     </span>
                   )}
@@ -106,7 +105,6 @@ export function TopNavbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <ThemeToggle />
             {/* Search */}
             <div className="relative hidden lg:block">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-fg-muted" />
@@ -174,7 +172,7 @@ export function TopNavbar() {
                           setDropdownOpen(false);
                           handleLogout();
                         }}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-[14px] text-app-fg-secondary transition-colors hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400"
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-[14px] text-app-fg-secondary transition-colors hover:bg-red-500/10 hover:text-red-400"
                       >
                         <LogOut className="h-4 w-4 text-app-fg-muted" />
                         Sign Out
@@ -217,7 +215,7 @@ export function TopNavbar() {
                   <item.icon className="h-5 w-5" />
                   {item.label}
                   {!!badge && badge > 0 && (
-                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--app-accent)] px-1 text-[10px] font-bold text-white shadow-[0_2px_8px_var(--app-accent-soft)] dark:text-[#1a0c06]">
+                    <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--app-accent)] px-1 text-[10px] font-bold text-[#1a0c06] shadow-[0_2px_8px_var(--app-accent-soft)]">
                       {badge > 99 ? "99+" : badge}
                     </span>
                   )}
@@ -246,7 +244,7 @@ export function TopNavbar() {
             )}
             <button
               onClick={handleLogout}
-              className="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-app-fg-muted hover:text-red-500 dark:hover:text-red-400"
+              className="mt-2 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-app-fg-muted hover:text-red-400"
             >
               <LogOut className="h-5 w-5" />
               Sign Out

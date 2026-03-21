@@ -160,12 +160,12 @@ export default function SettingsPage() {
             </div>
 
             {error && (
-              <div className="rounded-app-md border border-red-500/25 bg-red-500/10 px-4 py-3 text-[14px] text-red-500 dark:text-red-400">
+              <div className="rounded-app-md border border-red-500/25 bg-red-500/10 px-4 py-3 text-[14px] text-red-400">
                 {error}
               </div>
             )}
             {success && (
-              <div className="rounded-app-md border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-[14px] text-emerald-700 dark:text-emerald-400">
+              <div className="rounded-app-md border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-[14px] text-emerald-400">
                 Profile updated successfully!
               </div>
             )}
@@ -197,8 +197,8 @@ export default function SettingsPage() {
 
       {/* Danger Zone */}
       <div className="mb-10 mt-8">
-        <h2 className="mb-3 text-[15px] font-semibold text-red-500 dark:text-red-400">Danger Zone</h2>
-        <div className="rounded-app border border-red-500/20 bg-red-500/[0.04] p-6 dark:bg-red-500/[0.06]">
+        <h2 className="mb-3 text-[15px] font-semibold text-red-400">Danger Zone</h2>
+        <div className="rounded-app border border-red-500/20 bg-red-500/[0.06] p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[14px] font-medium text-app-fg">Sign out of your account</p>
@@ -208,7 +208,7 @@ export default function SettingsPage() {
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="w-full shrink-0 rounded-full border-red-500/35 text-red-600 hover:bg-red-500/10 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 sm:w-auto"
+              className="w-full shrink-0 rounded-full border-red-500/35 text-red-400 hover:bg-red-500/10 hover:text-red-300 sm:w-auto"
             >
               <LogOut className="mr-2 h-3.5 w-3.5" />
               Sign Out

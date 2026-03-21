@@ -8,7 +8,7 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-[color-mix(in_srgb,var(--app-accent)_28%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-soft)_18%,transparent)] text-[var(--app-accent)] dark:text-[#f0d9a8]",
+          "border-[color-mix(in_srgb,var(--app-accent)_28%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-soft)_18%,transparent)] text-[#f0d9a8]",
         muted: "border-app-border bg-app-surface-2 text-app-fg-muted"
       }
     },

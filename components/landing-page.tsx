@@ -17,7 +17,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { LockedInMark } from "@/components/brand/locked-in-mark";
 
 const gateSteps = [
@@ -101,10 +100,10 @@ export function LandingPage() {
 
           <motion.div variants={fadeUp}>
             <Card className="animated-border card-glow mt-10 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-[color-mix(in_srgb,var(--app-accent)_10%,transparent)] via-transparent to-blue-500/[0.06] dark:from-neon/[0.04] dark:to-blue-500/[0.03]" />
+              <div className="absolute inset-0 bg-gradient-to-br from-neon/[0.04] via-transparent to-blue-500/[0.03]" />
               <CardHeader className="relative">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--app-accent-soft)_25%,transparent)] text-[var(--app-accent)] dark:bg-neon/10 dark:text-neon">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neon/10 text-neon">
                     <ClipboardCheck className="h-5 w-5" />
                   </div>
                   <div>
@@ -241,9 +240,7 @@ function Navbar() {
       <div className="section-shell flex h-16 items-center justify-between gap-3">
         <a
           href="#"
-          className={`group flex items-center gap-2.5 font-[var(--font-geist)] text-lg font-bold transition-colors ${
-            scrolled ? "text-app-fg" : "text-slate-900 dark:text-app-fg"
-          }`}
+          className="group flex items-center gap-2.5 font-[var(--font-geist)] text-lg font-bold transition-colors text-app-fg"
         >
           <LockedInMark size={24} className="transition-transform duration-200 group-hover:scale-105" />{" "}
           <span className="text-brand-logo">LockedIn</span>
@@ -251,31 +248,20 @@ function Navbar() {
         <div className="flex items-center gap-2 sm:gap-3">
           <a
             href="/login"
-            className={`text-sm font-medium md:hidden ${
-              scrolled ? "text-app-fg-muted hover:text-app-fg" : "text-slate-600 hover:text-slate-900 dark:text-app-fg-muted dark:hover:text-app-fg"
-            }`}
+            className="text-sm font-medium text-app-fg-muted hover:text-app-fg md:hidden"
           >
             Sign in
           </a>
-          <ThemeToggle />
           <nav className="hidden items-center gap-6 text-sm sm:gap-8 md:flex">
             <a
               href="#how"
-              className={`transition-colors ${
-                scrolled
-                  ? "text-app-fg-muted hover:text-app-fg"
-                  : "text-slate-600 hover:text-slate-900 dark:text-app-fg-muted dark:hover:text-app-fg"
-              }`}
+              className="transition-colors text-app-fg-muted hover:text-app-fg"
             >
               How it Works
             </a>
             <a
               href="/login"
-              className={`transition-colors ${
-                scrolled
-                  ? "text-app-fg-muted hover:text-app-fg"
-                  : "text-slate-600 hover:text-slate-900 dark:text-app-fg-muted dark:hover:text-app-fg"
-              }`}
+              className="transition-colors text-app-fg-muted hover:text-app-fg"
             >
               Sign In
             </a>
@@ -304,7 +290,7 @@ function Hero() {
           className="mx-auto max-w-4xl text-center"
         >
           <Badge variant="muted" className="mb-8">
-            <Sparkles className="mr-1.5 h-3 w-3 text-[var(--app-accent)] dark:text-neon" /> Curated network for high-signal builders
+            <Sparkles className="mr-1.5 h-3 w-3 text-neon" /> Curated network for high-signal builders
           </Badge>
           <h1 className="font-[var(--font-geist)] text-5xl font-semibold leading-[1.1] tracking-tight text-app-fg sm:text-6xl lg:text-7xl">
             Build with people who
@@ -345,7 +331,7 @@ function FloatingOrbs() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
       <div className="absolute left-[10%] top-[20%] h-72 w-72 animate-float rounded-full bg-blue-500/[0.06] blur-[100px]" />
-      <div className="absolute right-[15%] top-[30%] h-56 w-56 animate-float-slow rounded-full bg-[color-mix(in_srgb,var(--app-accent)_12%,transparent)] blur-[80px] dark:bg-neon/[0.05]" />
+      <div className="absolute right-[15%] top-[30%] h-56 w-56 animate-float-slow rounded-full bg-neon/[0.05] blur-[80px]" />
       <div className="absolute bottom-[20%] left-[40%] h-64 w-64 animate-float rounded-full bg-purple-500/[0.04] blur-[90px]" />
     </div>
   );
@@ -365,7 +351,7 @@ function FeatureCard({
   return (
     <Card className="card-glow group h-full">
       <CardHeader>
-        <div className="mb-4 w-fit rounded-xl bg-gradient-to-br from-[color-mix(in_srgb,var(--app-accent)_22%,transparent)] to-[color-mix(in_srgb,var(--app-accent-soft)_10%,transparent)] p-2.5 text-[var(--app-accent)] transition-transform duration-300 group-hover:scale-110 dark:from-neon/20 dark:to-neon/5 dark:text-neon">
+        <div className="mb-4 w-fit rounded-xl bg-gradient-to-br from-neon/20 to-neon/5 p-2.5 text-neon transition-transform duration-300 group-hover:scale-110">
           <Icon className="h-5 w-5" />
         </div>
         <CardTitle className="text-lg text-app-fg">{title}</CardTitle>

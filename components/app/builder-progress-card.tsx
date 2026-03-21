@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 
 const tierRing: Record<string, string> = {
   bronze:
-    "border-amber-800/40 bg-gradient-to-br from-amber-100/95 to-amber-200/60 text-amber-950 dark:border-amber-700/50 dark:from-amber-900/35 dark:to-amber-950/30 dark:text-amber-200/90",
+    "border-amber-700/50 bg-gradient-to-br from-amber-900/35 to-amber-950/30 text-amber-200/90",
   silver:
-    "border-zinc-500/35 bg-gradient-to-br from-zinc-200/90 to-zinc-300/50 text-zinc-900 dark:border-zinc-400/40 dark:from-zinc-500/20 dark:to-zinc-700/15 dark:text-zinc-200",
+    "border-zinc-400/40 bg-gradient-to-br from-zinc-500/20 to-zinc-700/15 text-zinc-200",
   gold:
     "border-[var(--app-accent-soft)] bg-gradient-to-br from-[color-mix(in_srgb,var(--app-accent)_18%,transparent)] to-[color-mix(in_srgb,var(--app-accent-soft)_12%,transparent)] text-app-fg",
 };
@@ -21,7 +21,7 @@ function XpBar({ progress }: { progress: BuilderProgress }) {
   return (
     <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-app-surface-2 shadow-app-inset">
       <div
-        className="h-full rounded-full bg-gradient-to-r from-[#f08838] to-[var(--app-accent)] transition-all duration-500 dark:from-[#e9a85a] dark:to-[#f0d9a8]"
+        className="h-full rounded-full bg-gradient-to-r from-[#e9a85a] to-[#f0d9a8] transition-all duration-500"
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -42,7 +42,7 @@ export function BuilderProgressCard({
       <div className={cn("app-panel p-4", className)}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--app-accent-soft)_35%,transparent)] text-sm font-bold text-[var(--app-accent)] dark:text-[#f0d9a8]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--app-accent-soft)_35%,transparent)] text-sm font-bold text-[#f0d9a8]">
               {progress.level}
             </span>
             <div>

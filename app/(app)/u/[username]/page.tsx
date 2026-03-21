@@ -144,7 +144,7 @@ export default function ProfilePage() {
               <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <h1 className="text-xl font-bold text-app-fg">{profile.displayName}</h1>
                 {profile.builder && (
-                  <span className="rounded-full bg-[color-mix(in_srgb,var(--app-accent-soft)_40%,transparent)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--app-accent)] dark:text-[#f0d9a8]">
+                  <span className="rounded-full bg-[color-mix(in_srgb,var(--app-accent-soft)_40%,transparent)] px-2.5 py-0.5 text-[11px] font-bold text-[#f0d9a8]">
                     Lvl {profile.builder.level}
                   </span>
                 )}

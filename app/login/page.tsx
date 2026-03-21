@@ -60,7 +60,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-app-bg px-4 py-10 sm:py-14">
-      <div className="hero-aurora pointer-events-none fixed inset-0 opacity-60 dark:opacity-100" />
+      <div className="hero-aurora pointer-events-none fixed inset-0 opacity-100" />
       <div className="relative z-10 mx-auto w-full max-w-[420px]">
         <header className="mb-8 text-center sm:mb-10">
           <Link
