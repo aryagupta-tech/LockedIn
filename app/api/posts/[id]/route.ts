@@ -17,14 +17,28 @@ export async function GET(
       .from("users").select("id, username, displayName, avatarUrl").eq("id", post.authorId).single();
 
     let hasLiked: boolean | undefined;
+    let hasBookmarked: boolean | undefined;
     const viewer = await getAuthUser(request);
     if (viewer) {
-      const { data: like } = await supabase
-        .from("post_likes").select("id").eq("postId", id).eq("userId", viewer.id).maybeSingle();
-      hasLiked = !!like;
+      const [likeRes, markRes] = await Promise.all([
+        supabase
+          .from("post_likes")
+          .select("id")
+          .eq("postId", id)
+          .eq("userId", viewer.id)
+          .maybeSingle(),
+        supabase
+          .from("post_bookmarks")
+          .select("id")
+          .eq("postId", id)
+          .eq("userId", viewer.id)
+          .maybeSingle(),
+      ]);
+      hasLiked = !!likeRes.data;
+      hasBookmarked = markRes.error ? false : !!markRes.data;
     }
 
-    return NextResponse.json({ ...post, author, hasLiked });
+    return NextResponse.json({ ...post, author, hasLiked, hasBookmarked });
   } catch (e) {
     console.error("Get post error:", e);
     return errorResponse("Internal server error", "INTERNAL_ERROR", 500);

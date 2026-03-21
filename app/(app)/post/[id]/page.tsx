@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Heart, Loader2, MessageCircle, Trash2, Share2 } from "lucide-react";
+import { ArrowLeft, Heart, Loader2, MessageCircle, Trash2, Share2, Bookmark } from "lucide-react";
 import Link from "next/link";
 import { api, type Post, type Comment } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -21,6 +21,7 @@ export default function PostDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(0);
+  const [saved, setSaved] = useState(false);
 
   const postId = params.id as string;
 
@@ -33,6 +34,7 @@ export default function PostDetailPage() {
       setPost(p);
       setLiked(p.hasLiked ?? false);
       setLikes(p.likesCount);
+      setSaved(p.hasBookmarked ?? false);
       setComments(Array.isArray(c) ? c : []);
     } catch { /* ignore */ }
     setLoading(false);
@@ -40,19 +42,34 @@ export default function PostDetailPage() {
 
   useEffect(() => { fetchPost(); }, [fetchPost]);
 
-  const toggleLike = async () => {
-    if (!post) return;
-    try {
-      if (liked) {
-        await api.del(`/posts/${post.id}/like`);
-        setLiked(false);
-        setLikes((c) => c - 1);
-      } else {
-        await api.post(`/posts/${post.id}/like`);
-        setLiked(true);
-        setLikes((c) => c + 1);
+  const toggleLike = () => {
+    if (!post || !user) return;
+    const next = !liked;
+    setLiked(next);
+    setLikes((c) => Math.max(0, c + (next ? 1 : -1)));
+    void (async () => {
+      try {
+        if (next) await api.post(`/posts/${post.id}/like`);
+        else await api.del(`/posts/${post.id}/like`);
+      } catch {
+        setLiked(!next);
+        setLikes((c) => Math.max(0, c + (next ? -1 : 1)));
       }
-    } catch { /* ignore */ }
+    })();
+  };
+
+  const toggleBookmark = () => {
+    if (!post || !user) return;
+    const next = !saved;
+    setSaved(next);
+    void (async () => {
+      try {
+        if (next) await api.post(`/posts/${post.id}/bookmark`);
+        else await api.del(`/posts/${post.id}/bookmark`);
+      } catch {
+        setSaved(!next);
+      }
+    })();
   };
 
   const handleComment = async () => {
@@ -173,6 +190,7 @@ export default function PostDetailPage() {
         {/* Action buttons */}
         <div className="mt-1 flex items-center justify-around border-t border-white/[0.06] pt-1">
           <button
+            type="button"
             onClick={toggleLike}
             className={cn(
               "flex items-center gap-2 rounded-full px-4 py-2 text-[14px] transition-colors",
@@ -181,17 +199,34 @@ export default function PostDetailPage() {
           >
             <Heart className={cn("h-5 w-5", liked && "fill-red-400")} />
           </button>
-          <button className="flex items-center gap-2 rounded-full px-4 py-2 text-[14px] text-zinc-500 hover:text-blue-400">
+          <a
+            href="#comment"
+            className="flex items-center gap-2 rounded-full px-4 py-2 text-[14px] text-zinc-500 transition-colors hover:text-blue-400"
+          >
             <MessageCircle className="h-5 w-5" />
-          </button>
-          <button className="flex items-center gap-2 rounded-full px-4 py-2 text-[14px] text-zinc-500 hover:text-green-400">
+          </a>
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-full px-4 py-2 text-[14px] text-zinc-500 transition-colors hover:text-green-400"
+          >
             <Share2 className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={toggleBookmark}
+            title={saved ? "Remove bookmark" : "Save post"}
+            className={cn(
+              "flex items-center gap-2 rounded-full px-4 py-2 text-[14px] transition-colors",
+              saved ? "text-neon" : "text-zinc-500 hover:text-neon",
+            )}
+          >
+            <Bookmark className={cn("h-5 w-5", saved && "fill-neon")} />
           </button>
         </div>
       </div>
 
       {/* Comment input */}
-      <div className="border-b border-white/[0.06] px-1 py-3">
+      <div id="comment" className="scroll-mt-24 border-b border-white/[0.06] px-1 py-3">
         {replyTo && (
           <div className="mb-2 flex items-center gap-2 text-xs text-zinc-500">
             <span>Replying to comment</span>

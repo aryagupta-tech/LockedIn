@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Bell, Shield, FileCheck, Menu, X, Search, Settings, LogOut, User } from "lucide-react";
+import { Home, Compass, Bell, Shield, FileCheck, Menu, X, Search, Settings, LogOut, User, Bookmark } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications";
@@ -155,6 +155,16 @@ export function TopNavbar() {
                         <User className="h-4 w-4 text-app-fg-muted" />
                         My Profile
                       </Link>
+                      {!isPending && (
+                        <Link
+                          href="/bookmarks"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-app-fg-secondary transition-colors hover:bg-app-surface-2 hover:text-app-fg"
+                        >
+                          <Bookmark className="h-4 w-4 text-app-fg-muted" />
+                          Saved posts
+                        </Link>
+                      )}
                       <Link
                         href="/settings"
                         onClick={() => setDropdownOpen(false)}
@@ -232,6 +242,16 @@ export function TopNavbar() {
                   <User className="h-5 w-5" />
                   My Profile
                 </Link>
+                {!isPending && (
+                  <Link
+                    href="/bookmarks"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium text-app-fg-muted hover:text-app-fg"
+                  >
+                    <Bookmark className="h-5 w-5" />
+                    Saved posts
+                  </Link>
+                )}
                 <Link
                   href="/settings"
                   onClick={() => setMobileOpen(false)}

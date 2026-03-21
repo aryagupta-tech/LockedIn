@@ -60,23 +60,29 @@ export async function GET(request: Request) {
     const postAuthorIds = [...new Set(items.map((p) => p.authorId))];
     const postCommunityIds = [...new Set(items.map((p) => p.communityId).filter(Boolean))] as string[];
 
-    const [authorsRes, communitiesRes, likesRes] = await Promise.all([
+    const postIds = items.map((p) => p.id);
+    const [authorsRes, communitiesRes, likesRes, bookmarksRes] = await Promise.all([
       supabase.from("users").select("id, username, displayName, avatarUrl").in("id", postAuthorIds),
       postCommunityIds.length > 0
         ? supabase.from("communities").select("id, name, slug").in("id", postCommunityIds)
         : Promise.resolve({ data: [] }),
-      supabase.from("post_likes").select("postId").eq("userId", userId).in("postId", items.map((p) => p.id)),
+      supabase.from("post_likes").select("postId").eq("userId", userId).in("postId", postIds),
+      supabase.from("post_bookmarks").select("postId").eq("userId", userId).in("postId", postIds),
     ]);
 
     const authorMap = new Map((authorsRes.data || []).map((a) => [a.id, a]));
     const communityMap = new Map((communitiesRes.data || []).map((c) => [c.id, c]));
     const likedSet = new Set((likesRes.data || []).map((l) => l.postId));
+    const bookmarkedSet = bookmarksRes.error
+      ? new Set<string>()
+      : new Set((bookmarksRes.data || []).map((b) => b.postId));
 
     const enriched = items.map((p) => ({
       ...p,
       author: authorMap.get(p.authorId) || null,
       community: p.communityId ? communityMap.get(p.communityId) || null : null,
       hasLiked: likedSet.has(p.id),
+      hasBookmarked: bookmarkedSet.has(p.id),
     }));
 
     return NextResponse.json({ items: enriched, nextCursor, hasMore });

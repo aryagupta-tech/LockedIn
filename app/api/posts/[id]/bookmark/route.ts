@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireApproved, requireAuth, errorResponse, generateId, now } from "@/lib/api-utils";
-import { bumpPostLikes } from "@/lib/post-counter-bump";
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-async function syncLikeCount(supabase: SupabaseClient, postId: string) {
-  const { count } = await supabase
-    .from("post_likes").select("*", { count: "exact", head: true }).eq("postId", postId);
-  await supabase.from("posts").update({ likesCount: count || 0, updatedAt: now() }).eq("id", postId);
-}
 
 export async function POST(
   request: Request,
@@ -24,19 +16,23 @@ export async function POST(
     const { data: post } = await supabase.from("posts").select("id").eq("id", postId).single();
     if (!post) return errorResponse("Post not found", "NOT_FOUND", 404);
 
-    const { error } = await supabase.from("post_likes").insert({
-      id: generateId(), postId, userId: auth.user.id, createdAt: now(),
+    const { error } = await supabase.from("post_bookmarks").insert({
+      id: generateId(),
+      postId,
+      userId: auth.user.id,
+      createdAt: now(),
     });
 
     if (error) {
-      if (error.code === "23505") return errorResponse("Already liked", "CONFLICT", 409);
+      if (error.code === "23505") {
+        return NextResponse.json({ saved: true, already: true });
+      }
       throw error;
     }
 
-    await bumpPostLikes(supabase, postId, 1, () => syncLikeCount(supabase, postId));
-    return NextResponse.json({ liked: true });
+    return NextResponse.json({ saved: true });
   } catch (e) {
-    console.error("Like error:", e);
+    console.error("Bookmark error:", e);
     return errorResponse("Internal server error", "INTERNAL_ERROR", 500);
   }
 }
@@ -53,15 +49,15 @@ export async function DELETE(
     const supabase = createServiceClient();
 
     const { count } = await supabase
-      .from("post_likes").delete({ count: "exact" })
-      .eq("postId", postId).eq("userId", auth.user.id);
+      .from("post_bookmarks")
+      .delete({ count: "exact" })
+      .eq("postId", postId)
+      .eq("userId", auth.user.id);
 
-    if (!count) return NextResponse.json({ unliked: false });
-
-    await bumpPostLikes(supabase, postId, -1, () => syncLikeCount(supabase, postId));
-    return NextResponse.json({ unliked: true });
+    if (!count) return NextResponse.json({ removed: false });
+    return NextResponse.json({ removed: true });
   } catch (e) {
-    console.error("Unlike error:", e);
+    console.error("Unbookmark error:", e);
     return errorResponse("Internal server error", "INTERNAL_ERROR", 500);
   }
 }

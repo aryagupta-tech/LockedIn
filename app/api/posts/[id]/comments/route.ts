@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireApproved, errorResponse, generateId, now } from "@/lib/api-utils";
+import { bumpPostComments } from "@/lib/post-counter-bump";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+async function syncCommentCount(supabase: SupabaseClient, postId: string) {
+  const { count } = await supabase
+    .from("comments").select("*", { count: "exact", head: true }).eq("postId", postId);
+  await supabase.from("posts").update({ commentsCount: count || 0, updatedAt: now() }).eq("id", postId);
+}
 
 export async function GET(
   request: Request,
@@ -86,9 +94,7 @@ export async function POST(
       content, parentId: parentId || null, createdAt: ts, updatedAt: ts,
     });
 
-    const { count } = await supabase
-      .from("comments").select("*", { count: "exact", head: true }).eq("postId", postId);
-    await supabase.from("posts").update({ commentsCount: count || 0, updatedAt: now() }).eq("id", postId);
+    await bumpPostComments(supabase, postId, 1, () => syncCommentCount(supabase, postId));
 
     const { data: author } = await supabase
       .from("users").select("id, username, displayName, avatarUrl").eq("id", auth.user.id).single();

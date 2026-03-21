@@ -136,6 +136,7 @@ export interface Post {
     avatarUrl: string | null;
   };
   hasLiked?: boolean;
+  hasBookmarked?: boolean;
   createdAt: string;
 }
 

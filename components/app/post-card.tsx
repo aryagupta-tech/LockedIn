@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, type MouseEvent } from "react";
 import Link from "next/link";
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Trash2 } from "lucide-react";
 import { api, type Post } from "@/lib/api";
@@ -41,32 +41,62 @@ function formatCount(n: number): string {
   return String(n);
 }
 
-export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: string) => void }) {
+export function PostCard({
+  post,
+  onDelete,
+  onBookmarkRemoved,
+}: {
+  post: Post;
+  onDelete?: (id: string) => void;
+  /** When set, unsaving removes this post from the current list (e.g. bookmarks view). */
+  onBookmarkRemoved?: (id: string) => void;
+}) {
   const { user } = useAuth();
   const [liked, setLiked] = useState(post.hasLiked ?? false);
   const [likes, setLikes] = useState(post.likesCount);
-  const [toggling, setToggling] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(post.hasBookmarked ?? false);
   const [showMenu, setShowMenu] = useState(false);
 
   const isAuthor = user?.id === post.author.id;
   const avatarColor = getAvatarColor(post.author.username);
 
-  const toggleLike = async () => {
-    if (toggling) return;
-    setToggling(true);
-    try {
-      if (liked) {
-        await api.del(`/posts/${post.id}/like`);
-        setLiked(false);
-        setLikes((c) => c - 1);
-      } else {
-        await api.post(`/posts/${post.id}/like`);
-        setLiked(true);
-        setLikes((c) => c + 1);
+  useEffect(() => {
+    setLiked(post.hasLiked ?? false);
+    setLikes(post.likesCount);
+    setSaved(post.hasBookmarked ?? false);
+  }, [post.id]);
+
+  const toggleLike = () => {
+    if (!user) return;
+    const next = !liked;
+    setLiked(next);
+    setLikes((c) => Math.max(0, c + (next ? 1 : -1)));
+    void (async () => {
+      try {
+        if (next) await api.post(`/posts/${post.id}/like`);
+        else await api.del(`/posts/${post.id}/like`);
+      } catch {
+        setLiked(!next);
+        setLikes((c) => Math.max(0, c + (next ? -1 : 1)));
       }
-    } catch { /* ignore */ }
-    setToggling(false);
+    })();
+  };
+
+  const toggleBookmark = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) return;
+    const next = !saved;
+    setSaved(next);
+    void (async () => {
+      try {
+        if (next) await api.post(`/posts/${post.id}/bookmark`);
+        else await api.del(`/posts/${post.id}/bookmark`);
+        if (!next) onBookmarkRemoved?.(post.id);
+      } catch {
+        setSaved(!next);
+      }
+    })();
   };
 
   const handleDelete = async () => {
@@ -124,7 +154,7 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
       </div>
 
       {/* Content */}
-      <Link href={`/post/${post.id}`} className="block px-4 pb-3">
+      <Link href={`/post/${post.id}`} prefetch className="block px-4 pb-3">
         {post.content ? (
           <p className="whitespace-pre-wrap text-[15px] leading-[1.65] text-app-fg-secondary">
             {post.content}
@@ -179,7 +209,8 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
           </button>
 
           <Link
-            href={`/post/${post.id}`}
+            href={`/post/${post.id}#comment`}
+            prefetch
             className="group flex items-center gap-1.5 text-app-fg-muted transition-colors hover:text-blue-400"
           >
             <MessageCircle className="h-[20px] w-[20px] transition-colors group-hover:text-blue-400" />
@@ -191,7 +222,12 @@ export function PostCard({ post, onDelete }: { post: Post; onDelete?: (id: strin
           </button>
         </div>
 
-        <button onClick={() => setSaved(!saved)} className="transition-colors">
+        <button
+          type="button"
+          onClick={toggleBookmark}
+          title={saved ? "Remove bookmark" : "Save post"}
+          className="transition-colors"
+        >
           <Bookmark
             className={cn(
               "h-[20px] w-[20px]",
