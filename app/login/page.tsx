@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { LockedInMark } from "@/components/brand/locked-in-mark";
 
 export default function LoginPage() {
@@ -48,19 +47,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-app-bg px-4">
-      <ThemeToggle className="fixed right-4 top-4 z-20 sm:right-6 sm:top-6" />
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-app-bg px-4 py-10 sm:py-14">
       <div className="hero-aurora pointer-events-none fixed inset-0 opacity-60 dark:opacity-100" />
-      <div className="relative z-10 w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2.5 font-[var(--font-geist)] text-2xl font-semibold text-app-fg">
+      <div className="relative z-10 mx-auto w-full max-w-[420px]">
+        <header className="mb-8 text-center sm:mb-10">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center gap-2.5 font-[var(--font-geist)] text-2xl font-semibold text-app-fg"
+          >
             <LockedInMark size={28} />
             LockedIn
           </Link>
           <p className="mt-3 text-sm text-app-fg-muted">Sign in to your account</p>
-        </div>
+        </header>
 
-        <div className="app-panel p-8 backdrop-blur-xl">
+        <div className="app-panel p-6 backdrop-blur-xl sm:p-8">
           <Button variant="outline" className="mb-6 w-full" onClick={handleGitHub}>
             <Github className="mr-2 h-4 w-4" />
             Continue with GitHub
@@ -110,7 +111,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-sm text-app-fg-muted">
+        <p className="mt-8 text-center text-sm text-app-fg-muted sm:mt-10">
           Don&apos;t have an account?{" "}
           <Link href="/register" className="text-neon hover:text-neon-light transition-colors">
             Register <ArrowRight className="ml-0.5 inline h-3 w-3" />
