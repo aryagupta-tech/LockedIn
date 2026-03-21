@@ -8,12 +8,29 @@ export async function GET(request: Request) {
     if ("error" in auth) return auth.error;
 
     const url = new URL(request.url);
-    const status = url.searchParams.get("status");
+    const statusRaw = url.searchParams.get("status") ?? "NEEDS_REVIEW";
     const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 20));
     const offset = (page - 1) * limit;
 
     const supabase = createServiceClient();
+
+    /** Submitted apps are scored to UNDER_REVIEW or APPROVED — the admin "PENDING" tab was usually empty. */
+    function resolveStatuses(param: string): string[] | null {
+      if (param === "ALL") return null;
+      if (param === "NEEDS_REVIEW" || param === "OPEN") {
+        return ["UNDER_REVIEW", "PROCESSING", "PENDING"];
+      }
+      if (param.includes(",")) {
+        return param
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+      return [param];
+    }
+
+    const statuses = resolveStatuses(statusRaw);
 
     let query = supabase
       .from("applications")
@@ -21,8 +38,12 @@ export async function GET(request: Request) {
       .order("createdAt", { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (status) {
-      query = query.eq("status", status);
+    if (statuses !== null) {
+      if (statuses.length === 1) {
+        query = query.eq("status", statuses[0]);
+      } else {
+        query = query.in("status", statuses);
+      }
     }
 
     const { data: items, count: total } = await query;
