@@ -16,62 +16,55 @@ function githubRestHeaders(): Record<string, string> {
   return h;
 }
 
-/**
- * Fetches GitHub contributions in a **rolling ~365-day window** (GraphQL with
- * explicit `from`/`to` when `GITHUB_TOKEN` is set — matches the profile grid,
- * not “calendar year only”). Without a token, scrapes the public contributions
- * page (data-count cells + tooltip fallback).
- */
-export async function fetchGitHubSignal(
-  username: string,
-  accessToken?: string,
-): Promise<SignalInput> {
-  const login = username.trim();
-  if (!login) throw new Error("GitHub username is empty");
-
-  try {
-    const token = accessToken || process.env.GITHUB_TOKEN;
-    if (token) {
-      try {
-        return await fetchViaGraphQL(login, token);
-      } catch (graphqlErr) {
-        console.warn(
-          `[GitHub] GraphQL failed for ${login}, falling back to public contributions page:`,
-          graphqlErr,
-        );
-      }
+/** Matches the big number on profile / contributions pages (public view). */
+function parseContributionsHeadline(html: string): number | null {
+  const patterns = [
+    /(\d[\d,]*)\s+contributions?\s+in\s+the\s+last\s+year/i,
+    /in\s+the\s+last\s+year[^0-9]{0,60}(\d[\d,]*)/i,
+  ];
+  for (const re of patterns) {
+    const m = re.exec(html);
+    if (m?.[1]) {
+      const n = parseInt(m[1].replace(/,/g, ""), 10);
+      if (Number.isFinite(n) && n >= 0 && n < 1_000_000) return n;
     }
-
-    await assertGitHubUserExists(login);
-    const total = await fetchContributionsFromProfilePage(login);
-    return { key: "github_contributions", rawValue: total };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown GitHub fetch error";
-    throw new Error(`GitHub provider failed for '${login}': ${message}`);
   }
+
+  const lower = html.toLowerCase();
+  const needle = "contributions in the last year";
+  const idx = lower.indexOf(needle);
+  if (idx !== -1) {
+    const window = html.slice(Math.max(0, idx - 200), idx);
+    const nums = [...window.matchAll(/(\d[\d,]*)/g)];
+    const last = nums.at(-1);
+    if (last?.[1]) {
+      const n = parseInt(last[1].replace(/,/g, ""), 10);
+      if (Number.isFinite(n) && n >= 0 && n < 1_000_000) return n;
+    }
+  }
+
+  return null;
 }
 
-async function assertGitHubUserExists(login: string): Promise<void> {
-  const res = await fetch(
-    `https://api.github.com/users/${encodeURIComponent(login)}`,
-    { headers: githubRestHeaders() },
-  );
-  if (res.status === 404) throw new Error("GitHub user not found");
-  if (!res.ok) {
-    throw new Error(`GitHub REST API returned ${res.status}`);
+function sumContributionCalendarDays(calendar: {
+  weeks?: Array<{ contributionDays?: Array<{ contributionCount?: number }> }>;
+}): number {
+  let sum = 0;
+  for (const week of calendar.weeks ?? []) {
+    for (const day of week.contributionDays ?? []) {
+      const c = day.contributionCount;
+      if (typeof c === "number" && Number.isFinite(c)) sum += c;
+    }
   }
+  return sum;
 }
 
 /**
- * Rolling window aligned with the green grid on GitHub profiles (~last 53 weeks).
- * Without `from`/`to`, GitHub defaults to the *calendar year* only — wildly wrong
- * outside Jan–Dec and does not match what users see on their profile.
+ * Rolling window (≤365d). GitHub allows at most ~1 year per contributionsCollection.
  */
 function githubRollingContributionsWindow(): { from: string; to: string } {
   const to = new Date();
   const from = new Date(to.getTime());
-  // Rolling year (≤365d) — GitHub allows at most ~1 year per contributionsCollection.
   from.setTime(from.getTime() - 364 * 24 * 60 * 60 * 1000);
   return { from: from.toISOString(), to: to.toISOString() };
 }
@@ -83,7 +76,14 @@ async function fetchViaGraphQL(login: string, token: string): Promise<SignalInpu
     query($login: String!, $from: DateTime!, $to: DateTime!) {
       user(login: $login) {
         contributionsCollection(from: $from, to: $to) {
-          contributionCalendar { totalContributions }
+          contributionCalendar {
+            totalContributions
+            weeks {
+              contributionDays {
+                contributionCount
+              }
+            }
+          }
         }
       }
     }
@@ -106,8 +106,13 @@ async function fetchViaGraphQL(login: string, token: string): Promise<SignalInpu
   const json = (await res.json()) as {
     data?: {
       user?: {
-        contributionsCollection: {
-          contributionCalendar: { totalContributions: number };
+        contributionsCollection?: {
+          contributionCalendar?: {
+            totalContributions?: number;
+            weeks?: Array<{
+              contributionDays?: Array<{ contributionCount?: number }>;
+            }>;
+          };
         };
       };
     };
@@ -118,49 +123,65 @@ async function fetchViaGraphQL(login: string, token: string): Promise<SignalInpu
     throw new Error(json.errors[0].message);
   }
 
-  const total =
-    json.data?.user?.contributionsCollection.contributionCalendar
-      .totalContributions ?? 0;
+  const cal = json.data?.user?.contributionsCollection?.contributionCalendar;
+  if (!cal) {
+    throw new Error("GitHub GraphQL returned no contribution calendar");
+  }
 
-  return { key: "github_contributions", rawValue: total };
+  const fromDays = sumContributionCalendarDays(cal);
+  const reported = cal.totalContributions ?? 0;
+  // Prefer the detailed calendar sum; totalContributions sometimes disagrees with the profile.
+  const rawValue = Math.max(fromDays, reported);
+
+  return { key: "github_contributions", rawValue };
 }
 
 /**
- * Parses https://github.com/users/{login}/contributions HTML.
- * Prefer `data-count` on calendar cells (matches the profile grid); fall back to tooltips.
+ * Public HTML: headline on profile is the same number users see; calendar DOM
+ * often uses data-level (0–4) not per-day data-count — do not rely on data-count sums.
  */
-async function fetchContributionsFromProfilePage(login: string): Promise<number> {
-  const url = `https://github.com/users/${encodeURIComponent(login)}/contributions`;
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": USER_AGENT,
-      Accept: "text/html,application/xhtml+xml",
-    },
-  });
+async function fetchContributionsFromPublicHtml(login: string): Promise<number> {
+  const urls = [
+    `https://github.com/${encodeURIComponent(login)}`,
+    `https://github.com/users/${encodeURIComponent(login)}/contributions`,
+  ];
 
+  for (const url of urls) {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        Accept: "text/html,application/xhtml+xml",
+      },
+    });
+
+    if (res.status === 404) throw new Error("GitHub user not found");
+    if (!res.ok) continue;
+
+    const html = await res.text();
+    const headline = parseContributionsHeadline(html);
+    if (headline !== null) return headline;
+  }
+
+  throw new Error(
+    "Could not read contributions from GitHub HTML (layout may have changed). Set GITHUB_TOKEN for GraphQL.",
+  );
+}
+
+async function assertGitHubUserExists(login: string): Promise<void> {
+  const res = await fetch(
+    `https://api.github.com/users/${encodeURIComponent(login)}`,
+    { headers: githubRestHeaders() },
+  );
   if (res.status === 404) throw new Error("GitHub user not found");
   if (!res.ok) {
-    throw new Error(`GitHub contributions page returned ${res.status}`);
+    throw new Error(`GitHub REST API returned ${res.status}`);
   }
+}
 
-  const html = await res.text();
-
-  const calIdx = html.indexOf("ContributionCalendar");
-  let sumCells = 0;
-  let cellMatches = 0;
-  if (calIdx !== -1) {
-    const slice = html.slice(calIdx, calIdx + 600_000);
-    for (const m of slice.matchAll(/\bdata-count="(\d+)"/g)) {
-      cellMatches++;
-      sumCells += parseInt(m[1], 10);
-    }
-  }
-
-  // Expect roughly one year of days on the contributions-only page
-  if (cellMatches >= 200) {
-    return sumCells;
-  }
-
+/**
+ * Tooltip / legacy cell parse — last resort when headline missing.
+ */
+function sumFromContributionTooltips(html: string): number | null {
   const tooltipRe =
     />(?:No contributions|(\d+) contributions?) on[^<]+<\/tool-tip>/gi;
   let sum = 0;
@@ -169,12 +190,73 @@ async function fetchContributionsFromProfilePage(login: string): Promise<number>
     matched = true;
     if (m[1]) sum += parseInt(m[1], 10);
   }
+  return matched ? sum : null;
+}
 
-  if (!matched) {
-    throw new Error(
-      "Could not parse GitHub contribution calendar (GitHub HTML format may have changed). Set GITHUB_TOKEN for reliable counts.",
-    );
+/**
+ * Fetches GitHub contributions for the rolling year shown on the profile.
+ * - With `GITHUB_TOKEN`: GraphQL calendar, summing each day's `contributionCount`.
+ * - Without token: parses the public "**N** contributions in the last year" headline
+ *   (calendar `data-count` scraping is unreliable since GitHub moved to `data-level`).
+ */
+export async function fetchGitHubSignal(
+  username: string,
+  accessToken?: string,
+): Promise<SignalInput> {
+  const login = username.trim();
+  if (!login) throw new Error("GitHub username is empty");
+
+  try {
+    const token = accessToken || process.env.GITHUB_TOKEN;
+    if (token) {
+      try {
+        const gql = await fetchViaGraphQL(login, token);
+        try {
+          const htmlTotal = await fetchContributionsFromPublicHtml(login);
+          return {
+            key: "github_contributions",
+            rawValue: Math.max(gql.rawValue, htmlTotal),
+          };
+        } catch {
+          return gql;
+        }
+      } catch (graphqlErr) {
+        console.warn(
+          `[GitHub] GraphQL failed for ${login}, falling back to public HTML:`,
+          graphqlErr,
+        );
+      }
+    }
+
+    await assertGitHubUserExists(login);
+    try {
+      const fromHeadline = await fetchContributionsFromPublicHtml(login);
+      return { key: "github_contributions", rawValue: fromHeadline };
+    } catch {
+      const res = await fetch(
+        `https://github.com/users/${encodeURIComponent(login)}/contributions`,
+        {
+          headers: {
+            "User-Agent": USER_AGENT,
+            Accept: "text/html,application/xhtml+xml",
+          },
+        },
+      );
+      if (!res.ok) {
+        throw new Error(`GitHub contributions page returned ${res.status}`);
+      }
+      const html = await res.text();
+      const fromTips = sumFromContributionTooltips(html);
+      if (fromTips !== null) {
+        return { key: "github_contributions", rawValue: fromTips };
+      }
+      throw new Error(
+        "Could not parse GitHub contributions. Set GITHUB_TOKEN or try again later.",
+      );
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown GitHub fetch error";
+    throw new Error(`GitHub provider failed for '${login}': ${message}`);
   }
-
-  return sum;
 }
