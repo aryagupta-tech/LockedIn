@@ -38,6 +38,7 @@ async function getLeetCodeCsrfToken(): Promise<string | undefined> {
   if (fromEnv) return fromEnv;
 
   const res = await fetch(`${LEETCODE_ORIGIN}/`, {
+    cache: "no-store",
     headers: {
       "User-Agent": USER_AGENT,
       Accept: "text/html,application/xhtml+xml",
@@ -125,6 +126,7 @@ async function fetchLeetCodeAcStatsGraphQL(
   }
 
   const res = await fetch(`${LEETCODE_ORIGIN}/graphql`, {
+    cache: "no-store",
     method: "POST",
     headers: requestHeaders,
     body: JSON.stringify({ query, variables: { username: handle } }),
@@ -205,6 +207,7 @@ export async function fetchLeetCodeGithubUrl(
   const query = `query ($u: String!) { matchedUser(username: $u) { githubUrl } }`;
 
   const res = await fetch(`${LEETCODE_ORIGIN}/graphql`, {
+    cache: "no-store",
     method: "POST",
     headers: {
       "Content-Type": "application/json",

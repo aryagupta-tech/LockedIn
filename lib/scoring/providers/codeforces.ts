@@ -31,6 +31,7 @@ export async function fetchCodeforcesProfile(
   const url = `https://codeforces.com/api/user.info?handles=${encodeURIComponent(trimmed)}`;
 
   const res = await fetch(url, {
+    cache: "no-store",
     headers: { "User-Agent": USER_AGENT },
   });
   if (!res.ok) {

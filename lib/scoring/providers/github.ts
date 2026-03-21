@@ -46,6 +46,24 @@ function parseContributionsHeadline(html: string): number | null {
   return null;
 }
 
+/** GitHub often embeds stats in JSON inside the HTML (React / partial payloads). */
+function parseContributionsFromEmbeddedJson(html: string): number | null {
+  const patterns = [
+    /"contributionsLastYear"\s*:\s*(\d+)/i,
+    /"totalContributions"\s*:\s*(\d+)/i,
+    /contributionsLastYear['"]\s*:\s*(\d+)/i,
+    /"contributionCount"\s*:\s*\{\s*"total"\s*:\s*(\d+)/i,
+  ];
+  for (const re of patterns) {
+    const m = html.match(re);
+    if (m?.[1]) {
+      const n = parseInt(m[1].replace(/,/g, ""), 10);
+      if (Number.isFinite(n) && n >= 0 && n < 1_000_000) return n;
+    }
+  }
+  return null;
+}
+
 function sumContributionCalendarDays(calendar: {
   weeks?: Array<{ contributionDays?: Array<{ contributionCount?: number }> }>;
 }): number {
@@ -90,6 +108,7 @@ async function fetchViaGraphQL(login: string, token: string): Promise<SignalInpu
   `;
 
   const res = await fetch("https://api.github.com/graphql", {
+    cache: "no-store",
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -137,31 +156,45 @@ async function fetchViaGraphQL(login: string, token: string): Promise<SignalInpu
 }
 
 /**
- * Public HTML: headline on profile is the same number users see; calendar DOM
- * often uses data-level (0–4) not per-day data-count — do not rely on data-count sums.
+ * Public HTML — headline + embedded JSON (matches profile “N in the last year”).
+ * Uses cache: no-store so CDNs don’t serve stale counts.
  */
-async function fetchContributionsFromPublicHtml(login: string): Promise<number> {
+async function tryPublicContributionsFromHtml(login: string): Promise<number | null> {
   const urls = [
     `https://github.com/${encodeURIComponent(login)}`,
     `https://github.com/users/${encodeURIComponent(login)}/contributions`,
   ];
 
   for (const url of urls) {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": USER_AGENT,
-        Accept: "text/html,application/xhtml+xml",
-      },
-    });
+    try {
+      const res = await fetch(url, {
+        cache: "no-store",
+        headers: {
+          "User-Agent": USER_AGENT,
+          Accept: "text/html,application/xhtml+xml",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      });
 
-    if (res.status === 404) throw new Error("GitHub user not found");
-    if (!res.ok) continue;
+      if (res.status === 404) return null;
+      if (!res.ok) continue;
 
-    const html = await res.text();
-    const headline = parseContributionsHeadline(html);
-    if (headline !== null) return headline;
+      const html = await res.text();
+      const n =
+        parseContributionsHeadline(html) ??
+        parseContributionsFromEmbeddedJson(html);
+      if (n !== null) return n;
+    } catch {
+      continue;
+    }
   }
 
+  return null;
+}
+
+async function fetchContributionsFromPublicHtml(login: string): Promise<number> {
+  const n = await tryPublicContributionsFromHtml(login);
+  if (n !== null) return n;
   throw new Error(
     "Could not read contributions from GitHub HTML (layout may have changed). Set GITHUB_TOKEN for GraphQL.",
   );
@@ -170,7 +203,7 @@ async function fetchContributionsFromPublicHtml(login: string): Promise<number> 
 async function assertGitHubUserExists(login: string): Promise<void> {
   const res = await fetch(
     `https://api.github.com/users/${encodeURIComponent(login)}`,
-    { headers: githubRestHeaders() },
+    { cache: "no-store", headers: githubRestHeaders() },
   );
   if (res.status === 404) throw new Error("GitHub user not found");
   if (!res.ok) {
@@ -207,25 +240,33 @@ export async function fetchGitHubSignal(
   if (!login) throw new Error("GitHub username is empty");
 
   try {
+    const headlineTotal = await tryPublicContributionsFromHtml(login);
+
     const token = accessToken || process.env.GITHUB_TOKEN;
+    let gqlTotal: number | null = null;
     if (token) {
       try {
         const gql = await fetchViaGraphQL(login, token);
-        try {
-          const htmlTotal = await fetchContributionsFromPublicHtml(login);
-          return {
-            key: "github_contributions",
-            rawValue: Math.max(gql.rawValue, htmlTotal),
-          };
-        } catch {
-          return gql;
-        }
+        gqlTotal = gql.rawValue;
       } catch (graphqlErr) {
         console.warn(
-          `[GitHub] GraphQL failed for ${login}, falling back to public HTML:`,
+          `[GitHub] GraphQL failed for ${login}, using public HTML only:`,
           graphqlErr,
         );
       }
+    }
+
+    if (headlineTotal !== null && gqlTotal !== null) {
+      return {
+        key: "github_contributions",
+        rawValue: Math.max(headlineTotal, gqlTotal),
+      };
+    }
+    if (headlineTotal !== null) {
+      return { key: "github_contributions", rawValue: headlineTotal };
+    }
+    if (gqlTotal !== null) {
+      return { key: "github_contributions", rawValue: gqlTotal };
     }
 
     await assertGitHubUserExists(login);
@@ -236,9 +277,11 @@ export async function fetchGitHubSignal(
       const res = await fetch(
         `https://github.com/users/${encodeURIComponent(login)}/contributions`,
         {
+          cache: "no-store",
           headers: {
             "User-Agent": USER_AGENT,
             Accept: "text/html,application/xhtml+xml",
+            "Accept-Language": "en-US,en;q=0.9",
           },
         },
       );

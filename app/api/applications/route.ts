@@ -1,42 +1,10 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireAuth, errorResponse, generateId, now } from "@/lib/api-utils";
-import { checkAnyPlatformPasses, PLATFORM_THRESHOLDS } from "@/lib/scoring/engine";
-import type { SignalInput } from "@/lib/scoring/engine";
-import { fetchApplicationSignals } from "@/lib/scoring/fetch-application-signals";
 import { validatePlatformOwnership } from "@/lib/verification/platform-ownership";
-import {
-  normalizeCodeforcesHandle,
-  normalizeLeetCodeHandle,
-} from "@/lib/platform-handles";
+import { scoreAndPersistApplication } from "@/lib/application-scoring";
+import { parseApplicationProofBody } from "@/lib/application-body";
 import { ensurePublicUserRow } from "@/lib/ensure-public-user";
-
-function buildScoreBreakdown(
-  signals: SignalInput[],
-  fetchErrors: Record<string, string>,
-): Record<string, unknown> {
-  const breakdown: Record<string, unknown> = {};
-
-  for (const signal of signals) {
-    const threshold = PLATFORM_THRESHOLDS[signal.key];
-    if (threshold !== undefined) {
-      breakdown[signal.key] = {
-        rawValue: signal.rawValue,
-        threshold,
-        passed: signal.rawValue >= threshold,
-      };
-    }
-  }
-
-  if (Object.keys(fetchErrors).length > 0) {
-    breakdown._fetchErrors = fetchErrors;
-  }
-
-  breakdown._eligibilityRule =
-    "Auto-approve if ANY: GitHub ≥250 contributions OR LeetCode ≥100 solved OR Codeforces rating ≥900 — each proof must be tied to your GitHub sign-in (see ownership rules).";
-
-  return breakdown;
-}
 
 export async function POST(request: Request) {
   try {
@@ -45,39 +13,9 @@ export async function POST(request: Request) {
     const userId = auth.user.id;
 
     const body = await request.json();
-    const { githubUrl, codeforcesHandle, leetcodeHandle } = body;
-
-    const gh = typeof githubUrl === "string" ? githubUrl.trim() : "";
-    const cfRaw =
-      typeof codeforcesHandle === "string" ? codeforcesHandle.trim() : "";
-    const lcRaw =
-      typeof leetcodeHandle === "string" ? leetcodeHandle.trim() : "";
-    const cf = cfRaw ? normalizeCodeforcesHandle(cfRaw) : "";
-    const lc = lcRaw ? normalizeLeetCodeHandle(lcRaw) : "";
-
-    if (lcRaw && !lc) {
-      return errorResponse(
-        "That doesn’t look like a valid LeetCode profile link or username. Open your LeetCode profile and copy the link (…/u/yourname) or type your handle only.",
-        "VALIDATION_ERROR",
-        400,
-      );
-    }
-
-    if (cfRaw && !cf) {
-      return errorResponse(
-        "That doesn’t look like a valid Codeforces profile link or handle. Use your profile URL (…/profile/yourhandle) or your handle only.",
-        "VALIDATION_ERROR",
-        400,
-      );
-    }
-
-    if (!gh && !cf && !lc) {
-      return errorResponse(
-        "Provide at least one of GitHub profile URL, Codeforces handle, or LeetCode username.",
-        "VALIDATION_ERROR",
-        400,
-      );
-    }
+    const parsed = parseApplicationProofBody(body);
+    if (!parsed.ok) return parsed.response;
+    const { gh, cfRaw, lcRaw, cf, lc } = parsed.data;
 
     const supabase = createServiceClient();
 
@@ -168,79 +106,17 @@ export async function POST(request: Request) {
       );
     }
 
-    try {
-      const { signals, errors: fetchErrors } = await fetchApplicationSignals({
-        githubUrl: application.githubUrl as string | null,
-        codeforcesHandle: application.codeforcesHandle as string | null,
-        leetcodeHandle: application.leetcodeHandle as string | null,
-      });
-
-      const passed = checkAnyPlatformPasses(signals);
-      const decision = passed ? "APPROVED" : "UNDER_REVIEW";
-      const breakdown = buildScoreBreakdown(signals, fetchErrors);
-
-      const { error: appUpdateError } = await supabase
-        .from("applications")
-        .update({
-          score: passed ? 100 : 0,
-          scoreBreakdown: breakdown as object,
-          passingThreshold: 1,
-          status: decision,
-          updatedAt: now(),
-        })
-        .eq("id", appId);
-
-      if (appUpdateError) {
-        console.error("applications update failed:", appUpdateError);
-        throw appUpdateError;
-      }
-
-      if (decision === "APPROVED") {
-        const { error: userUpdateError } = await supabase
-          .from("users")
-          .update({ status: "APPROVED", updatedAt: now() })
-          .eq("id", userId);
-        if (userUpdateError) {
-          console.error("users.status APPROVED update failed:", userUpdateError);
-          throw userUpdateError;
-        }
-      }
-
-      application.score = passed ? 100 : 0;
-      application.scoreBreakdown = breakdown;
-      application.passingThreshold = 1;
-      application.status = decision;
-    } catch (scoringErr) {
-      console.error("Scoring failed, setting to UNDER_REVIEW:", scoringErr);
-      try {
-        const { signals, errors: fe } = await fetchApplicationSignals({
-          githubUrl: application.githubUrl as string | null,
-          codeforcesHandle: application.codeforcesHandle as string | null,
-          leetcodeHandle: application.leetcodeHandle as string | null,
-        });
-        const breakdown = buildScoreBreakdown(signals, fe);
-        await supabase
-          .from("applications")
-          .update({
-            status: "UNDER_REVIEW",
-            score: 0,
-            scoreBreakdown: breakdown as object,
-            passingThreshold: 1,
-            updatedAt: now(),
-          })
-          .eq("id", appId);
-        application.score = 0;
-        application.scoreBreakdown = breakdown;
-        application.status = "UNDER_REVIEW";
-      } catch (fallbackErr) {
-        console.error("Fallback scoring breakdown save failed:", fallbackErr);
-        await supabase
-          .from("applications")
-          .update({ status: "UNDER_REVIEW", updatedAt: now() })
-          .eq("id", appId);
-        application.status = "UNDER_REVIEW";
-      }
-    }
+    const scored = await scoreAndPersistApplication(supabase, {
+      appId,
+      userId,
+      githubUrl: application.githubUrl as string | null,
+      codeforcesHandle: application.codeforcesHandle as string | null,
+      leetcodeHandle: application.leetcodeHandle as string | null,
+    });
+    application.score = scored.score;
+    application.scoreBreakdown = scored.scoreBreakdown;
+    application.passingThreshold = 1;
+    application.status = scored.status;
 
     return NextResponse.json(application, { status: 201 });
   } catch (e) {

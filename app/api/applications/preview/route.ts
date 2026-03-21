@@ -4,10 +4,7 @@ import { requireAuth, errorResponse } from "@/lib/api-utils";
 import { checkAnyPlatformPasses } from "@/lib/scoring/engine";
 import { fetchApplicationSignals } from "@/lib/scoring/fetch-application-signals";
 import { validatePlatformOwnership } from "@/lib/verification/platform-ownership";
-import {
-  normalizeCodeforcesHandle,
-  normalizeLeetCodeHandle,
-} from "@/lib/platform-handles";
+import { parseApplicationProofBody } from "@/lib/application-body";
 import { ensurePublicUserRow } from "@/lib/ensure-public-user";
 import { buildPlatformProgressFromSignals } from "@/lib/eligibility-progress";
 
@@ -21,37 +18,9 @@ export async function POST(request: Request) {
     if ("error" in auth) return auth.error;
 
     const body = await request.json();
-    const { githubUrl, codeforcesHandle, leetcodeHandle } = body;
-
-    const gh = typeof githubUrl === "string" ? githubUrl.trim() : "";
-    const cfRaw =
-      typeof codeforcesHandle === "string" ? codeforcesHandle.trim() : "";
-    const lcRaw =
-      typeof leetcodeHandle === "string" ? leetcodeHandle.trim() : "";
-    const cf = cfRaw ? normalizeCodeforcesHandle(cfRaw) : "";
-    const lc = lcRaw ? normalizeLeetCodeHandle(lcRaw) : "";
-
-    if (lcRaw && !lc) {
-      return errorResponse(
-        "That doesn’t look like a valid LeetCode profile link or username.",
-        "VALIDATION_ERROR",
-        400,
-      );
-    }
-    if (cfRaw && !cf) {
-      return errorResponse(
-        "That doesn’t look like a valid Codeforces profile link or handle.",
-        "VALIDATION_ERROR",
-        400,
-      );
-    }
-    if (!gh && !cf && !lc) {
-      return errorResponse(
-        "Add at least one of GitHub profile URL, Codeforces handle, or LeetCode username.",
-        "VALIDATION_ERROR",
-        400,
-      );
-    }
+    const parsed = parseApplicationProofBody(body);
+    if (!parsed.ok) return parsed.response;
+    const { gh, cfRaw, lcRaw, cf, lc } = parsed.data;
 
     const supabase = createServiceClient();
     await ensurePublicUserRow(supabase, auth.user);

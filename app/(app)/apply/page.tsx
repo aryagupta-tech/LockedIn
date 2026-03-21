@@ -20,6 +20,15 @@ type EligibilityPreview = {
   rule: string;
 };
 
+/** Same as server — statuses where user may replace proof & re-score. */
+const CAN_UPDATE_APPLICATION = new Set([
+  "PENDING",
+  "PROCESSING",
+  "UNDER_REVIEW",
+  "REJECTED",
+  "APPEALED",
+]);
+
 function hintForApplyError(err: unknown): string | null {
   if (!(err instanceof ApiError)) return null;
   switch (err.code) {
@@ -62,6 +71,14 @@ export default function ApplyPage() {
     useState<EligibilityPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
+  const [updateForm, setUpdateForm] = useState({
+    githubUrl: "",
+    codeforcesHandle: "",
+    leetcodeHandle: "",
+  });
+  const [updating, setUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+  const [updateHint, setUpdateHint] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -78,7 +95,7 @@ export default function ApplyPage() {
   }, [refreshUser]);
 
   useEffect(() => {
-    if (application) return;
+    if (application?.status === "APPROVED") return;
     api
       .get<{ phrase: string }>("/verification/codeforces-phrase")
       .then((r) => setCodeforcesOrgPhrase(r.phrase))
@@ -183,6 +200,54 @@ export default function ApplyPage() {
     }
   };
 
+  const updateField =
+    (field: keyof typeof updateForm) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      setUpdateForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const handleUpdateApplication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdateError("");
+    setUpdateHint(null);
+    const gh = updateForm.githubUrl.trim();
+    const cfRaw = updateForm.codeforcesHandle.trim();
+    const lcRaw = updateForm.leetcodeHandle.trim();
+    const cf = cfRaw ? normalizeCodeforcesHandle(cfRaw) : "";
+    const lc = lcRaw ? normalizeLeetCodeHandle(lcRaw) : "";
+    if (lcRaw && !lc) {
+      setUpdateError("LeetCode: invalid link or username.");
+      return;
+    }
+    if (cfRaw && !cf) {
+      setUpdateError("Codeforces: invalid link or handle.");
+      return;
+    }
+    if (!gh && !cf && !lc) {
+      setUpdateError("Enter at least one of GitHub URL, LeetCode, or Codeforces.");
+      return;
+    }
+    setUpdating(true);
+    try {
+      const fresh = await api.patch<Application>("/applications/me", {
+        githubUrl: updateForm.githubUrl || undefined,
+        codeforcesHandle: updateForm.codeforcesHandle || undefined,
+        leetcodeHandle: updateForm.leetcodeHandle || undefined,
+      });
+      setApplication(fresh);
+      if (fresh.status === "APPROVED") await refreshUser();
+      setUpdateForm({ githubUrl: "", codeforcesHandle: "", leetcodeHandle: "" });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setUpdateError(err.message);
+        setUpdateHint(hintForApplyError(err));
+      } else {
+        setUpdateError("Could not update application.");
+      }
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const handleAppeal = async () => {
     if (!application) return;
     try {
@@ -232,22 +297,77 @@ export default function ApplyPage() {
           </div>
 
           <div className="space-y-3 text-sm">
-            {application.githubUrl && (
-              <div>
-                <span className="text-app-fg-muted">GitHub:</span>{" "}
-                <span className="text-app-fg-secondary">{application.githubUrl}</span>
-              </div>
-            )}
-            {application.codeforcesHandle && (
-              <div>
-                <span className="text-app-fg-muted">Codeforces:</span>{" "}
-                <span className="text-app-fg-secondary">{application.codeforcesHandle}</span>
-              </div>
-            )}
-            {application.leetcodeHandle && (
-              <div>
-                <span className="text-app-fg-muted">LeetCode:</span>{" "}
-                <span className="text-app-fg-secondary">{application.leetcodeHandle}</span>
+            {CAN_UPDATE_APPLICATION.has(application.status) && (
+              <div className="rounded-xl border border-[#e3c98e]/25 bg-[#e3c98e]/5 p-4">
+                <p className="text-sm font-medium text-app-fg">
+                  Update proof &amp; refresh stats
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-app-fg-muted">
+                  Re-enter the links or handles you want us to check (fields start empty).
+                  GitHub URL must still match the GitHub account you signed in with.
+                  This re-runs live fetches so counts match the latest fix on our side.
+                </p>
+                <form onSubmit={handleUpdateApplication} className="mt-4 space-y-3">
+                  <div>
+                    <label className="mb-1 block text-xs text-app-fg-muted">
+                      GitHub profile URL
+                    </label>
+                    <Input
+                      value={updateForm.githubUrl}
+                      onChange={updateField("githubUrl")}
+                      placeholder="https://github.com/yourusername"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-app-fg-muted">
+                      LeetCode profile URL or username
+                    </label>
+                    <Input
+                      value={updateForm.leetcodeHandle}
+                      onChange={updateField("leetcodeHandle")}
+                      placeholder="https://leetcode.com/u/you or you"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-app-fg-muted">
+                      Codeforces profile URL or handle
+                    </label>
+                    <Input
+                      value={updateForm.codeforcesHandle}
+                      onChange={updateField("codeforcesHandle")}
+                      placeholder="https://codeforces.com/profile/you or you"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  {codeforcesOrgPhrase && (
+                    <p className="text-[11px] text-app-fg-muted">
+                      Codeforces org phrase:{" "}
+                      <code className="break-all font-mono text-app-fg-secondary">
+                        {codeforcesOrgPhrase}
+                      </code>
+                    </p>
+                  )}
+                  {updateError && (
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+                      {updateError}
+                      {updateHint && (
+                        <p className="mt-1 text-[12px] text-red-300/90">{updateHint}</p>
+                      )}
+                    </div>
+                  )}
+                  <Button
+                    type="submit"
+                    className="w-full rounded-full"
+                    disabled={updating}
+                  >
+                    {updating ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Save &amp; refresh verification
+                  </Button>
+                </form>
               </div>
             )}
             {application.score !== null && (
@@ -277,6 +397,19 @@ export default function ApplyPage() {
                       : undefined
                   }
                 />
+              )}
+            {application.scoreBreakdown != null &&
+              typeof application.scoreBreakdown === "object" &&
+              "_statsFetchedAt" in (application.scoreBreakdown as object) && (
+                <p className="text-[11px] text-app-fg-muted">
+                  Stats fetched:{" "}
+                  <span className="font-mono text-app-fg-secondary">
+                    {String(
+                      (application.scoreBreakdown as { _statsFetchedAt?: string })
+                        ._statsFetchedAt,
+                    )}
+                  </span>
+                </p>
               )}
             {application.scoreBreakdown == null &&
               (application.status === "UNDER_REVIEW" ||
