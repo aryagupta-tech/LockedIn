@@ -6,8 +6,16 @@ export function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
 }
 
-export function errorResponse(message: string, code: string, status: number) {
-  return NextResponse.json({ error: message, code }, { status });
+export function errorResponse(
+  message: string,
+  code: string,
+  status: number,
+  extras?: Record<string, unknown>,
+) {
+  return NextResponse.json(
+    { error: message, code, ...extras },
+    { status },
+  );
 }
 
 type AuthSuccess = { user: SupabaseUser };

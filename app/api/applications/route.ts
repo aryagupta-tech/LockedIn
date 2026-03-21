@@ -151,7 +151,20 @@ export async function POST(request: Request) {
       .insert(application);
     if (insertError) {
       console.error("applications insert failed:", insertError);
-      return errorResponse("Could not create application", "DB_ERROR", 500);
+      const hint =
+        insertError.code === "23505"
+          ? "You may already have an application — refresh the page. If not, ask an admin to check for a duplicate row."
+          : "The database rejected the insert. Ask an admin to confirm the `applications` table matches the app (columns + RLS / service role).";
+      return errorResponse(
+        "Could not save your application.",
+        "DB_ERROR",
+        500,
+        {
+          details: insertError.message,
+          hint,
+          dbCode: insertError.code,
+        },
+      );
     }
 
     try {
@@ -198,11 +211,34 @@ export async function POST(request: Request) {
       application.status = decision;
     } catch (scoringErr) {
       console.error("Scoring failed, setting to UNDER_REVIEW:", scoringErr);
-      await supabase
-        .from("applications")
-        .update({ status: "UNDER_REVIEW", updatedAt: now() })
-        .eq("id", appId);
-      application.status = "UNDER_REVIEW";
+      try {
+        const { signals, errors: fe } = await fetchApplicationSignals({
+          githubUrl: application.githubUrl as string | null,
+          codeforcesHandle: application.codeforcesHandle as string | null,
+          leetcodeHandle: application.leetcodeHandle as string | null,
+        });
+        const breakdown = buildScoreBreakdown(signals, fe);
+        await supabase
+          .from("applications")
+          .update({
+            status: "UNDER_REVIEW",
+            score: 0,
+            scoreBreakdown: breakdown as object,
+            passingThreshold: 1,
+            updatedAt: now(),
+          })
+          .eq("id", appId);
+        application.score = 0;
+        application.scoreBreakdown = breakdown;
+        application.status = "UNDER_REVIEW";
+      } catch (fallbackErr) {
+        console.error("Fallback scoring breakdown save failed:", fallbackErr);
+        await supabase
+          .from("applications")
+          .update({ status: "UNDER_REVIEW", updatedAt: now() })
+          .eq("id", appId);
+        application.status = "UNDER_REVIEW";
+      }
     }
 
     return NextResponse.json(application, { status: 201 });

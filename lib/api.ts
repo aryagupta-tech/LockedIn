@@ -51,7 +51,13 @@ class ApiClient {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({ error: "Request failed" }));
-      throw new ApiError(res.status, body.error || "Request failed", body.code);
+      throw new ApiError(
+        res.status,
+        body.error || "Request failed",
+        body.code,
+        body.details as string | undefined,
+        body.hint as string | undefined,
+      );
     }
 
     if (res.status === 204) return undefined as T;
@@ -84,6 +90,8 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public code?: string,
+    public details?: string,
+    public hint?: string,
   ) {
     super(message);
     this.name = "ApiError";

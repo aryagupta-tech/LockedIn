@@ -10,6 +10,15 @@ import {
   normalizeCodeforcesHandle,
   normalizeLeetCodeHandle,
 } from "@/lib/platform-handles";
+import { buildPlatformProgressFromBreakdown } from "@/lib/eligibility-progress";
+import type { PlatformProgressRow } from "@/lib/eligibility-progress";
+import { EligibilityProgressCards } from "@/components/app/eligibility-progress-cards";
+
+type EligibilityPreview = {
+  anyPass: boolean;
+  platforms: PlatformProgressRow[];
+  rule: string;
+};
 
 function hintForApplyError(err: unknown): string | null {
   if (!(err instanceof ApiError)) return null;
@@ -24,6 +33,8 @@ function hintForApplyError(err: unknown): string | null {
       return "Use your own GitHub profile URL — it must match the GitHub account you signed in with.";
     case "GITHUB_IDENTITY_REQUIRED":
       return "Sign out and use “Continue with GitHub”, then return to this page.";
+    case "DB_ERROR":
+      return err.hint ?? null;
     default:
       return null;
   }
@@ -47,6 +58,10 @@ export default function ApplyPage() {
   });
   const [lcPreview, setLcPreview] = useState<string | null>(null);
   const [cfPreview, setCfPreview] = useState<string | null>(null);
+  const [eligibilityPreview, setEligibilityPreview] =
+    useState<EligibilityPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
 
   useEffect(() => {
     api
@@ -114,10 +129,57 @@ export default function ApplyPage() {
       setApplication(result);
       await refreshUser();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to submit application");
-      setErrorHint(hintForApplyError(err));
+      if (err instanceof ApiError) {
+        setError(err.message);
+        const h = hintForApplyError(err);
+        if (err.code === "DB_ERROR" && err.details) {
+          setErrorHint([h, err.details].filter(Boolean).join("\n\n") || null);
+        } else {
+          setErrorHint(h);
+        }
+      } else {
+        setError("Failed to submit application");
+        setErrorHint(null);
+      }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const runEligibilityPreview = async () => {
+    setPreviewError("");
+    setEligibilityPreview(null);
+    const gh = form.githubUrl.trim();
+    const cfRaw = form.codeforcesHandle.trim();
+    const lcRaw = form.leetcodeHandle.trim();
+    const cf = cfRaw ? normalizeCodeforcesHandle(cfRaw) : "";
+    const lc = lcRaw ? normalizeLeetCodeHandle(lcRaw) : "";
+    if (lcRaw && !lc) {
+      setPreviewError("Fix LeetCode URL/username before checking stats.");
+      return;
+    }
+    if (cfRaw && !cf) {
+      setPreviewError("Fix Codeforces URL/handle before checking stats.");
+      return;
+    }
+    if (!gh && !cf && !lc) {
+      setPreviewError("Add at least one profile field above first.");
+      return;
+    }
+    setPreviewLoading(true);
+    try {
+      const data = await api.post<EligibilityPreview>("/applications/preview", {
+        githubUrl: form.githubUrl || undefined,
+        codeforcesHandle: form.codeforcesHandle || undefined,
+        leetcodeHandle: form.leetcodeHandle || undefined,
+      });
+      setEligibilityPreview(data);
+    } catch (e) {
+      setPreviewError(
+        e instanceof ApiError ? e.message : "Could not load eligibility preview.",
+      );
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -196,68 +258,33 @@ export default function ApplyPage() {
                 </p>
                 <p className="mt-2 text-xs text-app-fg-muted">
                   100 = auto-approved (met at least one platform threshold). 0 =
-                  under manual review.
+                  under manual review — see your numbers below.
                 </p>
               </div>
             )}
             {application.scoreBreakdown != null &&
-            typeof application.scoreBreakdown === "object" ? (
-                <div className="neo-field mt-4 rounded-xl bg-app-surface-2 p-4 text-xs text-app-fg-muted">
-                  <p className="font-medium uppercase tracking-widest text-app-fg-muted">
-                    Verification details
-                  </p>
-                  <ul className="mt-2 space-y-1 font-mono text-[11px]">
-                    {Object.entries(
-                      application.scoreBreakdown as Record<string, unknown>,
-                    ).map(([key, val]) => {
-                      if (key.startsWith("_")) return null;
-                      if (
-                        val &&
-                        typeof val === "object" &&
-                        "rawValue" in val &&
-                        "threshold" in val
-                      ) {
-                        const v = val as {
-                          rawValue: number;
-                          threshold: number;
-                          passed?: boolean;
-                        };
-                        return (
-                          <li key={key}>
-                            <span className="text-[#e3c98e]">{key}</span>:{" "}
-                            {v.rawValue} (need ≥{v.threshold}
-                            {v.passed === false ? ", not met" : v.passed ? ", met" : ""})
-                          </li>
-                        );
-                      }
-                      return null;
-                    })}
-                  </ul>
-                  {"_fetchErrors" in (application.scoreBreakdown as object) &&
-                    (
-                      application.scoreBreakdown as {
-                        _fetchErrors?: Record<string, string>;
-                      }
-                    )._fetchErrors && (
-                      <div className="mt-3 text-red-400/90">
-                        <p className="font-medium text-red-400">Fetch issues</p>
-                        <ul className="mt-1 space-y-0.5">
-                          {Object.entries(
-                            (
-                              application.scoreBreakdown as {
-                                _fetchErrors: Record<string, string>;
-                              }
-                            )._fetchErrors,
-                          ).map(([k, msg]) => (
-                            <li key={k}>
-                              {k}: {msg}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                </div>
-              ) : null}
+              typeof application.scoreBreakdown === "object" && (
+                <EligibilityProgressCards
+                  platforms={buildPlatformProgressFromBreakdown(
+                    application.scoreBreakdown as Record<string, unknown>,
+                    application,
+                  )}
+                  heading="Your stats vs auto-approve thresholds"
+                  intro={
+                    application.score === 0
+                      ? "None of the platforms we could read met the auto-approve bar yet, or we couldn’t fetch a signal. Improve a metric and re-apply if needed, or wait for manual review."
+                      : undefined
+                  }
+                />
+              )}
+            {application.scoreBreakdown == null &&
+              (application.status === "UNDER_REVIEW" ||
+                application.status === "REJECTED") && (
+                <p className="mt-4 text-sm text-app-fg-muted">
+                  Detailed contribution / rating breakdown wasn’t stored for this application.
+                  Submit a new application after deploying the latest app, or contact support.
+                </p>
+              )}
           </div>
 
           {application.status === "REJECTED" && (
@@ -437,18 +464,51 @@ export default function ApplyPage() {
             <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
               <p>{error}</p>
               {errorHint && (
-                <p className="mt-2 border-t border-red-500/20 pt-2 text-[12px] leading-relaxed text-red-300/85">
+                <p className="mt-2 border-t border-red-500/20 pt-2 whitespace-pre-line text-[12px] leading-relaxed text-red-300/85">
                   {errorHint}
                 </p>
               )}
             </div>
           )}
 
-          <Button
-            type="submit"
-            className="w-full rounded-full"
-            disabled={submitting}
-          >
+          {eligibilityPreview && (
+            <div className="rounded-xl border border-green-500/15 bg-green-500/5 p-3">
+              <p className="text-[11px] text-app-fg-muted">{eligibilityPreview.rule}</p>
+              <EligibilityProgressCards
+                platforms={eligibilityPreview.platforms}
+                heading="Preview — your numbers (not submitted yet)"
+                intro={
+                  eligibilityPreview.anyPass
+                    ? "You meet at least one bar — submit below to lock this in."
+                    : "You’re under at least one bar — you can still submit for manual review, or improve and check again."
+                }
+              />
+            </div>
+          )}
+          {previewError && (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200/90">
+              {previewError}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full rounded-full sm:flex-1"
+              disabled={previewLoading || submitting}
+              onClick={runEligibilityPreview}
+            >
+              {previewLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Check my stats (no submit)
+            </Button>
+            <Button
+              type="submit"
+              className="w-full rounded-full sm:flex-1"
+              disabled={submitting}
+            >
             {submitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -456,6 +516,7 @@ export default function ApplyPage() {
             )}
             Submit application
           </Button>
+          </div>
         </form>
       </div>
     </div>
