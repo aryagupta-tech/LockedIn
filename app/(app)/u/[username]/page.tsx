@@ -10,24 +10,7 @@ import { PostCard } from "@/components/app/post-card";
 import { FeedSkeleton } from "@/components/app/feed-skeleton";
 import { BuilderProgressCard } from "@/components/app/builder-progress-card";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
-const AVATAR_COLORS = [
-  "from-violet-500 to-fuchsia-500",
-  "from-blue-500 to-cyan-400",
-  "from-orange-500 to-rose-500",
-  "from-emerald-500 to-teal-400",
-  "from-pink-500 to-rose-400",
-  "from-amber-500 to-orange-400",
-  "from-indigo-500 to-blue-400",
-  "from-teal-500 to-emerald-400",
-];
-
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 export default function ProfilePage() {
   const params = useParams();
@@ -41,8 +24,6 @@ export default function ProfilePage() {
   const [toggling, setToggling] = useState(false);
 
   const isMe = user?.username === username;
-  const avatarColor = username ? getAvatarColor(username) : AVATAR_COLORS[0];
-
   useEffect(() => {
     let cancelled = false;
     setProfile(null);
@@ -160,18 +141,12 @@ export default function ProfilePage() {
         <div className="app-panel p-6 sm:p-8">
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             {/* Avatar */}
-            <div
-              className={cn(
-                "flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-2xl font-bold text-white shadow-app",
-                avatarColor,
-              )}
-            >
-              {profile.avatarUrl ? (
-                <img src={profile.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
-              ) : (
-                profile.displayName.charAt(0).toUpperCase()
-              )}
-            </div>
+            <UserAvatar
+              avatarUrl={profile.avatarUrl}
+              displayName={profile.displayName}
+              username={profile.username}
+              size="xl"
+            />
 
             <div className="min-w-0 flex-1 text-center sm:text-left">
               <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">

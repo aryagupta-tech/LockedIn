@@ -7,19 +7,18 @@ import { api, type Post } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { uploadPostImage } from "@/lib/storage";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
-const AVATAR_COLORS = [
-  "from-violet-500 to-fuchsia-500", "from-blue-500 to-cyan-400",
-  "from-orange-500 to-rose-500", "from-emerald-500 to-teal-400",
-];
-
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-export function CreatePost({ communityId, onCreated }: { communityId?: string; onCreated: (post: Post) => void }) {
+export function CreatePost({
+  communityId,
+  onCreated,
+  className,
+}: {
+  communityId?: string;
+  onCreated: (post: Post) => void;
+  /** e.g. mb-5 when parent doesn’t use space-y */
+  className?: string;
+}) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState("");
@@ -31,8 +30,6 @@ export function CreatePost({ communityId, onCreated }: { communityId?: string; o
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState("");
-
-  const avatarColor = getAvatarColor(user?.username || "");
 
   const clearImage = () => {
     setImageFile(null);
@@ -82,14 +79,20 @@ export function CreatePost({ communityId, onCreated }: { communityId?: string; o
   const canPost = Boolean(content.trim() || imageFile);
 
   return (
-    <div className="post-card mb-5">
+    <div className={cn("post-card", className)}>
       <div className="flex gap-3 p-4">
-        <div className={cn(
-          "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[13px] font-bold text-white",
-          avatarColor,
-        )}>
-          {user?.displayName?.charAt(0).toUpperCase() || "?"}
-        </div>
+        {user ? (
+          <UserAvatar
+            avatarUrl={user.avatarUrl}
+            displayName={user.displayName}
+            username={user.username}
+            size="md"
+          />
+        ) : (
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-app-surface-2 text-[13px] font-bold text-app-fg-muted">
+            ?
+          </div>
+        )}
 
         <div className="min-w-0 flex-1">
           <textarea

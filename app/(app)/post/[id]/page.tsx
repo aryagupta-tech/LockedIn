@@ -7,6 +7,7 @@ import Link from "next/link";
 import { api, type Post, type Comment } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils";
 import { formatPostAbsoluteDateTime, formatRelativeTime } from "@/lib/utc-time";
 
@@ -210,13 +211,13 @@ export default function PostDetailPage() {
       <div className="border-b border-white/[0.06] px-1 py-4">
         <div className="flex items-start gap-3">
           <Link href={`/u/${post.author.username}`} className="flex-shrink-0">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-neon/25 to-blue-500/25 text-sm font-bold text-white ring-1 ring-white/[0.1]">
-              {post.author.avatarUrl ? (
-                <img src={post.author.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
-              ) : (
-                post.author.displayName.charAt(0).toUpperCase()
-              )}
-            </div>
+            <UserAvatar
+              avatarUrl={post.author.avatarUrl}
+              displayName={post.author.displayName}
+              username={post.author.username}
+              size="lg"
+              className="ring-1 ring-white/10"
+            />
           </Link>
           <div className="flex-1">
             <div className="flex items-center justify-between">
@@ -334,9 +335,19 @@ export default function PostDetailPage() {
           </div>
         )}
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neon/25 to-blue-500/25 text-xs font-bold text-white ring-1 ring-white/[0.1]">
-            {user?.displayName?.charAt(0).toUpperCase() || "?"}
-          </div>
+          {user ? (
+            <UserAvatar
+              avatarUrl={user.avatarUrl}
+              displayName={user.displayName}
+              username={user.username}
+              size="sm"
+              className="ring-1 ring-white/10"
+            />
+          ) : (
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-zinc-500">
+              ?
+            </div>
+          )}
           <input
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
@@ -378,9 +389,13 @@ function CommentItem({ comment, replies, onReply }: { comment: Comment; replies:
     <div className="border-b border-white/[0.06] px-1 py-3">
       <div className="flex gap-3">
         <Link href={`/u/${comment.author.username}`} className="flex-shrink-0">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-neon/20 to-blue-500/20 text-xs font-bold text-white ring-1 ring-white/[0.08]">
-            {comment.author.displayName.charAt(0).toUpperCase()}
-          </div>
+          <UserAvatar
+            avatarUrl={comment.author.avatarUrl}
+            displayName={comment.author.displayName}
+            username={comment.author.username}
+            size="sm"
+            className="ring-1 ring-white/[0.08]"
+          />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
@@ -403,16 +418,27 @@ function CommentItem({ comment, replies, onReply }: { comment: Comment; replies:
       {replies.length > 0 && (
         <div className="ml-12 mt-2 space-y-0 border-l-2 border-white/[0.06]">
           {replies.map((r) => (
-            <div key={r.id} className="py-2.5 pl-4">
-              <div className="flex items-center gap-1.5">
-                <Link href={`/u/${r.author.username}`} className="text-[13px] font-semibold text-white hover:underline">
-                  {r.author.displayName}
-                </Link>
-                <span className="text-xs text-zinc-500">
-                  {formatRelativeTime(r.createdAt, { subMinuteLabel: "just now" })}
-                </span>
+            <div key={r.id} className="flex gap-2 py-2.5 pl-4">
+              <Link href={`/u/${r.author.username}`} className="mt-0.5 flex-shrink-0">
+                <UserAvatar
+                  avatarUrl={r.author.avatarUrl}
+                  displayName={r.author.displayName}
+                  username={r.author.username}
+                  size="xs"
+                  className="ring-1 ring-white/[0.08]"
+                />
+              </Link>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Link href={`/u/${r.author.username}`} className="text-[13px] font-semibold text-white hover:underline">
+                    {r.author.displayName}
+                  </Link>
+                  <span className="text-xs text-zinc-500">
+                    {formatRelativeTime(r.createdAt, { subMinuteLabel: "just now" })}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[14px] text-zinc-300">{r.content}</p>
               </div>
-              <p className="mt-0.5 text-[14px] text-zinc-300">{r.content}</p>
             </div>
           ))}
         </div>

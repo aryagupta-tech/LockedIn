@@ -7,23 +7,7 @@ import { api, type Post } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utc-time";
-
-const AVATAR_COLORS = [
-  "from-violet-500 to-fuchsia-500",
-  "from-blue-500 to-cyan-400",
-  "from-orange-500 to-rose-500",
-  "from-emerald-500 to-teal-400",
-  "from-pink-500 to-rose-400",
-  "from-amber-500 to-orange-400",
-  "from-indigo-500 to-blue-400",
-  "from-teal-500 to-emerald-400",
-];
-
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 function formatCount(n: number): string {
   if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
@@ -46,8 +30,6 @@ export function PostCard({
   const [saved, setSaved] = useState(post.hasBookmarked ?? false);
 
   const isAuthor = user?.id === post.author.id;
-  const avatarColor = getAvatarColor(post.author.username);
-
   useEffect(() => {
     setLiked(post.hasLiked ?? false);
     setLikes(post.likesCount);
@@ -99,18 +81,12 @@ export function PostCard({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <Link href={`/u/${post.author.username}`} className="flex items-center gap-3">
-          <div
-            className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-[13px] font-bold text-white",
-              avatarColor,
-            )}
-          >
-            {post.author.avatarUrl ? (
-              <img src={post.author.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
-            ) : (
-              post.author.displayName.charAt(0).toUpperCase()
-            )}
-          </div>
+          <UserAvatar
+            avatarUrl={post.author.avatarUrl}
+            displayName={post.author.displayName}
+            username={post.author.username}
+            size="md"
+          />
           <div>
             <p className="text-[14px] font-semibold text-app-fg">{post.author.displayName}</p>
             <p className="text-[12px] text-app-fg-muted">@{post.author.username}</p>

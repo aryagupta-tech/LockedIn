@@ -173,7 +173,7 @@ export default function CommunityDetailPage() {
         </div>
       </div>
 
-      <CreatePost communityId={community.id} onCreated={handlePostCreated} />
+      <CreatePost className="mb-5" communityId={community.id} onCreated={handlePostCreated} />
 
       {posts.length === 0 ? (
         <div className="post-card px-8 py-16 text-center">

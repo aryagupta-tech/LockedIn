@@ -9,23 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { uploadAvatar } from "@/lib/storage";
 import { cn } from "@/lib/utils";
-
-const AVATAR_COLORS = [
-  "from-violet-500 to-fuchsia-500",
-  "from-blue-500 to-cyan-400",
-  "from-orange-500 to-rose-500",
-  "from-emerald-500 to-teal-400",
-  "from-pink-500 to-rose-400",
-  "from-amber-500 to-orange-400",
-  "from-indigo-500 to-blue-400",
-  "from-teal-500 to-emerald-400",
-];
-
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 export default function SettingsPage() {
   const { user, refreshUser, logout } = useAuth();
@@ -119,18 +103,12 @@ export default function SettingsPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Avatar */}
             <div className="flex items-center gap-5">
-              <div
-                className={cn(
-                  "flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-2xl font-bold text-white shadow-app",
-                  user?.username ? getAvatarColor(user.username) : "from-violet-500 to-fuchsia-500",
-                )}
-              >
-                {form.avatarUrl ? (
-                  <img src={form.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-                ) : (
-                  user?.displayName?.charAt(0).toUpperCase() || "?"
-                )}
-              </div>
+              <UserAvatar
+                avatarUrl={form.avatarUrl}
+                displayName={form.displayName || user?.displayName || "?"}
+                username={user?.username || "?"}
+                size="xl"
+              />
               <div>
                 <input
                   ref={fileRef}

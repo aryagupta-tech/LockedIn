@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { BuilderProgressCard } from "@/components/app/builder-progress-card";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 type SuggestedUser = {
   id: string;
@@ -13,23 +14,6 @@ type SuggestedUser = {
   displayName: string;
   avatarUrl: string | null;
 };
-
-const AVATAR_COLORS = [
-  "from-violet-500 to-fuchsia-500",
-  "from-blue-500 to-cyan-400",
-  "from-orange-500 to-rose-500",
-  "from-emerald-500 to-teal-400",
-  "from-pink-500 to-rose-400",
-  "from-amber-500 to-orange-400",
-  "from-indigo-500 to-blue-400",
-  "from-teal-500 to-emerald-400",
-];
-
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
 
 /** Wire to real trending tags / analytics when there is usage. */
 const trendingTopics: { tag: string; count: string }[] = [];
@@ -97,16 +81,12 @@ export function RightSidebar() {
             {suggested.map((u) => (
               <div key={u.id} className="flex items-center gap-3">
                 <Link href={`/u/${u.username}`} className="flex min-w-0 flex-1 items-center gap-3">
-                  <div
-                    className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarColor(u.displayName || u.username)} text-[11px] font-bold text-white overflow-hidden`}
-                  >
-                    {u.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={u.avatarUrl} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      (u.displayName || u.username).charAt(0).toUpperCase()
-                    )}
-                  </div>
+                  <UserAvatar
+                    avatarUrl={u.avatarUrl}
+                    displayName={u.displayName}
+                    username={u.username}
+                    size="sm"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-semibold text-app-fg">{u.displayName}</p>
                     <p className="truncate text-[12px] text-app-fg-muted">@{u.username}</p>

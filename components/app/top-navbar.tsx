@@ -8,23 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import { LockedInMark } from "@/components/brand/locked-in-mark";
-
-const AVATAR_COLORS = [
-  "from-violet-500 to-fuchsia-500",
-  "from-blue-500 to-cyan-400",
-  "from-orange-500 to-rose-500",
-  "from-emerald-500 to-teal-400",
-  "from-pink-500 to-rose-400",
-  "from-amber-500 to-orange-400",
-  "from-indigo-500 to-blue-400",
-  "from-teal-500 to-emerald-400",
-];
-
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 export function TopNavbar() {
   const pathname = usePathname();
@@ -36,8 +20,6 @@ export function TopNavbar() {
 
   const isAdmin = user?.role === "ADMIN";
   const isPending = user?.status === "PENDING";
-  const avatarColor = user?.username ? getAvatarColor(user.username) : AVATAR_COLORS[0];
-
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -122,19 +104,20 @@ export function TopNavbar() {
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className={cn(
-                    "group flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-xs font-bold text-white ring-2 transition-all",
-                    avatarColor,
+                    "group h-9 w-9 overflow-hidden rounded-full p-0 ring-2 transition-all",
                     dropdownOpen
                       ? "ring-neon/60 shadow-[0_0_12px_rgba(214,179,106,0.25)]"
                       : "ring-app-border-strong hover:ring-neon/40",
                   )}
                   title="Profile menu"
                 >
-                  {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    user.displayName.charAt(0).toUpperCase()
-                  )}
+                  <UserAvatar
+                    avatarUrl={user.avatarUrl}
+                    displayName={user.displayName}
+                    username={user.username}
+                    size="sm"
+                    className="h-full w-full"
+                  />
                 </button>
 
                 {/* Dropdown menu */}
