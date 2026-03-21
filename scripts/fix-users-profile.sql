@@ -1,5 +1,16 @@
+-- ============================================================================
+-- HOW TO RUN (you got "syntax error at or near scripts" if you pasted the path)
+-- ============================================================================
+-- Do NOT type or paste: scripts/fix-users-profile.sql  ← that is a FILE NAME, not SQL.
+--   1. Open this file in your editor (Cursor).  2. Ctrl+A / Cmd+A  3. Copy
+--   4. Supabase → SQL Editor → New query → Paste → Run
+-- Easiest: use COPY-PASTE-INTO-SUPABASE-SQL-EDITOR.sql (one file = Part A + Part B).
+-- ============================================================================
+--
 -- Run in Supabase → SQL Editor if `public.users` inserts fail (missing columns / NOT NULL).
 -- Adjust to match your actual table (check Table Editor → users → column names).
+--
+-- Also run the RPC/trigger script (same copy-paste method): supabase-profile-rls-and-rpc.sql
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- RLS error: "new row violates row-level security policy for table users"

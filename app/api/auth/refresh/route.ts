@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase-server";
+import {
+  createAnonClient,
+  createServiceClientIfConfigured,
+  createUserAuthedClient,
+} from "@/lib/supabase-server";
 import { errorResponse } from "@/lib/api-utils";
-import { ensurePublicUserRow } from "@/lib/ensure-public-user";
+import {
+  ensurePublicUserProfileWithUserJwt,
+  ensurePublicUserRow,
+} from "@/lib/ensure-public-user";
 
 export async function POST(request: Request) {
   try {
@@ -12,9 +19,20 @@ export async function POST(request: Request) {
       return errorResponse("Missing refresh token", "VALIDATION_ERROR", 400);
     }
 
-    const supabase = createServiceClient();
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+    ) {
+      return errorResponse(
+        "Server missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+        "INTERNAL_ERROR",
+        500,
+      );
+    }
 
-    const { data: session, error } = await supabase.auth.refreshSession({
+    const anon = createAnonClient();
+
+    const { data: session, error } = await anon.auth.refreshSession({
       refresh_token: refreshToken,
     });
 
@@ -22,13 +40,39 @@ export async function POST(request: Request) {
       return errorResponse("Invalid or expired refresh token", "UNAUTHORIZED", 401);
     }
 
-    await ensurePublicUserRow(supabase, session.user!);
+    const authUser = session.user!;
+    const accessToken = session.session.access_token;
 
-    const { data: user } = await supabase
+    let ensureErr = await ensurePublicUserProfileWithUserJwt(accessToken);
+    if (ensureErr) {
+      const svc = createServiceClientIfConfigured();
+      if (svc) {
+        ensureErr = await ensurePublicUserRow(svc, authUser);
+      }
+    }
+    if (ensureErr) {
+      console.error("refresh ensure profile:", ensureErr);
+    }
+
+    const userAuthed = createUserAuthedClient(accessToken);
+    let { data: user, error: userErr } = await userAuthed
       .from("users")
       .select("id, email, username, displayName, avatarUrl, role, status")
-      .eq("id", session.user!.id)
+      .eq("id", authUser.id)
       .single();
+
+    if (userErr || !user) {
+      const svcRead = createServiceClientIfConfigured();
+      if (svcRead) {
+        const r2 = await svcRead
+          .from("users")
+          .select("id, email, username, displayName, avatarUrl, role, status")
+          .eq("id", authUser.id)
+          .single();
+        user = r2.data ?? null;
+        userErr = r2.error ?? null;
+      }
+    }
 
     if (!user) {
       return errorResponse("Profile not found", "UNAUTHORIZED", 401);

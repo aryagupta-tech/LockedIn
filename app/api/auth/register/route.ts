@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { getServiceRoleKeyMisconfigurationError } from "@/lib/supabase-service-key";
-import { errorResponse, now } from "@/lib/api-utils";
+import { errorResponse } from "@/lib/api-utils";
+import {
+  ensurePublicUserProfileWithUserJwt,
+  ensurePublicUserRow,
+} from "@/lib/ensure-public-user";
+import { applySeedAccessRules } from "@/lib/seed-access-rules";
 
 export async function POST(request: Request) {
   try {
@@ -45,16 +50,6 @@ export async function POST(request: Request) {
       return errorResponse(authError.message, "CONFLICT", 409);
     }
 
-    const ts = now();
-    await supabase.from("users").insert({
-      id: authData.user.id,
-      email: email.toLowerCase(),
-      username: username.toLowerCase(),
-      displayName,
-      createdAt: ts,
-      updatedAt: ts,
-    });
-
     const { data: session, error: signInError } =
       await supabase.auth.signInWithPassword({
         email: email.toLowerCase(),
@@ -69,20 +64,61 @@ export async function POST(request: Request) {
       );
     }
 
+    let profileErr = await ensurePublicUserProfileWithUserJwt(
+      session.session.access_token,
+    );
+    if (profileErr) {
+      profileErr = await ensurePublicUserRow(supabase, session.user);
+    }
+    if (profileErr) {
+      return errorResponse(
+        `Account created but profile setup failed: ${profileErr}`,
+        "PROFILE_CREATE_FAILED",
+        500,
+        {
+          hint: "Run scripts/supabase-profile-rls-and-rpc.sql in Supabase SQL Editor, or ensure SUPABASE_SERVICE_ROLE_KEY is the service_role secret.",
+        },
+      );
+    }
+
+    await applySeedAccessRules(
+      supabase,
+      authData.user.id,
+      email.toLowerCase(),
+    );
+
+    const { data: userRow, error: userFetchErr } = await supabase
+      .from("users")
+      .select("id, email, username, displayName, avatarUrl, role, status")
+      .eq("id", authData.user.id)
+      .single();
+
+    if (userFetchErr || !userRow) {
+      return NextResponse.json(
+        {
+          accessToken: session.session.access_token,
+          refreshToken: session.session.refresh_token,
+          expiresIn: session.session.expires_in,
+          user: {
+            id: authData.user.id,
+            email: email.toLowerCase(),
+            username: username.toLowerCase(),
+            displayName,
+            avatarUrl: null,
+            role: "USER",
+            status: "PENDING",
+          },
+        },
+        { status: 201 },
+      );
+    }
+
     return NextResponse.json(
       {
         accessToken: session.session.access_token,
         refreshToken: session.session.refresh_token,
         expiresIn: session.session.expires_in,
-        user: {
-          id: authData.user.id,
-          email: email.toLowerCase(),
-          username: username.toLowerCase(),
-          displayName,
-          avatarUrl: null,
-          role: "USER",
-          status: "PENDING",
-        },
+        user: userRow,
       },
       { status: 201 },
     );

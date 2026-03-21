@@ -1,48 +1,15 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase-server";
-import { getServiceRoleKeyMisconfigurationError } from "@/lib/supabase-service-key";
-import { errorResponse, now } from "@/lib/api-utils";
-import { ensurePublicUserRow } from "@/lib/ensure-public-user";
-
-function parseEmailList(raw: string | undefined): string[] {
-  if (!raw?.trim()) return [];
-  return raw
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-/**
- * Optional dev/staging: auto-approve or grant admin to specific emails after login.
- * Set in Vercel env — never commit real addresses with production secrets.
- */
-async function applySeedAccessRules(
-  supabase: ReturnType<typeof createServiceClient>,
-  userId: string,
-  emailLower: string,
-): Promise<void> {
-  const adminEmails = parseEmailList(process.env.LOCKEDIN_SEED_ADMIN_EMAILS);
-  const approvedEmails = parseEmailList(process.env.LOCKEDIN_SEED_APPROVED_EMAILS);
-
-  if (adminEmails.includes(emailLower)) {
-    await supabase
-      .from("users")
-      .update({
-        status: "APPROVED",
-        role: "ADMIN",
-        updatedAt: now(),
-      })
-      .eq("id", userId);
-    return;
-  }
-
-  if (approvedEmails.includes(emailLower)) {
-    await supabase
-      .from("users")
-      .update({ status: "APPROVED", updatedAt: now() })
-      .eq("id", userId);
-  }
-}
+import {
+  createAnonClient,
+  createServiceClientIfConfigured,
+  createUserAuthedClient,
+} from "@/lib/supabase-server";
+import { errorResponse } from "@/lib/api-utils";
+import {
+  ensurePublicUserProfileWithUserJwt,
+  ensurePublicUserRow,
+} from "@/lib/ensure-public-user";
+import { applySeedAccessRules } from "@/lib/seed-access-rules";
 
 export async function POST(request: Request) {
   try {
@@ -55,26 +22,19 @@ export async function POST(request: Request) {
 
     if (
       !process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
-      !process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
     ) {
       return errorResponse(
-        "Server missing Supabase configuration (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY).",
+        "Server missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.",
         "INTERNAL_ERROR",
         500,
       );
     }
 
-    const keyMisconfig = getServiceRoleKeyMisconfigurationError();
-    if (keyMisconfig) {
-      return errorResponse(keyMisconfig, "SUPABASE_KEY_MISCONFIGURED", 500, {
-        hint: "Redeploy after fixing the env var. The service_role value is labeled “service_role” in Supabase API settings and is longer than the anon key.",
-      });
-    }
-
-    const supabase = createServiceClient();
+    const anon = createAnonClient();
     const emailLower = email.toLowerCase();
 
-    const { data: session, error } = await supabase.auth.signInWithPassword({
+    const { data: session, error } = await anon.auth.signInWithPassword({
       email: emailLower,
       password,
     });
@@ -84,8 +44,16 @@ export async function POST(request: Request) {
     }
 
     const authUser = session.user;
+    const accessToken = session.session.access_token;
 
-    const ensureErr = await ensurePublicUserRow(supabase, authUser);
+    let ensureErr = await ensurePublicUserProfileWithUserJwt(accessToken);
+    if (ensureErr) {
+      const svc = createServiceClientIfConfigured();
+      if (svc) {
+        ensureErr = await ensurePublicUserRow(svc, authUser);
+      }
+    }
+
     if (ensureErr) {
       return errorResponse(
         "Could not create your profile row in the database.",
@@ -94,22 +62,39 @@ export async function POST(request: Request) {
         {
           details: ensureErr,
           hint:
-            "In Vercel, set SUPABASE_SERVICE_ROLE_KEY to the service_role secret from Supabase (Settings → API), not the anon key. If the error mentions a column, add missing columns or defaults — see scripts/fix-users-profile.sql in the repo.",
+            "Run scripts/supabase-profile-rls-and-rpc.sql in Supabase (SQL Editor) — that fixes RLS without needing a correct service_role key. Or set SUPABASE_SERVICE_ROLE_KEY to the real service_role secret from Supabase → Settings → API.",
         },
       );
     }
 
-    await applySeedAccessRules(supabase, authUser.id, emailLower);
+    const svc = createServiceClientIfConfigured();
+    if (svc) {
+      await applySeedAccessRules(svc, authUser.id, emailLower);
+    }
 
-    const { data: user, error: userSelectErr } = await supabase
+    const userAuthed = createUserAuthedClient(accessToken);
+    let { data: user, error: userSelectErr } = await userAuthed
       .from("users")
       .select("id, email, username, displayName, avatarUrl, role, status")
       .eq("id", authUser.id)
       .single();
 
     if (userSelectErr || !user) {
+      const svcRead = createServiceClientIfConfigured();
+      if (svcRead) {
+        const r2 = await svcRead
+          .from("users")
+          .select("id, email, username, displayName, avatarUrl, role, status")
+          .eq("id", authUser.id)
+          .single();
+        user = r2.data ?? null;
+        userSelectErr = r2.error ?? null;
+      }
+    }
+
+    if (userSelectErr || !user) {
       return errorResponse(
-        "Profile was not found after sign-in. Check that `public.users` exists and RLS allows the service role.",
+        "Profile was not found after sign-in. Run scripts/supabase-profile-rls-and-rpc.sql (adds SELECT policy) or fix service_role access.",
         "UNAUTHORIZED",
         401,
         {

@@ -1,6 +1,33 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 import { now } from "@/lib/api-utils";
+import { createUserAuthedClient } from "@/lib/supabase-server";
+
+/**
+ * Creates `public.users` via SECURITY DEFINER RPC using the logged-in user's JWT.
+ * Works even when SUPABASE_SERVICE_ROLE_KEY is wrong (RLS blocks service_role-as-anon inserts).
+ * Requires running scripts/supabase-profile-rls-and-rpc.sql once in Supabase.
+ */
+export async function ensurePublicUserProfileWithUserJwt(
+  accessToken: string,
+): Promise<string | null> {
+  const client = createUserAuthedClient(accessToken);
+  const { error } = await client.rpc("lockedin_ensure_my_profile");
+  if (!error) return null;
+
+  const msg = error.message || "";
+  const code = (error as { code?: string }).code;
+  if (
+    code === "PGRST202" ||
+    msg.includes("Could not find the function") ||
+    msg.includes("does not exist")
+  ) {
+    return (
+      "Database function lockedin_ensure_my_profile is missing — run scripts/supabase-profile-rls-and-rpc.sql in the Supabase SQL Editor."
+    );
+  }
+  return msg;
+}
 
 /**
  * Ensures `public.users` has a row for this Supabase Auth user.
