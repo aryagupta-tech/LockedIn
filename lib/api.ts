@@ -109,6 +109,14 @@ export interface User {
   role: string;
   status: string;
   createdAt?: string;
+  /** Last time username was changed (GitHub accounts); drives 30-day cooldown. */
+  usernameChangedAt?: string | null;
+  /** From GET/PATCH /profiles/me — whether the session includes GitHub OAuth. */
+  githubSignIn?: boolean;
+  /** From GET/PATCH /profiles/me — false while inside the 30-day username cooldown. */
+  canChangeUsername?: boolean;
+  /** ISO date when username can change again (cooldown). */
+  nextUsernameChangeAt?: string | null;
   builder?: BuilderProgress;
 }
 

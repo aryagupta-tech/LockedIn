@@ -6,6 +6,7 @@ import {
   extractGitHubLoginFromSupabaseUser,
   extractGitHubNumericIdFromSupabaseUser,
 } from "@/lib/github-auth-metadata";
+import { pickAvailableUsername } from "@/lib/username-holds";
 
 /**
  * Creates `public.users` via SECURITY DEFINER RPC using the logged-in user's JWT.
@@ -51,25 +52,15 @@ export async function ensurePublicUserRow(
 
   const meta = authUser.user_metadata || {};
   const ghLoginFromOAuth = extractGitHubLoginFromSupabaseUser(authUser);
-  let username = (
+  const preferred =
     ghLoginFromOAuth ||
     meta.user_name ||
     meta.preferred_username ||
     meta.username ||
     authUser.email?.split("@")[0] ||
-    "user"
-  )
-    .toString()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, "_");
-  if (!username) username = "user";
+    "user";
 
-  const { data: taken } = await supabase
-    .from("users")
-    .select("id")
-    .eq("username", username)
-    .maybeSingle();
-  if (taken) username = `${username}_${authUser.id.slice(0, 6)}`;
+  const username = await pickAvailableUsername(supabase, String(preferred), authUser.id);
 
   const ts = now();
   const ghNumericId = extractGitHubNumericIdFromSupabaseUser(authUser);

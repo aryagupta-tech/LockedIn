@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Loader2, Save, Upload, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,11 @@ export default function SettingsPage() {
     bio: "",
     avatarUrl: user?.avatarUrl || "",
   });
+  const [usernameDraft, setUsernameDraft] = useState(user?.username || "");
+
+  useEffect(() => {
+    if (user?.username) setUsernameDraft(user.username);
+  }, [user?.username]);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -72,11 +77,19 @@ export default function SettingsPage() {
     setSuccess(false);
     setLoading(true);
     try {
-      await api.patch("/profiles/me", {
+      const body: Record<string, unknown> = {
         displayName: form.displayName || undefined,
         bio: form.bio || undefined,
         avatarUrl: form.avatarUrl || undefined,
-      });
+      };
+      const draftNorm = usernameDraft.trim().toLowerCase();
+      const currentNorm = user?.username?.trim().toLowerCase() ?? "";
+      const mayChangeUsername = user?.canChangeUsername !== false;
+      if (mayChangeUsername && draftNorm && draftNorm !== currentNorm) {
+        body.username = draftNorm;
+      }
+
+      await api.patch("/profiles/me", body);
       await refreshUser();
       setSuccess(true);
     } catch (err) {
@@ -189,8 +202,31 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="mb-1.5 block text-[13px] font-medium text-app-fg-muted">Username</label>
-            <Input value={user?.username || ""} disabled className="opacity-50" />
-            <p className="mt-1.5 text-xs text-app-fg-muted">Username cannot be changed</p>
+            <Input
+              value={usernameDraft}
+              onChange={(e) =>
+                setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))
+              }
+              disabled={user?.canChangeUsername === false}
+              className={user?.canChangeUsername === false ? "opacity-50" : ""}
+              autoComplete="username"
+              spellCheck={false}
+            />
+            <p className="mt-1.5 text-xs text-app-fg-muted">
+              3–30 characters: lowercase letters, numbers, underscores. Your public profile is at{" "}
+              <span className="text-app-fg-secondary">/u/{usernameDraft || user?.username}</span>.
+            </p>
+            {user?.canChangeUsername === false && user?.nextUsernameChangeAt && (
+              <p className="mt-2 text-xs text-amber-400/90">
+                You can change your username again after{" "}
+                {new Date(user.nextUsernameChangeAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+                . After a change, your previous handle stays reserved for 30 days before anyone else can take it.
+              </p>
+            )}
           </div>
         </div>
       </div>

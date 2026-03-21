@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 
-function userHasGithubProvider(user: User): boolean {
+/** True if this account uses GitHub OAuth (primary or linked provider). */
+export function sessionHasGithubIdentity(user: User): boolean {
   const app = user.app_metadata || {};
   if (app.provider === "github") return true;
   const providers = app.providers;
@@ -46,7 +47,7 @@ export function extractGitHubLoginFromSupabaseUser(user: User): string | null {
     }
   }
 
-  if (userHasGithubProvider(user)) {
+  if (sessionHasGithubIdentity(user)) {
     const fromEmail = githubLoginFromNoreplyEmail(user.email);
     if (fromEmail) return fromEmail;
   }

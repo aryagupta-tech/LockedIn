@@ -8,6 +8,7 @@ import {
   validatePassword,
   validateUsername,
 } from "@/lib/validation";
+import { isUsernameAvailable } from "@/lib/username-holds";
 import {
   ensurePublicUserProfileWithUserJwt,
   ensurePublicUserRow,
@@ -64,14 +65,9 @@ export async function POST(request: Request) {
       return errorResponse("This email is already registered.", "CONFLICT", 409);
     }
 
-    const { data: usernameTaken } = await supabase
-      .from("users")
-      .select("id")
-      .eq("username", usernameNorm)
-      .maybeSingle();
-
-    if (usernameTaken) {
-      return errorResponse("This username is already taken. Choose another.", "CONFLICT", 409);
+    const usernameFree = await isUsernameAvailable(supabase, usernameNorm);
+    if (!usernameFree.ok) {
+      return errorResponse(usernameFree.message, "CONFLICT", 409);
     }
 
     const displayTrimmed = displayName.trim();

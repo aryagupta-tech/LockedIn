@@ -5,6 +5,7 @@ import {
   extractGitHubLoginFromSupabaseUser,
   extractGitHubNumericIdFromSupabaseUser,
 } from "@/lib/github-auth-metadata";
+import { pickAvailableUsername } from "@/lib/username-holds";
 
 export async function POST(request: Request) {
   try {
@@ -41,19 +42,12 @@ export async function POST(request: Request) {
     const ghNumericId = extractGitHubNumericIdFromSupabaseUser(supaUser);
 
     if (!user) {
-      let username = (
+      const preferred =
         ghLoginRaw ||
         meta.preferred_username ||
         supaUser.email?.split("@")[0] ||
-        "user"
-      )
-        .toString()
-        .toLowerCase()
-        .replace(/[^a-z0-9_]/g, "_");
-
-      const { data: taken } = await supabase
-        .from("users").select("id").eq("username", username).maybeSingle();
-      if (taken) username = `${username}_${supaUser.id.slice(0, 6)}`;
+        "user";
+      const username = await pickAvailableUsername(supabase, String(preferred), supaUser.id);
 
       const ts = now();
       const newUser = {
