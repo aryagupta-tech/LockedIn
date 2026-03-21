@@ -370,19 +370,6 @@ export default function ApplyPage() {
                 </form>
               </div>
             )}
-            {application.score !== null && (
-              <div className="neo-field mt-4 rounded-xl bg-app-surface-2 p-4">
-                <p className="text-xs font-medium uppercase tracking-widest text-app-fg-muted">Score</p>
-                <p className="mt-1 text-3xl font-bold text-app-fg">
-                  {application.score}
-                  <span className="text-sm text-app-fg-muted">/100</span>
-                </p>
-                <p className="mt-2 text-xs text-app-fg-muted">
-                  100 = auto-approved (met at least one platform threshold). 0 =
-                  under manual review — see your numbers below.
-                </p>
-              </div>
-            )}
             {application.scoreBreakdown != null &&
               typeof application.scoreBreakdown === "object" && (
                 <EligibilityProgressCards
