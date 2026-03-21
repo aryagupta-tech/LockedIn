@@ -4,9 +4,9 @@
 -- Meaning: public.users still has your email on an OLD user id (Auth account was
 -- deleted/recreated). Change the email if needed, then Run.
 
--- Example for test@lockedin.dev:
+-- Example (replace with the stuck email):
 DELETE FROM public.users pu
-WHERE lower(trim(COALESCE(pu.email, ''))) = lower('test@lockedin.dev')
+WHERE lower(trim(COALESCE(pu.email, ''))) = lower('you@example.com')
   AND NOT EXISTS (SELECT 1 FROM auth.users au WHERE au.id = pu.id);
 
 -- After this, log in again (or re-run scripts/supabase-profile-rls-and-rpc.sql

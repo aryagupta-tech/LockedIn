@@ -3,31 +3,59 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
+import type { AuthResponse } from "@/lib/api";
 
 export default function DevLoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { setAuth } = useAuth();
   const [status, setStatus] = useState("Logging you in...");
 
   useEffect(() => {
-    const email = process.env.NEXT_PUBLIC_DEV_EMAIL;
-    const password = process.env.NEXT_PUBLIC_DEV_PASSWORD;
-
-    if (!email || !password) {
-      setStatus("Dev login not configured. Set NEXT_PUBLIC_DEV_EMAIL and NEXT_PUBLIC_DEV_PASSWORD in .env");
+    if (process.env.NODE_ENV !== "development") {
+      setStatus("Not available in production.");
       return;
     }
 
-    login(email, password)
-      .then(() => {
+    fetch("/api/dev-login", { method: "POST" })
+      .then(async (res) => {
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          accessToken?: string;
+          refreshToken?: string;
+          expiresIn?: number;
+          user?: AuthResponse["user"];
+        };
+        if (!res.ok) {
+          throw new Error(body.error || res.statusText);
+        }
+        if (
+          !body.accessToken ||
+          !body.refreshToken ||
+          body.expiresIn === undefined ||
+          !body.user
+        ) {
+          throw new Error("Invalid dev-login response");
+        }
+        const data: AuthResponse = {
+          accessToken: body.accessToken,
+          refreshToken: body.refreshToken,
+          expiresIn: body.expiresIn,
+          user: body.user,
+        };
+        await supabase.auth.setSession({
+          access_token: data.accessToken,
+          refresh_token: data.refreshToken,
+        });
+        setAuth(data);
         document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
         setStatus("Success! Redirecting...");
         router.push("/feed");
       })
-      .catch((err) => {
+      .catch((err: Error) => {
         setStatus(`Login failed: ${err.message}`);
       });
-  }, [login, router]);
+  }, [router, setAuth]);
 
   return (
     <div className="flex min-h-screen items-center justify-center">

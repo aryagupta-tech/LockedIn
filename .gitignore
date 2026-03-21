@@ -35,3 +35,9 @@ tsconfig.tsbuildinfo
 .DS_Store
 *.swp
 
+# Keys / local secrets (extra safety)
+*.pem
+*.p12
+.envrc
+.vercel
+

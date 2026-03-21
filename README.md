@@ -100,6 +100,8 @@ cp .env.example .env
 
 Fill in your Supabase project URL, anon key, and service role key. See `.env.example` for all required variables.
 
+**Before pushing to GitHub:** read **[SECURITY.md](./SECURITY.md)** (secrets, `NEXT_PUBLIC_*`, `.gitignore`).
+
 ### 3. Set up the database
 
 Run `supabase-setup.sql` in the Supabase SQL Editor to enable RLS, create the storage bucket, and seed scoring weights.

@@ -43,7 +43,7 @@ BEGIN
   END IF;
 
   -- Same email, different id: leftover row from a deleted Auth user (e.g. recreated
-  -- test@lockedin.dev). Removes only profiles with NO matching auth.users row.
+  -- recreated account with same email). Removes only profiles with NO matching auth.users row.
   IF trim(COALESCE(u.email, '')) <> '' THEN
     DELETE FROM public.users pu
     WHERE pu.id <> p_user_id
