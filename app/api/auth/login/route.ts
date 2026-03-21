@@ -52,6 +52,17 @@ export async function POST(request: Request) {
       return errorResponse("Missing required fields", "VALIDATION_ERROR", 400);
     }
 
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+      !process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+    ) {
+      return errorResponse(
+        "Server missing Supabase configuration (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY).",
+        "INTERNAL_ERROR",
+        500,
+      );
+    }
+
     const supabase = createServiceClient();
     const emailLower = email.toLowerCase();
 
@@ -66,20 +77,36 @@ export async function POST(request: Request) {
 
     const authUser = session.user;
 
-    await ensurePublicUserRow(supabase, authUser);
+    const ensureErr = await ensurePublicUserRow(supabase, authUser);
+    if (ensureErr) {
+      return errorResponse(
+        "Could not create your profile row in the database.",
+        "PROFILE_CREATE_FAILED",
+        401,
+        {
+          details: ensureErr,
+          hint:
+            "In Vercel, set SUPABASE_SERVICE_ROLE_KEY to the service_role secret from Supabase (Settings → API), not the anon key. If the error mentions a column, add missing columns or defaults — see scripts/fix-users-profile.sql in the repo.",
+        },
+      );
+    }
+
     await applySeedAccessRules(supabase, authUser.id, emailLower);
 
-    const { data: user } = await supabase
+    const { data: user, error: userSelectErr } = await supabase
       .from("users")
       .select("id, email, username, displayName, avatarUrl, role, status")
       .eq("id", authUser.id)
       .single();
 
-    if (!user) {
+    if (userSelectErr || !user) {
       return errorResponse(
-        "Profile row could not be created. Check database `users` table and service role key.",
+        "Profile was not found after sign-in. Check that `public.users` exists and RLS allows the service role.",
         "UNAUTHORIZED",
         401,
+        {
+          details: userSelectErr?.message,
+        },
       );
     }
 

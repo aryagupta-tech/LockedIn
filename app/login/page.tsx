@@ -28,7 +28,14 @@ export default function LoginPage() {
       document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
       router.push("/feed");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong");
+      if (err instanceof ApiError) {
+        const parts = [err.message];
+        if (err.details) parts.push(String(err.details));
+        if (err.hint) parts.push(String(err.hint));
+        setError(parts.filter(Boolean).join("\n\n"));
+      } else {
+        setError("Something went wrong");
+      }
     } finally {
       setLoading(false);
     }

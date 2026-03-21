@@ -4,20 +4,19 @@ import { now } from "@/lib/api-utils";
 
 /**
  * Ensures `public.users` has a row for this Supabase Auth user.
- * Fixes "User record not found" when JWT is valid but the profile row was never
- * created (OAuth edge cases, failed callback insert, or auth/user drift).
+ * @returns `null` if OK, otherwise a short error message (often the DB/PostgREST error).
  */
 export async function ensurePublicUserRow(
   supabase: SupabaseClient,
   authUser: User,
-): Promise<void> {
+): Promise<string | null> {
   const { data: existing } = await supabase
     .from("users")
     .select("id")
     .eq("id", authUser.id)
     .maybeSingle();
 
-  if (existing) return;
+  if (existing) return null;
 
   const meta = authUser.user_metadata || {};
   let username = (
@@ -41,7 +40,8 @@ export async function ensurePublicUserRow(
 
   const ts = now();
   const providerId = meta.provider_id;
-  const newRow = {
+
+  const newRow: Record<string, unknown> = {
     id: authUser.id,
     email: (authUser.email || `${username}@users.lockedin`).toLowerCase(),
     username,
@@ -49,19 +49,42 @@ export async function ensurePublicUserRow(
       meta.name ||
       meta.displayName ||
       username) as string,
-    avatarUrl: (meta.avatar_url as string | undefined) ?? null,
-    githubId:
-      providerId !== undefined && providerId !== null
-        ? parseInt(String(providerId), 10)
-        : null,
-    githubUsername: (meta.user_name as string | undefined) ?? null,
+    role: "USER",
+    status: "PENDING",
     createdAt: ts,
     updatedAt: ts,
   };
 
-  const { error: insErr } = await supabase.from("users").insert(newRow);
-  if (insErr && insErr.code !== "23505") {
-    console.error("ensurePublicUserRow insert:", insErr.message);
+  if (meta.avatar_url) {
+    newRow.avatarUrl = meta.avatar_url;
   }
-  // 23505 = race: another request created the row
+
+  if (providerId !== undefined && providerId !== null) {
+    const n = parseInt(String(providerId), 10);
+    if (!Number.isNaN(n)) {
+      newRow.githubId = n;
+    }
+  }
+
+  if (meta.user_name) {
+    newRow.githubUsername = meta.user_name;
+  }
+
+  const { error: insErr } = await supabase.from("users").insert(newRow);
+
+  if (!insErr) {
+    return null;
+  }
+
+  if (insErr.code === "23505") {
+    const { data: again } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", authUser.id)
+      .maybeSingle();
+    if (again) return null;
+  }
+
+  console.error("ensurePublicUserRow insert failed:", insErr.code, insErr.message, insErr.details);
+  return insErr.message || `Insert failed (${insErr.code || "unknown"})`;
 }
