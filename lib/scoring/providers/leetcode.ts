@@ -168,7 +168,8 @@ export async function fetchLeetCodeSignal(username: string): Promise<SignalInput
 
   let lastErr: Error | null = null;
 
-  for (const q of [QUERY_SUBMIT_STATS_GLOBAL, QUERY_SUBMIT_STATS_LEGACY]) {
+  // Legacy first: submitStatsGlobal can 403 / field-error from some regions; old path still works for many users.
+  for (const q of [QUERY_SUBMIT_STATS_LEGACY, QUERY_SUBMIT_STATS_GLOBAL]) {
     try {
       const json = await fetchLeetCodeAcStatsGraphQL(handle, q);
       const stats = json.data?.matchedUser?.submitStats?.acSubmissionNum;

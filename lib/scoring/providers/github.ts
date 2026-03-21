@@ -16,7 +16,7 @@ function githubRestHeaders(): Record<string, string> {
   return h;
 }
 
-/** Matches the big number on profile / contributions pages (public view). */
+/** Matches the visible “N contributions in the last year” text (English). */
 function parseContributionsHeadline(html: string): number | null {
   const patterns = [
     /(\d[\d,]*)\s+contributions?\s+in\s+the\s+last\s+year/i,
@@ -46,24 +46,6 @@ function parseContributionsHeadline(html: string): number | null {
   return null;
 }
 
-/** GitHub often embeds stats in JSON inside the HTML (React / partial payloads). */
-function parseContributionsFromEmbeddedJson(html: string): number | null {
-  const patterns = [
-    /"contributionsLastYear"\s*:\s*(\d+)/i,
-    /"totalContributions"\s*:\s*(\d+)/i,
-    /contributionsLastYear['"]\s*:\s*(\d+)/i,
-    /"contributionCount"\s*:\s*\{\s*"total"\s*:\s*(\d+)/i,
-  ];
-  for (const re of patterns) {
-    const m = html.match(re);
-    if (m?.[1]) {
-      const n = parseInt(m[1].replace(/,/g, ""), 10);
-      if (Number.isFinite(n) && n >= 0 && n < 1_000_000) return n;
-    }
-  }
-  return null;
-}
-
 function sumContributionCalendarDays(calendar: {
   weeks?: Array<{ contributionDays?: Array<{ contributionCount?: number }> }>;
 }): number {
@@ -77,9 +59,6 @@ function sumContributionCalendarDays(calendar: {
   return sum;
 }
 
-/**
- * Rolling window (≤365d). GitHub allows at most ~1 year per contributionsCollection.
- */
 function githubRollingContributionsWindow(): { from: string; to: string } {
   const to = new Date();
   const from = new Date(to.getTime());
@@ -149,17 +128,18 @@ async function fetchViaGraphQL(login: string, token: string): Promise<SignalInpu
 
   const fromDays = sumContributionCalendarDays(cal);
   const reported = cal.totalContributions ?? 0;
-  // Prefer the detailed calendar sum; totalContributions sometimes disagrees with the profile.
   const rawValue = Math.max(fromDays, reported);
 
   return { key: "github_contributions", rawValue };
 }
 
 /**
- * Public HTML — headline + embedded JSON (matches profile “N in the last year”).
- * Uses cache: no-store so CDNs don’t serve stale counts.
+ * Headline-only from public pages. Do not parse arbitrary JSON in HTML — the first
+ * "totalContributions":1 elsewhere on the page caused false counts.
  */
-async function tryPublicContributionsFromHtml(login: string): Promise<number | null> {
+async function tryContributionsHeadlineFromPublicPages(
+  login: string,
+): Promise<number | null> {
   const urls = [
     `https://github.com/${encodeURIComponent(login)}`,
     `https://github.com/users/${encodeURIComponent(login)}/contributions`,
@@ -176,13 +156,10 @@ async function tryPublicContributionsFromHtml(login: string): Promise<number | n
         },
       });
 
-      if (res.status === 404) return null;
       if (!res.ok) continue;
 
       const html = await res.text();
-      const n =
-        parseContributionsHeadline(html) ??
-        parseContributionsFromEmbeddedJson(html);
+      const n = parseContributionsHeadline(html);
       if (n !== null) return n;
     } catch {
       continue;
@@ -190,14 +167,6 @@ async function tryPublicContributionsFromHtml(login: string): Promise<number | n
   }
 
   return null;
-}
-
-async function fetchContributionsFromPublicHtml(login: string): Promise<number> {
-  const n = await tryPublicContributionsFromHtml(login);
-  if (n !== null) return n;
-  throw new Error(
-    "Could not read contributions from GitHub HTML (layout may have changed). Set GITHUB_TOKEN for GraphQL.",
-  );
 }
 
 async function assertGitHubUserExists(login: string): Promise<void> {
@@ -211,9 +180,6 @@ async function assertGitHubUserExists(login: string): Promise<void> {
   }
 }
 
-/**
- * Tooltip / legacy cell parse — last resort when headline missing.
- */
 function sumFromContributionTooltips(html: string): number | null {
   const tooltipRe =
     />(?:No contributions|(\d+) contributions?) on[^<]+<\/tool-tip>/gi;
@@ -227,10 +193,8 @@ function sumFromContributionTooltips(html: string): number | null {
 }
 
 /**
- * Fetches GitHub contributions for the rolling year shown on the profile.
- * - With `GITHUB_TOKEN`: GraphQL calendar, summing each day's `contributionCount`.
- * - Without token: parses the public "**N** contributions in the last year" headline
- *   (calendar `data-count` scraping is unreliable since GitHub moved to `data-level`).
+ * GitHub contributions (rolling ~year): GraphQL when `GITHUB_TOKEN` is set, merged with
+ * the public headline when available (max of both). No unsafe HTML JSON scraping.
  */
 export async function fetchGitHubSignal(
   username: string,
@@ -240,63 +204,58 @@ export async function fetchGitHubSignal(
   if (!login) throw new Error("GitHub username is empty");
 
   try {
-    const headlineTotal = await tryPublicContributionsFromHtml(login);
-
     const token = accessToken || process.env.GITHUB_TOKEN;
-    let gqlTotal: number | null = null;
+
+    let gqlVal: number | null = null;
     if (token) {
       try {
-        const gql = await fetchViaGraphQL(login, token);
-        gqlTotal = gql.rawValue;
+        gqlVal = (await fetchViaGraphQL(login, token)).rawValue;
       } catch (graphqlErr) {
         console.warn(
-          `[GitHub] GraphQL failed for ${login}, using public HTML only:`,
-          graphqlErr,
+          `[GitHub] GraphQL failed for ${login}:`,
+          graphqlErr instanceof Error ? graphqlErr.message : graphqlErr,
         );
       }
     }
 
-    if (headlineTotal !== null && gqlTotal !== null) {
+    const headlineVal = await tryContributionsHeadlineFromPublicPages(login);
+
+    const parts = [gqlVal, headlineVal].filter(
+      (v): v is number => typeof v === "number" && Number.isFinite(v) && v >= 0,
+    );
+
+    if (parts.length > 0) {
       return {
         key: "github_contributions",
-        rawValue: Math.max(headlineTotal, gqlTotal),
+        rawValue: Math.max(...parts),
       };
-    }
-    if (headlineTotal !== null) {
-      return { key: "github_contributions", rawValue: headlineTotal };
-    }
-    if (gqlTotal !== null) {
-      return { key: "github_contributions", rawValue: gqlTotal };
     }
 
     await assertGitHubUserExists(login);
-    try {
-      const fromHeadline = await fetchContributionsFromPublicHtml(login);
-      return { key: "github_contributions", rawValue: fromHeadline };
-    } catch {
-      const res = await fetch(
-        `https://github.com/users/${encodeURIComponent(login)}/contributions`,
-        {
-          cache: "no-store",
-          headers: {
-            "User-Agent": USER_AGENT,
-            Accept: "text/html,application/xhtml+xml",
-            "Accept-Language": "en-US,en;q=0.9",
-          },
+
+    const res = await fetch(
+      `https://github.com/users/${encodeURIComponent(login)}/contributions`,
+      {
+        cache: "no-store",
+        headers: {
+          "User-Agent": USER_AGENT,
+          Accept: "text/html,application/xhtml+xml",
+          "Accept-Language": "en-US,en;q=0.9",
         },
-      );
-      if (!res.ok) {
-        throw new Error(`GitHub contributions page returned ${res.status}`);
-      }
-      const html = await res.text();
-      const fromTips = sumFromContributionTooltips(html);
-      if (fromTips !== null) {
-        return { key: "github_contributions", rawValue: fromTips };
-      }
-      throw new Error(
-        "Could not parse GitHub contributions. Set GITHUB_TOKEN or try again later.",
-      );
+      },
+    );
+    if (!res.ok) {
+      throw new Error(`GitHub contributions page returned ${res.status}`);
     }
+    const html = await res.text();
+    const fromTips = sumFromContributionTooltips(html);
+    if (fromTips !== null) {
+      return { key: "github_contributions", rawValue: fromTips };
+    }
+
+    throw new Error(
+      "Could not read GitHub contributions. Set GITHUB_TOKEN (classic PAT with read:user) or try again later.",
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown GitHub fetch error";
