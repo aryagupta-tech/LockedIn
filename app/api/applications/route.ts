@@ -131,6 +131,7 @@ export async function POST(request: Request) {
 
     const ts = now();
     const appId = generateId();
+    // DB often has NOT NULL on score / passingThreshold — use placeholders until scoring runs.
     const application: Record<string, unknown> = {
       id: appId,
       userId,
@@ -139,9 +140,9 @@ export async function POST(request: Request) {
       codeforcesHandle: cf || null,
       leetcodeHandle: lc || null,
       portfolioUrl: null,
-      score: null,
+      score: 0,
       scoreBreakdown: null,
-      passingThreshold: null,
+      passingThreshold: 1,
       createdAt: ts,
       updatedAt: ts,
     };

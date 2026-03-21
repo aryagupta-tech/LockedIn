@@ -207,6 +207,7 @@ export default function ApplyPage() {
   if (application) {
     const statusColors: Record<string, string> = {
       PENDING: "border-yellow-500/20 bg-yellow-500/10 text-yellow-400",
+      PROCESSING: "border-cyan-500/20 bg-cyan-500/10 text-cyan-300",
       APPROVED: "border-green-500/20 bg-green-500/10 text-green-400",
       REJECTED: "border-red-500/20 bg-red-500/10 text-red-400",
       APPEALED: "border-blue-500/20 bg-blue-500/10 text-blue-400",
@@ -279,10 +280,12 @@ export default function ApplyPage() {
               )}
             {application.scoreBreakdown == null &&
               (application.status === "UNDER_REVIEW" ||
-                application.status === "REJECTED") && (
+                application.status === "REJECTED" ||
+                application.status === "PROCESSING") && (
                 <p className="mt-4 text-sm text-app-fg-muted">
-                  Detailed contribution / rating breakdown wasn’t stored for this application.
-                  Submit a new application after deploying the latest app, or contact support.
+                  {application.status === "PROCESSING"
+                    ? "Still loading your GitHub / LeetCode / Codeforces stats. Refresh in a few seconds."
+                    : "Detailed contribution / rating breakdown wasn’t stored for this application. Submit again after deploying the latest app, or contact support."}
                 </p>
               )}
           </div>
