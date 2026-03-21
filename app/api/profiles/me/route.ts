@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireAuth, errorResponse, now } from "@/lib/api-utils";
+import { ensurePublicUserRow } from "@/lib/ensure-public-user";
 import { getBuilderProgressForUser } from "@/lib/gamification-queries";
 
 export async function GET(request: Request) {
@@ -9,6 +10,8 @@ export async function GET(request: Request) {
     if ("error" in auth) return auth.error;
 
     const supabase = createServiceClient();
+    await ensurePublicUserRow(supabase, auth.user);
+
     const { data: user } = await supabase
       .from("users")
       .select("id, email, username, displayName, avatarUrl, role, status, createdAt")

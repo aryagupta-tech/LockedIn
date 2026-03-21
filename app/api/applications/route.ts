@@ -9,6 +9,7 @@ import {
   normalizeCodeforcesHandle,
   normalizeLeetCodeHandle,
 } from "@/lib/platform-handles";
+import { ensurePublicUserRow } from "@/lib/ensure-public-user";
 
 function buildScoreBreakdown(
   signals: SignalInput[],
@@ -80,6 +81,8 @@ export async function POST(request: Request) {
 
     const supabase = createServiceClient();
 
+    await ensurePublicUserRow(supabase, auth.user);
+
     const { data: dbUser, error: profErr } = await supabase
       .from("users")
       .select("id, githubUsername")
@@ -87,7 +90,11 @@ export async function POST(request: Request) {
       .single();
 
     if (profErr || !dbUser) {
-      return errorResponse("User record not found", "NOT_FOUND", 404);
+      return errorResponse(
+        "Could not load your profile. Try signing out and signing in again.",
+        "NOT_FOUND",
+        404,
+      );
     }
 
     const ownershipViolation = await validatePlatformOwnership(

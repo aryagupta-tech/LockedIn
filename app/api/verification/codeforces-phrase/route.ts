@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { requireAuth, errorResponse } from "@/lib/api-utils";
+import { ensurePublicUserRow } from "@/lib/ensure-public-user";
 import { getCodeforcesVerificationPhrase } from "@/lib/verification/platform-ownership";
 
 /**
@@ -13,6 +14,8 @@ export async function GET(request: Request) {
     if ("error" in auth) return auth.error;
 
     const supabase = createServiceClient();
+    await ensurePublicUserRow(supabase, auth.user);
+
     const { data: row } = await supabase
       .from("users")
       .select("githubUsername")

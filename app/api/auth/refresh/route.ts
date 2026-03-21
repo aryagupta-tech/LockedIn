@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
 import { errorResponse } from "@/lib/api-utils";
+import { ensurePublicUserRow } from "@/lib/ensure-public-user";
 
 export async function POST(request: Request) {
   try {
@@ -20,6 +21,8 @@ export async function POST(request: Request) {
     if (error || !session.session) {
       return errorResponse("Invalid or expired refresh token", "UNAUTHORIZED", 401);
     }
+
+    await ensurePublicUserRow(supabase, session.user!);
 
     const { data: user } = await supabase
       .from("users")
