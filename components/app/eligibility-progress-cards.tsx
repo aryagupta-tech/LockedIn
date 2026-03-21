@@ -40,11 +40,11 @@ export function EligibilityProgressCards({
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="text-sm font-semibold text-app-fg">{p.label}</span>
               {p.passed ? (
-                <span className="text-xs font-medium text-green-400/90">
+                <span className="text-xs font-medium text-green-800 dark:text-green-400/90">
                   Meets bar — counts for auto-approve
                 </span>
               ) : (
-                <span className="text-xs font-medium text-amber-400/90">
+                <span className="text-xs font-medium text-amber-800 dark:text-amber-400/90">
                   Below bar for auto-approve
                 </span>
               )}
@@ -68,7 +68,7 @@ export function EligibilityProgressCards({
                   </span>
                 </div>
                 {!p.passed && p.shortfall !== null && p.shortfall > 0 && (
-                  <p className="mt-1 text-[12px] text-amber-200/85">
+                  <p className="mt-1 text-[12px] text-amber-900 dark:text-amber-200/85">
                     About <strong>{p.shortfall}</strong> more {p.unit} to reach the auto-approve
                     threshold on {p.label} alone.
                   </p>

@@ -188,7 +188,7 @@ export default function AdminPage() {
       </div>
 
       {loadError && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+        <div className="rounded-lg border border-amber-600/35 bg-amber-100/85 px-3 py-2 text-sm text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
           {loadError}
         </div>
       )}

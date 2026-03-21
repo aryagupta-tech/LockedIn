@@ -477,8 +477,8 @@ export default function ApplyPage() {
 
           <div className="grid gap-6 md:grid-cols-2">
             {/* LeetCode */}
-            <section className="rounded-xl border border-orange-500/20 bg-orange-500/[0.04] p-4">
-              <div className="text-sm font-semibold text-orange-200/95">
+            <section className="rounded-xl border border-orange-500/25 bg-orange-500/[0.06] p-4 dark:border-orange-500/20 dark:bg-orange-500/[0.04]">
+              <div className="text-sm font-semibold text-orange-900 dark:text-orange-200/95">
                 LeetCode (100+ problems)
               </div>
               <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-[11px] leading-relaxed text-app-fg-muted">
@@ -524,8 +524,8 @@ export default function ApplyPage() {
             </section>
 
             {/* Codeforces */}
-            <section className="rounded-xl border border-sky-500/20 bg-sky-500/[0.04] p-4">
-              <div className="text-sm font-semibold text-sky-200/95">
+            <section className="rounded-xl border border-sky-500/25 bg-sky-500/[0.06] p-4 dark:border-sky-500/20 dark:bg-sky-500/[0.04]">
+              <div className="text-sm font-semibold text-sky-900 dark:text-sky-200/95">
                 Codeforces (rating 900+)
               </div>
               <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-[11px] leading-relaxed text-app-fg-muted">
@@ -538,12 +538,14 @@ export default function ApplyPage() {
                 <li>Wait a few seconds, then paste your profile URL or handle here.</li>
               </ol>
               {codeforcesOrgPhrase ? (
-                <div className="mt-3 rounded-lg border border-sky-500/30 bg-sky-950/30 px-3 py-2 text-[11px] text-app-fg-muted">
-                  <p className="font-medium text-sky-200/90">Your org phrase (unique to you)</p>
-                  <code className="mt-1 block break-all font-mono text-xs text-app-fg">
+                <div className="mt-3 rounded-lg border border-sky-600/25 bg-sky-100/90 px-3 py-2 text-[11px] text-app-fg-secondary dark:border-sky-500/35 dark:bg-sky-950/45 dark:text-app-fg-muted">
+                  <p className="font-medium text-sky-950 dark:text-sky-200/90">
+                    Your org phrase (unique to you)
+                  </p>
+                  <code className="mt-1 block break-all font-mono text-[13px] leading-relaxed text-neutral-900 dark:text-app-fg">
                     {codeforcesOrgPhrase}
                   </code>
-                  <p className="mt-1.5 text-[10px] text-app-fg-muted">
+                  <p className="mt-1.5 text-[10px] text-app-fg-secondary dark:text-app-fg-muted">
                     This proves the handle is yours — you can clear it after approval.
                   </p>
                 </div>
@@ -609,7 +611,7 @@ export default function ApplyPage() {
             </div>
           )}
           {previewError && (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200/90">
+            <div className="rounded-xl border border-amber-600/30 bg-amber-100/80 px-4 py-3 text-sm text-amber-950 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200/90">
               {previewError}
             </div>
           )}

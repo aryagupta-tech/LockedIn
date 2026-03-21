@@ -123,7 +123,7 @@ export function CreatePost({ communityId, onCreated }: { communityId?: string; o
                   value={codeLanguage}
                   onChange={(e) => setCodeLanguage(e.target.value)}
                   placeholder="Language"
-                  className="w-full bg-transparent text-[12px] text-app-fg-muted placeholder:text-app-fg-muted/60 outline-none"
+                  className="w-full bg-transparent text-[12px] text-app-fg placeholder:text-app-fg-muted/70 outline-none"
                 />
               </div>
               <textarea
@@ -131,13 +131,13 @@ export function CreatePost({ communityId, onCreated }: { communityId?: string; o
                 onChange={(e) => setCodeSnippet(e.target.value)}
                 placeholder="Paste your code..."
                 rows={4}
-                className="w-full resize-none bg-app-code p-3 font-mono text-[13px] text-app-fg-secondary placeholder:text-app-fg-muted/60 outline-none"
+                className="w-full resize-none bg-app-code p-3 font-mono text-[13px] text-app-fg placeholder:text-app-fg-muted/70 outline-none"
               />
             </div>
           )}
 
           {error && (
-            <p className="mt-2 text-[13px] text-red-400">{error}</p>
+            <p className="mt-2 text-[13px] text-red-700 dark:text-red-400">{error}</p>
           )}
 
           {(focused || content || imageFile) && (
