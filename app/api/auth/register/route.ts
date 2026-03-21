@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
+import { getServiceRoleKeyMisconfigurationError } from "@/lib/supabase-service-key";
 import { errorResponse, now } from "@/lib/api-utils";
 
 export async function POST(request: Request) {
@@ -9,6 +10,13 @@ export async function POST(request: Request) {
 
     if (!email || !username || !password || !displayName) {
       return errorResponse("Missing required fields", "VALIDATION_ERROR", 400);
+    }
+
+    const keyMisconfig = getServiceRoleKeyMisconfigurationError();
+    if (keyMisconfig) {
+      return errorResponse(keyMisconfig, "SUPABASE_KEY_MISCONFIGURED", 500, {
+        hint: "Redeploy after fixing SUPABASE_SERVICE_ROLE_KEY in Vercel.",
+      });
     }
 
     const supabase = createServiceClient();

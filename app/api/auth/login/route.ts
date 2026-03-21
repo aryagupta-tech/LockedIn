@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-server";
+import { getServiceRoleKeyMisconfigurationError } from "@/lib/supabase-service-key";
 import { errorResponse, now } from "@/lib/api-utils";
 import { ensurePublicUserRow } from "@/lib/ensure-public-user";
 
@@ -61,6 +62,13 @@ export async function POST(request: Request) {
         "INTERNAL_ERROR",
         500,
       );
+    }
+
+    const keyMisconfig = getServiceRoleKeyMisconfigurationError();
+    if (keyMisconfig) {
+      return errorResponse(keyMisconfig, "SUPABASE_KEY_MISCONFIGURED", 500, {
+        hint: "Redeploy after fixing the env var. The service_role value is labeled “service_role” in Supabase API settings and is longer than the anon key.",
+      });
     }
 
     const supabase = createServiceClient();
