@@ -62,7 +62,9 @@ export async function POST(request: Request) {
         {
           details: ensureErr,
           hint:
-            "Run scripts/supabase-profile-rls-and-rpc.sql in Supabase (SQL Editor) — that fixes RLS without needing a correct service_role key. Or set SUPABASE_SERVICE_ROLE_KEY to the real service_role secret from Supabase → Settings → API.",
+          ensureErr.includes("users_email_key") || ensureErr.includes("duplicate key")
+            ? "Your email is tied to an old public.users row (e.g. recreated Auth user). Re-run the updated SQL in Supabase SQL Editor (scripts/supabase-profile-rls-and-rpc.sql — removes orphan rows by email), or delete the stale row in Table Editor → public.users."
+            : "Run scripts/supabase-profile-rls-and-rpc.sql in Supabase (SQL Editor), or set SUPABASE_SERVICE_ROLE_KEY to the service_role secret from Supabase → Settings → API.",
         },
       );
     }

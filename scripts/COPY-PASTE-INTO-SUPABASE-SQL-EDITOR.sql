@@ -59,6 +59,14 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Same email, different id: leftover row from a deleted Auth user (recreated account).
+  IF trim(COALESCE(u.email, '')) <> '' THEN
+    DELETE FROM public.users pu
+    WHERE pu.id <> p_user_id
+      AND lower(trim(COALESCE(pu.email, ''))) = lower(trim(COALESCE(u.email, '')))
+      AND NOT EXISTS (SELECT 1 FROM auth.users au WHERE au.id = pu.id);
+  END IF;
+
   meta := COALESCE(u.raw_user_meta_data, '{}'::jsonb);
 
   base_username := lower(regexp_replace(
