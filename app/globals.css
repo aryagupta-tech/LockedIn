@@ -12,33 +12,33 @@
   --app-r-md: 0.875rem;
   --app-r-lg: 1.3125rem;
   --app-r-xl: 1.625rem;
-  /* Warm lavender-gray canvas (less cold than blue-gray) */
-  --app-bg: #d9d6df;
-  --app-bg-subtle: #d0ccd6;
-  --app-surface: #e8e4ee;
-  --app-surface-2: #f0ecf4;
-  --app-input-bg: #e0dce6;
-  --app-code-bg: #e6e2eb;
-  --app-nav-bg: rgba(232, 228, 238, 0.93);
-  --app-text: #181a22;
-  --app-text-secondary: #3a3848;
-  --app-text-muted: #5a5668;
-  --app-border: rgba(255, 255, 255, 0.48);
-  --app-border-strong: rgba(240, 120, 40, 0.26);
-  --app-accent: #f07828;
-  --app-accent-soft: rgba(240, 120, 40, 0.2);
-  --app-overlay: rgba(28, 26, 36, 0.38);
-  --app-neo-hi: rgba(255, 255, 255, 0.95);
-  --app-neo-lo: rgba(0, 0, 0, 0.048);
-  --app-shadow: 8px 8px 20px var(--app-neo-lo), -6px -6px 18px var(--app-neo-hi);
-  --app-shadow-hover: 9px 9px 24px var(--app-neo-lo), -6px -6px 20px var(--app-neo-hi),
-    0 0 22px var(--app-accent-soft);
-  --app-shadow-inset: inset 2px 2px 8px var(--app-neo-lo), inset -2px -2px 8px var(--app-neo-hi);
-  --app-shadow-nav: 0 7px 22px rgba(0, 0, 0, 0.038), -3px -3px 16px var(--app-neo-hi);
-  --app-shadow-modal: 0 24px 60px rgba(26, 24, 34, 0.11), 0 0 0 1px rgba(255, 255, 255, 0.28);
-  --app-shadow-raised: 5px 5px 13px var(--app-neo-lo), -4px -4px 13px var(--app-neo-hi);
-  --app-shadow-raised-hover: 6px 6px 16px var(--app-neo-lo), -4px -4px 15px var(--app-neo-hi),
+  /* Light: mid-gray canvas — less glare, stronger text contrast */
+  --app-bg: #a8a4b2;
+  --app-bg-subtle: #9c98a8;
+  --app-surface: #c2beca;
+  --app-surface-2: #ccc8d4;
+  --app-input-bg: #b8b4c2;
+  --app-code-bg: #beb9c8;
+  --app-nav-bg: rgba(186, 182, 194, 0.96);
+  --app-text: #0a0b10;
+  --app-text-secondary: #1e1f2a;
+  --app-text-muted: #3a3848;
+  --app-border: rgba(20, 18, 32, 0.12);
+  --app-border-strong: rgba(200, 95, 30, 0.35);
+  --app-accent: #d86518;
+  --app-accent-soft: rgba(216, 101, 24, 0.22);
+  --app-overlay: rgba(12, 10, 18, 0.45);
+  --app-neo-hi: rgba(255, 255, 255, 0.38);
+  --app-neo-lo: rgba(0, 0, 0, 0.1);
+  --app-shadow: 8px 8px 22px var(--app-neo-lo), -5px -5px 16px var(--app-neo-hi);
+  --app-shadow-hover: 9px 9px 26px var(--app-neo-lo), -5px -5px 18px var(--app-neo-hi),
     0 0 20px var(--app-accent-soft);
+  --app-shadow-inset: inset 2px 2px 10px var(--app-neo-lo), inset -2px -2px 9px var(--app-neo-hi);
+  --app-shadow-nav: 0 6px 20px rgba(0, 0, 0, 0.08), -2px -2px 12px var(--app-neo-hi);
+  --app-shadow-modal: 0 22px 56px rgba(12, 10, 20, 0.2), 0 0 0 1px rgba(20, 18, 32, 0.1);
+  --app-shadow-raised: 5px 5px 14px var(--app-neo-lo), -4px -4px 12px var(--app-neo-hi);
+  --app-shadow-raised-hover: 6px 6px 18px var(--app-neo-lo), -4px -4px 14px var(--app-neo-hi),
+    0 0 18px var(--app-accent-soft);
 }
 
 .dark {
@@ -98,6 +98,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Light: slightly deeper gradient so the UI isn’t one flat bright sheet */
+:root html {
+  background: #9894a2;
+}
+
+:root body {
+  background: linear-gradient(165deg, #9a96a4 0%, #a8a4b2 48%, #a09daa 100%) fixed;
+}
+
 /* Dark: radial “spotlight” like reference */
 .dark body {
   background: radial-gradient(ellipse 120% 85% at 50% -10%, #4a3420 0%, #1f1510 34%, #050302 100%) fixed;
@@ -141,9 +150,9 @@ body {
 
 :root .hero-aurora::before {
   background:
-    radial-gradient(ellipse 45% 40% at 22% 34%, rgba(240, 120, 40, 0.14), transparent),
-    radial-gradient(ellipse 40% 35% at 72% 22%, rgba(255, 175, 130, 0.1), transparent),
-    radial-gradient(ellipse 50% 40% at 48% 72%, rgba(140, 130, 200, 0.09), transparent);
+    radial-gradient(ellipse 45% 40% at 22% 34%, rgba(200, 90, 30, 0.08), transparent),
+    radial-gradient(ellipse 40% 35% at 72% 22%, rgba(120, 110, 160, 0.06), transparent),
+    radial-gradient(ellipse 50% 40% at 48% 72%, rgba(90, 85, 120, 0.07), transparent);
 }
 
 .dark .hero-aurora::before {
@@ -359,7 +368,7 @@ body {
 
 :root .app-top-nav {
   background: var(--app-nav-bg);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  border-bottom: 1px solid rgba(20, 18, 32, 0.12);
   box-shadow: var(--app-shadow-nav);
 }
 
