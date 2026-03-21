@@ -76,7 +76,9 @@ export function EligibilityProgressCards({
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-app-surface-2">
                   <div
                     className={`h-full rounded-full transition-all ${
-                      p.passed ? "bg-green-500/70" : "bg-[#e3c98e]/80"
+                      p.passed
+                        ? "bg-green-600/85 dark:bg-green-500/70"
+                        : "bg-amber-700/80 dark:bg-[#e3c98e]/80"
                     }`}
                     style={{ width: `${pct(p.current, p.threshold)}%` }}
                   />

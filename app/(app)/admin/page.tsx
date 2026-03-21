@@ -240,7 +240,7 @@ export default function AdminPage() {
                             @{app.user.username} · {app.user.email}
                           </>
                         ) : (
-                          <span className="text-amber-400/90">No matching row in public.users</span>
+                          <span className="text-amber-950 dark:text-amber-400/90">No matching row in public.users</span>
                         )}
                       </p>
                     </div>
@@ -325,7 +325,7 @@ export default function AdminPage() {
                             </span>
                           </span>
                         ) : (
-                          <span className="text-amber-400/90">No application submitted</span>
+                          <span className="text-amber-950 dark:text-amber-400/90">No application submitted</span>
                         )}
                       </td>
                     </tr>

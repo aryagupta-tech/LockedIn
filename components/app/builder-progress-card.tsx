@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 
 const tierRing: Record<string, string> = {
   bronze:
-    "border-amber-700/50 bg-gradient-to-br from-amber-900/25 to-amber-950/20 text-amber-200/90 dark:from-amber-900/35 dark:to-amber-950/30",
+    "border-amber-800/40 bg-gradient-to-br from-amber-100/95 to-amber-200/60 text-amber-950 dark:border-amber-700/50 dark:from-amber-900/35 dark:to-amber-950/30 dark:text-amber-200/90",
   silver:
-    "border-zinc-400/40 bg-gradient-to-br from-zinc-400/15 to-zinc-600/10 text-zinc-200 dark:from-zinc-500/20 dark:to-zinc-700/15",
+    "border-zinc-500/35 bg-gradient-to-br from-zinc-200/90 to-zinc-300/50 text-zinc-900 dark:border-zinc-400/40 dark:from-zinc-500/20 dark:to-zinc-700/15 dark:text-zinc-200",
   gold:
     "border-[var(--app-accent-soft)] bg-gradient-to-br from-[color-mix(in_srgb,var(--app-accent)_18%,transparent)] to-[color-mix(in_srgb,var(--app-accent-soft)_12%,transparent)] text-app-fg",
 };

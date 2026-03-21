@@ -270,13 +270,20 @@ export default function ApplyPage() {
   }
 
   if (application) {
+    /* Light: dark text on tinted fills — dark: keeps softer neon-on-dark look */
     const statusColors: Record<string, string> = {
-      PENDING: "border-yellow-500/20 bg-yellow-500/10 text-yellow-400",
-      PROCESSING: "border-cyan-500/20 bg-cyan-500/10 text-cyan-300",
-      APPROVED: "border-green-500/20 bg-green-500/10 text-green-400",
-      REJECTED: "border-red-500/20 bg-red-500/10 text-red-400",
-      APPEALED: "border-blue-500/20 bg-blue-500/10 text-blue-400",
-      UNDER_REVIEW: "border-[#e3c98e]/20 bg-[#e3c98e]/10 text-[#e3c98e]",
+      PENDING:
+        "border-yellow-800/35 bg-yellow-200/70 text-yellow-950 dark:border-yellow-500/25 dark:bg-yellow-500/10 dark:text-yellow-400",
+      PROCESSING:
+        "border-cyan-800/35 bg-cyan-100/75 text-cyan-950 dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300",
+      APPROVED:
+        "border-green-800/35 bg-green-100/75 text-green-950 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-400",
+      REJECTED:
+        "border-red-800/35 bg-red-100/75 text-red-950 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400",
+      APPEALED:
+        "border-blue-800/35 bg-blue-100/75 text-blue-950 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400",
+      UNDER_REVIEW:
+        "border-amber-800/40 bg-amber-100/80 text-amber-950 dark:border-[#e3c98e]/25 dark:bg-[#e3c98e]/10 dark:text-[#e8d4a8]",
     };
 
     return (
@@ -298,11 +305,11 @@ export default function ApplyPage() {
 
           <div className="space-y-3 text-sm">
             {CAN_UPDATE_APPLICATION.has(application.status) && (
-              <div className="rounded-xl border border-[#e3c98e]/25 bg-[#e3c98e]/5 p-4">
+              <div className="rounded-xl border border-amber-800/20 bg-amber-50/90 p-4 dark:border-[#e3c98e]/25 dark:bg-[#e3c98e]/5">
                 <p className="text-sm font-medium text-app-fg">
                   Update proof &amp; refresh stats
                 </p>
-                <p className="mt-1 text-[12px] leading-relaxed text-app-fg-muted">
+                <p className="mt-1 text-[12px] leading-relaxed text-app-fg-secondary dark:text-app-fg-muted">
                   Re-enter the links or handles you want us to check (fields start empty).
                   GitHub URL must still match the GitHub account you signed in with.
                   This re-runs live fetches so counts match the latest fix on our side.
@@ -350,10 +357,10 @@ export default function ApplyPage() {
                     </p>
                   )}
                   {updateError && (
-                    <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+                    <div className="rounded-lg border border-red-700/30 bg-red-100/80 px-3 py-2 text-sm text-red-900 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
                       {updateError}
                       {updateHint && (
-                        <p className="mt-1 text-[12px] text-red-300/90">{updateHint}</p>
+                        <p className="mt-1 text-[12px] text-red-800 dark:text-red-300/90">{updateHint}</p>
                       )}
                     </div>
                   )}
@@ -512,7 +519,7 @@ export default function ApplyPage() {
                 className="font-mono text-sm"
               />
               {lcPreview === "__invalid__" && (
-                <p className="mt-1.5 text-[11px] text-amber-400/90">
+                <p className="mt-1.5 text-[11px] text-amber-950 dark:text-amber-400/90">
                   Couldn’t detect a username — use your profile URL or handle only.
                 </p>
               )}
@@ -573,7 +580,7 @@ export default function ApplyPage() {
                 className="font-mono text-sm"
               />
               {cfPreview === "__invalid__" && (
-                <p className="mt-1.5 text-[11px] text-amber-400/90">
+                <p className="mt-1.5 text-[11px] text-amber-950 dark:text-amber-400/90">
                   Couldn’t detect a handle — use your profile URL or handle only.
                 </p>
               )}
@@ -586,10 +593,10 @@ export default function ApplyPage() {
           </div>
 
           {error && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div className="rounded-xl border border-red-700/30 bg-red-100/85 px-4 py-3 text-sm text-red-950 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
               <p>{error}</p>
               {errorHint && (
-                <p className="mt-2 border-t border-red-500/20 pt-2 whitespace-pre-line text-[12px] leading-relaxed text-red-300/85">
+                <p className="mt-2 border-t border-red-700/25 pt-2 whitespace-pre-line text-[12px] leading-relaxed text-red-900 dark:border-red-500/20 dark:text-red-300/85">
                   {errorHint}
                 </p>
               )}
