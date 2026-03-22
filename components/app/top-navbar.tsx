@@ -51,9 +51,25 @@ export function TopNavbar() {
       <header className="app-top-nav fixed inset-x-0 top-0 z-50">
         <div className="mx-auto flex h-[60px] max-w-[1200px] items-center justify-between px-5">
           {/* Logo */}
-          <Link href="/feed" prefetch className="group flex items-center gap-2.5">
-            <LockedInMark size={28} className="transition-transform duration-200 group-hover:scale-105" />
-            <span className="text-brand-logo font-[var(--font-geist)] text-[19px] font-bold tracking-tight">
+          <Link
+            href="/feed"
+            prefetch
+            className="group flex items-center gap-3"
+          >
+            {/* Same 36×36 circle + ring as profile avatar so left mark aligns with right control */}
+            <span
+              className={cn(
+                "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ring-2 transition-all",
+                "bg-gradient-to-br from-[#2a1e18]/95 to-[#140e0c]/98 ring-app-border-strong",
+                "group-hover:ring-neon/40",
+              )}
+            >
+              <LockedInMark
+                size={24}
+                className="transition-transform duration-200 group-hover:scale-105"
+              />
+            </span>
+            <span className="text-brand-logo font-[var(--font-geist)] text-[19px] font-bold leading-none tracking-tight">
               LockedIn
             </span>
           </Link>
