@@ -2,59 +2,27 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Github, Lock, Loader2, ArrowRight } from "lucide-react";
+import { Github, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useAuth } from "@/lib/auth-context";
-import { ApiError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { LockedInMark } from "@/components/brand/locked-in-mark";
-import { isValidEmail } from "@/lib/validation";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGitHub = async () => {
     setError("");
-    if (!isValidEmail(email)) {
-      setError("Enter a valid email address.");
-      return;
-    }
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      document.cookie = "lockedin_logged_in=1; path=/; max-age=604800";
-      router.push("/feed");
-    } catch (err) {
-      if (err instanceof ApiError) {
-        const parts = [err.message];
-        if (err.details) parts.push(String(err.details));
-        if (err.hint) parts.push(String(err.hint));
-        setError(parts.filter(Boolean).join("\n\n"));
-      } else {
-        setError("Something went wrong");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGitHub = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: { redirectTo: `${window.location.origin}/auth/github/callback` },
       });
-      if (error) throw error;
+      if (oauthErr) throw oauthErr;
     } catch {
-      setError("Failed to start GitHub login");
+      setError("Could not start GitHub sign-in. Try again.");
+      setLoading(false);
     }
   };
 
@@ -70,69 +38,35 @@ export default function LoginPage() {
             <LockedInMark size={28} />
             LockedIn
           </Link>
-          <p className="mt-3 text-sm text-app-fg-muted">Sign in to your account</p>
+          <p className="mt-3 text-sm text-app-fg-muted">Sign in with GitHub to continue</p>
         </header>
 
         <div className="app-panel p-6 backdrop-blur-xl sm:p-8">
-          <Button variant="outline" className="mb-6 w-full" onClick={handleGitHub}>
-            <Github className="mr-2 h-4 w-4" />
+          <p className="mb-5 text-center text-[14px] leading-relaxed text-app-fg-muted">
+            New here? GitHub will create your account on first sign-in. You&apos;ll finish setup inside the app.
+          </p>
+          <Button className="w-full" disabled={loading} onClick={() => void handleGitHub()}>
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Github className="mr-2 h-4 w-4" />
+            )}
             Continue with GitHub
           </Button>
 
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-app-border" />
+          {error && (
+            <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+              {error}
             </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-app-surface px-3 text-app-fg-muted">or continue with email</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">Email</label>
-              <Input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-app-fg-muted">Password</label>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
-                {error}
-              </div>
-            )}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
-              Sign In
-            </Button>
-          </form>
+          )}
         </div>
 
         <p className="mt-8 text-center text-sm text-app-fg-muted sm:mt-10">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-neon hover:text-neon-light transition-colors">
-            Register <ArrowRight className="ml-0.5 inline h-3 w-3" />
+          <Link href="/" className="text-neon transition-colors hover:text-neon-light">
+            ← Back to home
           </Link>
         </p>
       </div>
     </div>
   );
 }
-

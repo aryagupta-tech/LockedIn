@@ -16,8 +16,6 @@ import type { Session } from "@supabase/supabase-js";
 interface AuthState {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: { email: string; username: string; password: string; displayName: string }) => Promise<void>;
   logout: () => void;
   setAuth: (data: AuthResponse) => void;
   refreshUser: () => Promise<void>;
@@ -29,7 +27,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Hydrate from localStorage before paint so the app shell renders immediately on navigation.
   useLayoutEffect(() => {
     const stored = localStorage.getItem("lockedin_user");
     if (!stored) return;
@@ -42,13 +39,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Only restore session if the user explicitly logged in/registered
-    // (indicated by the lockedin_logged_in cookie), unless they are currently in the middle of an OAuth callback
     const hasLoginCookie = document.cookie.split(";").some((c) => c.trim().startsWith("lockedin_logged_in="));
     const isAuthCallback = typeof window !== "undefined" && window.location.pathname.startsWith("/auth/");
 
     if (!hasLoginCookie && !isAuthCallback) {
-      // No login cookie — clear any stale Supabase session
       supabase.auth.signOut().catch(() => {});
       localStorage.removeItem("lockedin_user");
       setUser(null);
@@ -60,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session) {
         restoreProfile(session);
       } else {
-        // Cookie exists but session expired — clear cookie
         document.cookie = "lockedin_logged_in=; path=/; max-age=0";
         localStorage.removeItem("lockedin_user");
         setUser(null);
@@ -68,7 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         setUser(null);
         localStorage.removeItem("lockedin_user");
@@ -111,24 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const data = await api.post<AuthResponse>("/auth/login", { email, password }, { skipAuth: true });
-    supabase.auth.setSession({
-      access_token: data.accessToken,
-      refresh_token: data.refreshToken,
-    });
-    setAuth(data);
-  }, [setAuth]);
-
-  const register = useCallback(async (body: { email: string; username: string; password: string; displayName: string }) => {
-    const data = await api.post<AuthResponse>("/auth/register", body, { skipAuth: true });
-    supabase.auth.setSession({
-      access_token: data.accessToken,
-      refresh_token: data.refreshToken,
-    });
-    setAuth(data);
-  }, [setAuth]);
-
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     api.clearTokens();
@@ -140,11 +117,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = await api.get<User>("/profiles/me");
       localStorage.setItem("lockedin_user", JSON.stringify(profile));
       setUser(profile);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, setAuth, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, logout, setAuth, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -12,7 +12,7 @@ A private, gated social network for high-signal builders: developers, designers,
 - **Notifications** - real-time alerts for likes, comments, follows, and application updates
 - **Appeals** - rejected applicants can submit appeals for re-review
 - **Admin dashboard** - review applications, manage scoring weights, handle appeals
-- **Auth** - email/password registration, login, token refresh, GitHub OAuth
+- **Auth** - GitHub OAuth only (Supabase), token refresh; `/register` redirects to `/login`
 - **Middleware** - route protection with automatic redirects for authenticated/unauthenticated users
 - **UI** - single **dark** leather-luxe theme (no light mode)
 
@@ -41,7 +41,7 @@ lockedin/
 │   │   ├── apply/            # Application form
 │   │   └── admin/            # Admin dashboard
 │   ├── api/
-│   │   ├── auth/             # register, login, refresh, github oauth
+│   │   ├── auth/             # refresh, GitHub OAuth callback
 │   │   ├── applications/     # submit + review applications
 │   │   ├── posts/            # CRUD + likes + comments
 │   │   ├── communities/      # CRUD + join + members
@@ -50,8 +50,8 @@ lockedin/
 │   │   ├── appeals/          # submit + view appeals
 │   │   ├── admin/            # application review, scoring weights, appeals
 │   │   └── health/           # health check
-│   ├── login/                # Login page
-│   ├── register/             # Registration page
+│   ├── login/                # GitHub sign-in
+│   ├── register/             # Redirects to /login (legacy URL)
 │   ├── not-found.tsx         # Custom 404
 │   └── global-error.tsx      # Custom error boundary
 ├── components/

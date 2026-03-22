@@ -21,12 +21,6 @@
 - Anything prefixed with `NEXT_PUBLIC_` is **embedded in the browser**.  
 - **Never** use `NEXT_PUBLIC_` for passwords, service role keys, or admin tokens.
 
-## Dev auto-login (`/dev-login`)
-
-- Uses **`DEV_LOGIN_EMAIL` / `DEV_LOGIN_PASSWORD`** in `.env` **only on your machine**.
-- **`/api/dev-login` returns 404 in production** (`NODE_ENV=production`).
-- **`/dev-login` redirects to `/login` in production** via middleware.
-
 ## Supabase
 
 - Turn on **Row Level Security** for sensitive tables; use policies that match your threat model.

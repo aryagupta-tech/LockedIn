@@ -109,7 +109,7 @@ export function LandingPage() {
                   <div>
                     <CardTitle className="text-xl text-app-fg">Apply to join</CardTitle>
                     <CardDescription className="text-app-fg-muted">
-                      Create an account, complete verification, and submit your application. We score public GitHub,
+                      Sign in with GitHub, complete verification, and submit your application. We score public GitHub,
                       Codeforces, and LeetCode signals.
                     </CardDescription>
                   </div>
@@ -117,10 +117,7 @@ export function LandingPage() {
               </CardHeader>
               <CardContent className="relative flex flex-wrap gap-3">
                 <Button className="animate-pulseGlow" asChild>
-                  <a href="/register">Get started</a>
-                </Button>
-                <Button variant="outline" asChild>
-                  <a href="/login">Sign in</a>
+                  <a href="/login">Get started with GitHub</a>
                 </Button>
               </CardContent>
             </Card>
@@ -266,7 +263,7 @@ function Navbar() {
               Sign In
             </a>
             <Button size="sm" asChild>
-              <a href="/register">Get Started</a>
+              <a href="/login">Get started</a>
             </Button>
           </nav>
         </div>
@@ -312,10 +309,7 @@ function Hero() {
             className="mt-10 flex flex-wrap items-center justify-center gap-4"
           >
             <Button size="lg" asChild>
-              <a href="/register">Get Started</a>
-            </Button>
-            <Button variant="outline" size="lg" asChild>
-              <a href="/login">Sign In</a>
+              <a href="/login">Continue with GitHub</a>
             </Button>
           </motion.div>
 
