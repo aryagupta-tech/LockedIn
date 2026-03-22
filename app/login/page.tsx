@@ -1,19 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Github, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { LockedInMark } from "@/components/brand/locked-in-mark";
+import { useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [oauthBusy, setOauthBusy] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/feed");
+    }
+  }, [authLoading, user, router]);
 
   const handleGitHub = async () => {
     setError("");
-    setLoading(true);
+    setOauthBusy(true);
     try {
       const { error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: "github",
@@ -22,7 +32,7 @@ export default function LoginPage() {
       if (oauthErr) throw oauthErr;
     } catch {
       setError("Could not start GitHub sign-in. Try again.");
-      setLoading(false);
+      setOauthBusy(false);
     }
   };
 
@@ -45,8 +55,8 @@ export default function LoginPage() {
           <p className="mb-5 text-center text-[14px] leading-relaxed text-app-fg-muted">
             New here? GitHub will create your account on first sign-in. You&apos;ll finish setup inside the app.
           </p>
-          <Button className="w-full" disabled={loading} onClick={() => void handleGitHub()}>
-            {loading ? (
+          <Button className="w-full" disabled={oauthBusy} onClick={() => void handleGitHub()}>
+            {oauthBusy ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Github className="mr-2 h-4 w-4" />

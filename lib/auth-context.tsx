@@ -5,7 +5,6 @@ import {
   useContext,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useState,
   type ReactNode,
 } from "react";
@@ -23,57 +22,19 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+function setLoggedInCookie() {
+  document.cookie = "lockedin_logged_in=1; path=/; max-age=604800; SameSite=Lax";
+}
+
+function clearLoggedInCookie() {
+  document.cookie = "lockedin_logged_in=; path=/; max-age=0; SameSite=Lax";
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useLayoutEffect(() => {
-    const stored = localStorage.getItem("lockedin_user");
-    if (!stored) return;
-    try {
-      setUser(JSON.parse(stored) as User);
-      setLoading(false);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    const hasLoginCookie = document.cookie.split(";").some((c) => c.trim().startsWith("lockedin_logged_in="));
-    const isAuthCallback = typeof window !== "undefined" && window.location.pathname.startsWith("/auth/");
-
-    if (!hasLoginCookie && !isAuthCallback) {
-      supabase.auth.signOut().catch(() => {});
-      localStorage.removeItem("lockedin_user");
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        restoreProfile(session);
-      } else {
-        document.cookie = "lockedin_logged_in=; path=/; max-age=0";
-        localStorage.removeItem("lockedin_user");
-        setUser(null);
-        setLoading(false);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        setUser(null);
-        localStorage.removeItem("lockedin_user");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  async function restoreProfile(session: Session) {
+  const restoreProfile = useCallback(async (session: Session) => {
     api.setAccessToken(session.access_token);
     const stored = localStorage.getItem("lockedin_user");
     let hadCached = false;
@@ -92,21 +53,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("lockedin_user", JSON.stringify(profile));
       setUser(profile);
     } catch {
-      /* ignore */
+      /* keep cached user if fetch fails */
     }
 
     if (!hadCached) {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function applySession(session: Session | null) {
+      if (cancelled) return;
+      if (session) {
+        setLoggedInCookie();
+        await restoreProfile(session);
+      } else {
+        clearLoggedInCookie();
+        api.clearTokens();
+        localStorage.removeItem("lockedin_user");
+        setUser(null);
+        setLoading(false);
+      }
+    }
+
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      void applySession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") return;
+
+      if (!session) {
+        void applySession(null);
+        return;
+      }
+
+      setLoggedInCookie();
+      api.setAccessToken(session.access_token);
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        void restoreProfile(session);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [restoreProfile]);
 
   const setAuth = useCallback((data: AuthResponse) => {
     api.setAccessToken(data.accessToken);
+    setLoggedInCookie();
     localStorage.setItem("lockedin_user", JSON.stringify(data.user));
     setUser(data.user);
   }, []);
 
   const logout = useCallback(async () => {
+    clearLoggedInCookie();
     await supabase.auth.signOut();
     api.clearTokens();
     setUser(null);
