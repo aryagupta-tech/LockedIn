@@ -122,7 +122,8 @@ export function TopNavbar() {
 
                 {/* Dropdown menu */}
                 {dropdownOpen && (
-                  <div className="app-panel absolute right-0 top-[calc(100%+8px)] z-50 w-[220px] overflow-hidden rounded-app-md">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-[220px]">
+                    <div className="app-panel overflow-hidden rounded-app-md shadow-modal">
                     {/* User info header */}
                     <div className="border-b border-app-border px-4 py-3">
                       <p className="truncate text-[14px] font-semibold text-app-fg">{user.displayName}</p>
@@ -174,6 +175,7 @@ export function TopNavbar() {
                         <LogOut className="h-4 w-4 text-app-fg-muted" />
                         Sign Out
                       </button>
+                    </div>
                     </div>
                   </div>
                 )}
