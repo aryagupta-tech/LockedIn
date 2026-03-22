@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = parseApplicationProofBody(body);
     if (!parsed.ok) return parsed.response;
-    const { gh, cfRaw, lcRaw, cf, lc } = parsed.data;
+    const { gh, cfRaw, lcRaw, coRaw, cf, lc, co } = parsed.data;
 
     const supabase = createServiceClient();
     await ensurePublicUserRow(supabase, auth.user);
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
         githubUrl: gh || undefined,
         codeforcesHandle: cfRaw || undefined,
         leetcodeHandle: lcRaw || undefined,
+        codolioProfile: coRaw || undefined,
       },
       dbUserSynced,
     );
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
       githubUrl: gh || null,
       codeforcesHandle: cf || null,
       leetcodeHandle: lc || null,
+      codolioProfile: co || null,
     };
 
     const { signals, errors } = await fetchApplicationSignals(appPayload);
@@ -76,7 +78,7 @@ export async function POST(request: Request) {
       anyPass,
       platforms,
       rule:
-        "Auto-approve if ANY: GitHub ≥250 contributions (last year) OR LeetCode ≥100 solved OR Codeforces rating ≥900.",
+        "Auto-approve if ANY: GitHub ≥250 contributions (last year) OR LeetCode ≥100 solved OR Codeforces rating ≥900 OR Codolio C-Score ≥600.",
     });
   } catch (e) {
     console.error("Application preview error:", e);

@@ -28,7 +28,7 @@ function buildScoreBreakdown(
   }
 
   breakdown._eligibilityRule =
-    "Auto-approve if ANY: GitHub ≥250 OR LeetCode ≥100 OR Codeforces ≥900 — proofs must match GitHub sign-in / CF org phrase.";
+    "Auto-approve if ANY: GitHub ≥250 OR LeetCode ≥100 OR Codeforces ≥900 OR Codolio C-Score ≥600 — proofs must match GitHub sign-in / CF org phrase / Codolio-linked GitHub.";
 
   return breakdown;
 }
@@ -73,6 +73,7 @@ export async function POST(request: Request) {
             githubUrl: (app.githubUrl as string | null) || undefined,
             codeforcesHandle: (app.codeforcesHandle as string | null) || undefined,
             leetcodeHandle: (app.leetcodeHandle as string | null) || undefined,
+            codolioProfile: (app.codolioProfile as string | null) || undefined,
           },
           dbUser,
         );
@@ -89,6 +90,7 @@ export async function POST(request: Request) {
             githubUrl?: string | null;
             codeforcesHandle?: string | null;
             leetcodeHandle?: string | null;
+            codolioProfile?: string | null;
           },
         );
 

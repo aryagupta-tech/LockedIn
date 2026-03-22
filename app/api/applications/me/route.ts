@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 
 /**
  * Replace proof links on your latest application and re-fetch GitHub / LeetCode /
- * Codeforces stats (same checks as initial submit). Use when numbers were wrong
+ * Codeforces / Codolio stats (same checks as initial submit). Use when numbers were wrong
  * or you want different proof handles — still must match your sign-in GitHub for URL.
  */
 export async function PATCH(request: Request) {
@@ -43,7 +43,7 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const parsed = parseApplicationProofBody(body);
     if (!parsed.ok) return parsed.response;
-    const { gh, cfRaw, lcRaw, cf, lc } = parsed.data;
+    const { gh, cfRaw, lcRaw, coRaw, cf, lc, co } = parsed.data;
 
     const supabase = createServiceClient();
     await ensurePublicUserRow(supabase, auth.user);
@@ -93,6 +93,7 @@ export async function PATCH(request: Request) {
         githubUrl: gh || undefined,
         codeforcesHandle: cfRaw || undefined,
         leetcodeHandle: lcRaw || undefined,
+        codolioProfile: coRaw || undefined,
       },
       dbUserSynced,
     );
@@ -110,6 +111,7 @@ export async function PATCH(request: Request) {
         githubUrl: gh || null,
         codeforcesHandle: cf || null,
         leetcodeHandle: lc || null,
+        codolioProfile: co || null,
         status: "PROCESSING",
         updatedAt: now(),
       })
@@ -128,6 +130,7 @@ export async function PATCH(request: Request) {
       githubUrl: gh || null,
       codeforcesHandle: cf || null,
       leetcodeHandle: lc || null,
+      codolioProfile: co || null,
     });
 
     const { data: fresh, error: freshErr } = await supabase
@@ -146,6 +149,7 @@ export async function PATCH(request: Request) {
         githubUrl: gh || null,
         codeforcesHandle: cf || null,
         leetcodeHandle: lc || null,
+        codolioProfile: co || null,
       });
     }
 

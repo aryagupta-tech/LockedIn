@@ -26,7 +26,7 @@ export function buildScoreBreakdown(
   }
 
   breakdown._eligibilityRule =
-    "Auto-approve if ANY: GitHub ≥250 contributions OR LeetCode ≥100 solved OR Codeforces rating ≥900 — each proof must be tied to your GitHub sign-in (see ownership rules).";
+    "Auto-approve if ANY: GitHub ≥250 contributions OR LeetCode ≥100 solved OR Codeforces rating ≥900 OR Codolio C-Score ≥600 — each proof must be tied to your GitHub sign-in (see ownership rules).";
 
   breakdown._statsFetchedAt = new Date().toISOString();
 
@@ -39,6 +39,7 @@ type ScoreAppArgs = {
   githubUrl: string | null;
   codeforcesHandle: string | null;
   leetcodeHandle: string | null;
+  codolioProfile: string | null;
 };
 
 /**
@@ -48,13 +49,15 @@ export async function scoreAndPersistApplication(
   supabase: SupabaseClient,
   args: ScoreAppArgs,
 ): Promise<{ status: string; score: number; scoreBreakdown: Record<string, unknown> }> {
-  const { appId, userId, githubUrl, codeforcesHandle, leetcodeHandle } = args;
+  const { appId, userId, githubUrl, codeforcesHandle, leetcodeHandle, codolioProfile } =
+    args;
 
   try {
     const { signals, errors: fetchErrors } = await fetchApplicationSignals({
       githubUrl,
       codeforcesHandle,
       leetcodeHandle,
+      codolioProfile,
     });
 
     const passed = checkAnyPlatformPasses(signals);
@@ -100,6 +103,7 @@ export async function scoreAndPersistApplication(
         githubUrl,
         codeforcesHandle,
         leetcodeHandle,
+        codolioProfile,
       });
       const breakdown = buildScoreBreakdown(signals, fe);
       await supabase

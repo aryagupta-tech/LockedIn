@@ -207,6 +207,7 @@ export interface Application {
   githubUrl: string | null;
   codeforcesHandle: string | null;
   leetcodeHandle: string | null;
+  codolioProfile: string | null;
   score: number | null;
   scoreBreakdown: unknown;
   reviewedAt: string | null;

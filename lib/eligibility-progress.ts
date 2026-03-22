@@ -1,7 +1,7 @@
 import { PLATFORM_THRESHOLDS } from "@/lib/scoring/engine";
 import type { SignalInput } from "@/lib/scoring/engine";
 
-export type PlatformId = "github" | "leetcode" | "codeforces";
+export type PlatformId = "github" | "leetcode" | "codeforces" | "codolio";
 
 export type PlatformProgressRow = {
   id: PlatformId;
@@ -45,23 +45,34 @@ const DEFS: Record<
     metricLabel: "Rating for gate = max(current, maxRating) from official API",
     unit: "rating",
   },
+  codolio: {
+    signalKey: "codolio_c_score",
+    errorKey: "codolio",
+    label: "Codolio",
+    metricLabel:
+      "C-Score from Codolio’s public leaderboard (verified profiles only; auto-approve bar ≥600)",
+    unit: "C-Score",
+  },
 };
 
 type FetchErrorsShape = {
   github?: string;
   leetcode?: string;
   codeforces?: string;
+  codolio?: string;
 };
 
 function submittedFlags(app: {
   githubUrl?: string | null;
   codeforcesHandle?: string | null;
   leetcodeHandle?: string | null;
+  codolioProfile?: string | null;
 }): Record<PlatformId, boolean> {
   return {
     github: Boolean(app.githubUrl?.trim()),
     leetcode: Boolean(app.leetcodeHandle?.trim()),
     codeforces: Boolean(app.codeforcesHandle?.trim()),
+    codolio: Boolean(app.codolioProfile?.trim()),
   };
 }
 
@@ -75,6 +86,7 @@ export function buildPlatformProgressFromSignals(
     githubUrl?: string | null;
     codeforcesHandle?: string | null;
     leetcodeHandle?: string | null;
+    codolioProfile?: string | null;
   },
 ): PlatformProgressRow[] {
   const sub = submittedFlags(app);
@@ -119,6 +131,7 @@ export function buildPlatformProgressFromBreakdown(
     githubUrl?: string | null;
     codeforcesHandle?: string | null;
     leetcodeHandle?: string | null;
+    codolioProfile?: string | null;
   },
 ): PlatformProgressRow[] {
   const sub = submittedFlags(app);

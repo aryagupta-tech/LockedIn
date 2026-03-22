@@ -8,6 +8,7 @@ import { api, type Application, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
   normalizeCodeforcesHandle,
+  normalizeCodolioProfileKey,
   normalizeLeetCodeHandle,
 } from "@/lib/platform-handles";
 import { buildPlatformProgressFromBreakdown } from "@/lib/eligibility-progress";
@@ -42,6 +43,12 @@ function hintForApplyError(err: unknown): string | null {
       return "Use your own GitHub profile URL — it must match the GitHub account you signed in with.";
     case "GITHUB_IDENTITY_REQUIRED":
       return "Sign out and use “Continue with GitHub”, then return to this page.";
+    case "CODOLIO_GITHUB_NOT_LINKED":
+      return "On Codolio: edit profile → connect GitHub (Development) with the same account you used for “Continue with GitHub” here.";
+    case "CODOLIO_GITHUB_MISMATCH":
+      return "The GitHub account linked on your Codolio profile must match the GitHub you used to sign in to LockedIn.";
+    case "CODOLIO_VERIFY_FAILED":
+      return "Check your Codolio profile URL or @username — it must be your public profile name.";
     case "DB_ERROR":
       return err.hint ?? null;
     default:
@@ -64,9 +71,11 @@ export default function ApplyPage() {
     githubUrl: "",
     codeforcesHandle: "",
     leetcodeHandle: "",
+    codolioProfile: "",
   });
   const [lcPreview, setLcPreview] = useState<string | null>(null);
   const [cfPreview, setCfPreview] = useState<string | null>(null);
+  const [coPreview, setCoPreview] = useState<string | null>(null);
   const [eligibilityPreview, setEligibilityPreview] =
     useState<EligibilityPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -75,6 +84,7 @@ export default function ApplyPage() {
     githubUrl: "",
     codeforcesHandle: "",
     leetcodeHandle: "",
+    codolioProfile: "",
   });
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState("");
@@ -113,8 +123,10 @@ export default function ApplyPage() {
     const gh = form.githubUrl.trim();
     const cfRaw = form.codeforcesHandle.trim();
     const lcRaw = form.leetcodeHandle.trim();
+    const coRaw = form.codolioProfile.trim();
     const cf = cfRaw ? normalizeCodeforcesHandle(cfRaw) : "";
     const lc = lcRaw ? normalizeLeetCodeHandle(lcRaw) : "";
+    const co = coRaw ? normalizeCodolioProfileKey(coRaw) : "";
 
     if (lcRaw && !lc) {
       setError("LeetCode: invalid link or username.");
@@ -130,9 +142,16 @@ export default function ApplyPage() {
       );
       return;
     }
-    if (!gh && !cf && !lc) {
+    if (coRaw && !co) {
+      setError("Codolio: invalid profile link or username.");
+      setErrorHint(
+        "Use your public profile URL (codolio.com/profile/yourname) or your @profile name only.",
+      );
+      return;
+    }
+    if (!gh && !cf && !lc && !co) {
       setError(
-        "Add at least one of: GitHub profile URL, LeetCode profile/handle, or Codeforces profile/handle.",
+        "Add at least one of: GitHub profile URL, LeetCode profile/handle, Codeforces profile/handle, or Codolio profile.",
       );
       return;
     }
@@ -142,6 +161,7 @@ export default function ApplyPage() {
         githubUrl: form.githubUrl || undefined,
         codeforcesHandle: form.codeforcesHandle || undefined,
         leetcodeHandle: form.leetcodeHandle || undefined,
+        codolioProfile: form.codolioProfile || undefined,
       });
       setApplication(result);
       await refreshUser();
@@ -169,8 +189,10 @@ export default function ApplyPage() {
     const gh = form.githubUrl.trim();
     const cfRaw = form.codeforcesHandle.trim();
     const lcRaw = form.leetcodeHandle.trim();
+    const coRaw = form.codolioProfile.trim();
     const cf = cfRaw ? normalizeCodeforcesHandle(cfRaw) : "";
     const lc = lcRaw ? normalizeLeetCodeHandle(lcRaw) : "";
+    const co = coRaw ? normalizeCodolioProfileKey(coRaw) : "";
     if (lcRaw && !lc) {
       setPreviewError("Fix LeetCode URL/username before checking stats.");
       return;
@@ -179,7 +201,11 @@ export default function ApplyPage() {
       setPreviewError("Fix Codeforces URL/handle before checking stats.");
       return;
     }
-    if (!gh && !cf && !lc) {
+    if (coRaw && !co) {
+      setPreviewError("Fix Codolio profile URL/username before checking stats.");
+      return;
+    }
+    if (!gh && !cf && !lc && !co) {
       setPreviewError("Add at least one profile field above first.");
       return;
     }
@@ -189,6 +215,7 @@ export default function ApplyPage() {
         githubUrl: form.githubUrl || undefined,
         codeforcesHandle: form.codeforcesHandle || undefined,
         leetcodeHandle: form.leetcodeHandle || undefined,
+        codolioProfile: form.codolioProfile || undefined,
       });
       setEligibilityPreview(data);
     } catch (e) {
@@ -212,8 +239,10 @@ export default function ApplyPage() {
     const gh = updateForm.githubUrl.trim();
     const cfRaw = updateForm.codeforcesHandle.trim();
     const lcRaw = updateForm.leetcodeHandle.trim();
+    const coRaw = updateForm.codolioProfile.trim();
     const cf = cfRaw ? normalizeCodeforcesHandle(cfRaw) : "";
     const lc = lcRaw ? normalizeLeetCodeHandle(lcRaw) : "";
+    const co = coRaw ? normalizeCodolioProfileKey(coRaw) : "";
     if (lcRaw && !lc) {
       setUpdateError("LeetCode: invalid link or username.");
       return;
@@ -222,8 +251,14 @@ export default function ApplyPage() {
       setUpdateError("Codeforces: invalid link or handle.");
       return;
     }
-    if (!gh && !cf && !lc) {
-      setUpdateError("Enter at least one of GitHub URL, LeetCode, or Codeforces.");
+    if (coRaw && !co) {
+      setUpdateError("Codolio: invalid profile link or username.");
+      return;
+    }
+    if (!gh && !cf && !lc && !co) {
+      setUpdateError(
+        "Enter at least one of GitHub URL, LeetCode, Codeforces, or Codolio profile.",
+      );
       return;
     }
     setUpdating(true);
@@ -232,10 +267,16 @@ export default function ApplyPage() {
         githubUrl: updateForm.githubUrl || undefined,
         codeforcesHandle: updateForm.codeforcesHandle || undefined,
         leetcodeHandle: updateForm.leetcodeHandle || undefined,
+        codolioProfile: updateForm.codolioProfile || undefined,
       });
       setApplication(fresh);
       if (fresh.status === "APPROVED") await refreshUser();
-      setUpdateForm({ githubUrl: "", codeforcesHandle: "", leetcodeHandle: "" });
+      setUpdateForm({
+        githubUrl: "",
+        codeforcesHandle: "",
+        leetcodeHandle: "",
+        codolioProfile: "",
+      });
     } catch (err) {
       if (err instanceof ApiError) {
         setUpdateError(err.message);
@@ -341,6 +382,17 @@ export default function ApplyPage() {
                       className="font-mono text-sm"
                     />
                   </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-app-fg-muted">
+                      Codolio profile URL or @username
+                    </label>
+                    <Input
+                      value={updateForm.codolioProfile}
+                      onChange={updateField("codolioProfile")}
+                      placeholder="https://codolio.com/profile/you or you"
+                      className="font-mono text-sm"
+                    />
+                  </div>
                   {codeforcesOrgPhrase && (
                     <p className="text-[11px] text-app-fg-muted">
                       Codeforces org phrase:{" "}
@@ -404,7 +456,7 @@ export default function ApplyPage() {
                 application.status === "PROCESSING") && (
                 <p className="mt-4 text-sm text-app-fg-muted">
                   {application.status === "PROCESSING"
-                    ? "Still loading your GitHub / LeetCode / Codeforces stats. Refresh in a few seconds."
+                    ? "Still loading your GitHub / LeetCode / Codeforces / Codolio stats. Refresh in a few seconds."
                     : "Detailed contribution / rating breakdown wasn’t stored for this application. Submit again after deploying the latest app, or contact support."}
                 </p>
               )}
@@ -448,6 +500,13 @@ export default function ApplyPage() {
             you prove the handle is yours with a <strong className="text-app-fg-secondary">one-time
             org phrase</strong> (below) — not your real org name.
           </li>
+          <li>
+            <span className="text-app-fg-secondary font-medium">Codolio</span> — C-Score ≥600;
+            paste your public profile. Your Codolio account must{" "}
+            <strong className="text-app-fg-secondary">link the same GitHub</strong> you used to sign
+            in here, and your Codolio profile must be{" "}
+            <strong className="text-app-fg-secondary">verified</strong> so the score is published.
+          </li>
         </ul>
       </div>
 
@@ -460,7 +519,7 @@ export default function ApplyPage() {
               GitHub profile URL
             </div>
             <p className="mt-1 text-[12px] leading-relaxed text-app-fg-muted">
-              Optional if you only use LeetCode or Codeforces below — but recommended. Must be{" "}
+              Optional if you only use LeetCode, Codeforces, or Codolio below — but recommended. Must be{" "}
               <strong className="text-app-fg-secondary">your</strong> profile (same login as
               LockedIn).
             </p>
@@ -584,6 +643,51 @@ export default function ApplyPage() {
               )}
             </section>
           </div>
+
+          <section className="rounded-xl border border-violet-500/20 bg-violet-500/[0.04] p-4">
+            <div className="text-sm font-semibold text-violet-200/95">
+              Codolio (C-Score 600+)
+            </div>
+            <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-[11px] leading-relaxed text-app-fg-muted">
+              <li>
+                On Codolio, connect <strong className="text-app-fg-secondary">GitHub</strong> (same
+                account as LockedIn) under your profile.
+              </li>
+              <li>Complete Codolio&apos;s platform verification so your C-Score appears.</li>
+              <li>
+                Copy your <strong className="text-app-fg-secondary">profile link</strong> (opens as
+                codolio.com/profile/yourname) or type your @profile name.
+              </li>
+            </ol>
+            <label className="mb-1.5 mt-3 block text-xs font-medium text-app-fg-muted">
+              Profile URL or username
+            </label>
+            <Input
+              value={form.codolioProfile}
+              onChange={update("codolioProfile")}
+              onBlur={(e) => {
+                const t = e.target.value.trim();
+                if (!t) {
+                  setCoPreview(null);
+                  return;
+                }
+                const h = normalizeCodolioProfileKey(t);
+                setCoPreview(h || "__invalid__");
+              }}
+              placeholder="https://codolio.com/profile/you or you"
+              className="font-mono text-sm"
+            />
+            {coPreview === "__invalid__" && (
+              <p className="mt-1.5 text-[11px] text-amber-400/90">
+                Couldn’t detect a profile name — use your profile URL or handle only.
+              </p>
+            )}
+            {coPreview && coPreview !== "__invalid__" && (
+              <p className="mt-1.5 text-[11px] text-app-fg-muted">
+                We’ll verify <span className="font-mono text-app-fg-secondary">{coPreview}</span>
+              </p>
+            )}
+          </section>
 
           {error && (
             <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">

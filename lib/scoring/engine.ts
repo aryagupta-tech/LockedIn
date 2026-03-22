@@ -95,6 +95,7 @@ export const PLATFORM_THRESHOLDS: Record<string, number> = {
   github_contributions: 250,
   codeforces_rating: 900,
   leetcode_problems: 100,
+  codolio_c_score: 600,
 };
 
 /**

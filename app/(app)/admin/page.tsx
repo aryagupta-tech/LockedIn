@@ -22,6 +22,7 @@ interface AdminApplication {
   githubUrl: string | null;
   codeforcesHandle: string | null;
   leetcodeHandle: string | null;
+  codolioProfile: string | null;
   createdAt: string;
 }
 
@@ -262,6 +263,11 @@ export default function AdminPage() {
                     )}
                     {app.leetcodeHandle && (
                       <span className="rounded bg-app-surface-2 px-2 py-0.5">LC: {app.leetcodeHandle}</span>
+                    )}
+                    {app.codolioProfile && (
+                      <span className="rounded bg-app-surface-2 px-2 py-0.5">
+                        Codolio: {app.codolioProfile}
+                      </span>
                     )}
                   </div>
                   {REVIEWABLE.has(app.status) && (

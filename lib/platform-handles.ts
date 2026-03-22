@@ -1,6 +1,6 @@
 /**
- * Normalize pasted profile URLs or raw handles for LeetCode / Codeforces APIs.
- * Does not weaken ownership checks — verification still requires GitHub match / org phrase.
+ * Normalize pasted profile URLs or raw handles for LeetCode / Codeforces / Codolio.
+ * Does not weaken ownership checks — verification still requires GitHub match / org phrase / Codolio-linked GitHub.
  */
 
 const RESERVED_LEETCODE_PATH = new Set([
@@ -105,5 +105,42 @@ export function normalizeCodeforcesHandle(raw: string): string {
   const first = s.split(/[/?#]/)[0]?.trim() ?? "";
   if (!first) return "";
   if (/^[a-zA-Z0-9_.-]+$/.test(first)) return first;
+  return "";
+}
+
+/**
+ * Codolio public profile “userKey” (shown as @name on profiles), from a URL or raw handle.
+ */
+export function normalizeCodolioProfileKey(raw: string): string {
+  const s = raw.trim().replace(/^@+/, "");
+  if (!s) return "";
+
+  const fromCodolioHost = (urlStr: string): string => {
+    try {
+      const u = new URL(urlStr.includes("://") ? urlStr : `https://${urlStr}`);
+      const host = u.hostname.replace(/^www\./i, "").toLowerCase();
+      if (host !== "codolio.com" && !host.endsWith(".codolio.com")) return "";
+
+      const parts = u.pathname.split("/").filter(Boolean);
+      if (parts[0]?.toLowerCase() === "profile" && parts[1]) {
+        return decodeSeg(parts[1]);
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  };
+
+  if (/codolio\.com/i.test(s)) {
+    return fromCodolioHost(s);
+  }
+
+  if (/^https?:\/\//i.test(s)) {
+    return fromCodolioHost(s);
+  }
+
+  const first = s.split(/[/?#]/)[0]?.trim() ?? "";
+  if (!first) return "";
+  if (/^[a-zA-Z0-9._-]+$/.test(first)) return first;
   return "";
 }

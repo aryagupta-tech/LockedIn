@@ -2,6 +2,7 @@ import type { SignalInput } from "./engine";
 import { extractGitHubUsername } from "@/lib/github-username";
 import { fetchGitHubSignal } from "./providers/github";
 import { fetchCodeforcesSignal } from "./providers/codeforces";
+import { fetchCodolioSignal } from "./providers/codolio";
 import { fetchLeetCodeSignal } from "./providers/leetcode";
 
 export { extractGitHubUsername };
@@ -19,6 +20,7 @@ export async function fetchApplicationSignals(app: {
   githubUrl?: string | null;
   codeforcesHandle?: string | null;
   leetcodeHandle?: string | null;
+  codolioProfile?: string | null;
 }): Promise<FetchSignalsResult> {
   const signals: SignalInput[] = [];
   const errors: Record<string, string> = {};
@@ -47,6 +49,14 @@ export async function fetchApplicationSignals(app: {
       signals.push(await fetchLeetCodeSignal(app.leetcodeHandle.trim()));
     } catch (e) {
       errors.leetcode = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  if (app.codolioProfile?.trim()) {
+    try {
+      signals.push(await fetchCodolioSignal(app.codolioProfile.trim()));
+    } catch (e) {
+      errors.codolio = e instanceof Error ? e.message : String(e);
     }
   }
 

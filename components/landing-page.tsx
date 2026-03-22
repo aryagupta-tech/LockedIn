@@ -20,9 +20,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LockedInMark } from "@/components/brand/locked-in-mark";
 
 const gateSteps = [
-  { label: "Link GitHub + handles", icon: Github, desc: "Connect GitHub and add Codeforces / LeetCode" },
+  { label: "Link GitHub + handles", icon: Github, desc: "Connect GitHub and add Codeforces / LeetCode / Codolio" },
   { label: "Submit application", icon: ClipboardCheck, desc: "Verification steps + the handles we score" },
-  { label: "Automated signal check", icon: BarChart3, desc: "Thresholds on your public GitHub, Codeforces, and LeetCode activity" },
+  { label: "Automated signal check", icon: BarChart3, desc: "Thresholds on GitHub, Codeforces, LeetCode, or Codolio C-Score" },
   { label: "Unlock access", icon: CheckCircle2, desc: "Meet the bar and join the network" }
 ];
 
@@ -75,7 +75,7 @@ export function LandingPage() {
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-app-fg-muted">
               Pass any one: 250+ GitHub contributions OR Codeforces 900+ rating OR 100+ LeetCode
-              problems solved.
+              problems solved OR 600+ Codolio C-Score.
             </p>
           </motion.div>
 
@@ -110,7 +110,7 @@ export function LandingPage() {
                     <CardTitle className="text-xl text-app-fg">Apply to join</CardTitle>
                     <CardDescription className="text-app-fg-muted">
                       Sign in with GitHub, complete verification, and submit your application. We score public GitHub,
-                      Codeforces, and LeetCode signals.
+                      Codeforces, LeetCode, and Codolio C-Score signals.
                     </CardDescription>
                   </div>
                 </div>

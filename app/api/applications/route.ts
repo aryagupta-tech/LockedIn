@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = parseApplicationProofBody(body);
     if (!parsed.ok) return parsed.response;
-    const { gh, cfRaw, lcRaw, cf, lc } = parsed.data;
+    const { gh, cfRaw, lcRaw, coRaw, cf, lc, co } = parsed.data;
 
     const supabase = createServiceClient();
 
@@ -47,6 +47,7 @@ export async function POST(request: Request) {
         githubUrl: gh || undefined,
         codeforcesHandle: cfRaw || undefined,
         leetcodeHandle: lcRaw || undefined,
+        codolioProfile: coRaw || undefined,
       },
       dbUserSynced,
     );
@@ -84,6 +85,7 @@ export async function POST(request: Request) {
       githubUrl: gh || null,
       codeforcesHandle: cf || null,
       leetcodeHandle: lc || null,
+      codolioProfile: co || null,
       portfolioUrl: null,
       score: 0,
       scoreBreakdown: null,
@@ -119,6 +121,7 @@ export async function POST(request: Request) {
       githubUrl: application.githubUrl as string | null,
       codeforcesHandle: application.codeforcesHandle as string | null,
       leetcodeHandle: application.leetcodeHandle as string | null,
+      codolioProfile: application.codolioProfile as string | null,
     });
     application.score = scored.score;
     application.scoreBreakdown = scored.scoreBreakdown;

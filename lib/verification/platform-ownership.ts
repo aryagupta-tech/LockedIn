@@ -2,8 +2,10 @@ import { createHmac } from "node:crypto";
 import { extractGitHubUsername } from "@/lib/github-username";
 import {
   normalizeCodeforcesHandle,
+  normalizeCodolioProfileKey,
   normalizeLeetCodeHandle,
 } from "@/lib/platform-handles";
+import { fetchCodolioLinkedGitHubLogin } from "@/lib/scoring/providers/codolio";
 import { fetchLeetCodeGithubUrl } from "@/lib/scoring/providers/leetcode";
 import { fetchCodeforcesProfile } from "@/lib/scoring/providers/codeforces";
 
@@ -11,6 +13,7 @@ export type ApplicationPlatformBody = {
   githubUrl?: string;
   codeforcesHandle?: string;
   leetcodeHandle?: string;
+  codolioProfile?: string;
 };
 
 export type DbUserForOwnership = {
@@ -68,8 +71,10 @@ export async function validatePlatformOwnership(
   const gh = body.githubUrl?.trim() || "";
   const cfRaw = body.codeforcesHandle?.trim() || "";
   const lcRaw = body.leetcodeHandle?.trim() || "";
+  const coRaw = body.codolioProfile?.trim() || "";
   const cf = cfRaw ? normalizeCodeforcesHandle(cfRaw) : "";
   const lc = lcRaw ? normalizeLeetCodeHandle(lcRaw) : "";
+  const co = coRaw ? normalizeCodolioProfileKey(coRaw) : "";
 
   if (lcRaw && !lc) {
     return {
@@ -89,11 +94,20 @@ export async function validatePlatformOwnership(
     };
   }
 
-  if (!gh && !cf && !lc) {
+  if (coRaw && !co) {
     return {
       code: "VALIDATION_ERROR",
       message:
-        "Provide at least one of GitHub profile URL, Codeforces handle, or LeetCode username.",
+        "That doesn’t look like a valid Codolio profile link or @username. Use your public profile URL (codolio.com/profile/yourname) or your profile name only.",
+      status: 400,
+    };
+  }
+
+  if (!gh && !cf && !lc && !co) {
+    return {
+      code: "VALIDATION_ERROR",
+      message:
+        "Provide at least one of GitHub profile URL, Codeforces handle, LeetCode username, or Codolio profile.",
       status: 400,
     };
   }
@@ -146,6 +160,36 @@ export async function validatePlatformOwnership(
         code: "LEETCODE_GITHUB_MISMATCH",
         message:
           "Your LeetCode profile must link the same GitHub account you used to sign in to LockedIn.",
+        status: 403,
+      };
+    }
+  }
+
+  if (co) {
+    let githubOnCodolio: string | null;
+    try {
+      githubOnCodolio = await fetchCodolioLinkedGitHubLogin(co);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return {
+        code: "CODOLIO_VERIFY_FAILED",
+        message: `Could not read Codolio profile: ${msg}`,
+        status: 400,
+      };
+    }
+    if (!githubOnCodolio) {
+      return {
+        code: "CODOLIO_GITHUB_NOT_LINKED",
+        message:
+          "On Codolio, connect GitHub under your profile (Development section) using the same GitHub account you used to sign in to LockedIn, then try again.",
+        status: 403,
+      };
+    }
+    if (githubOnCodolio !== linkedLogin) {
+      return {
+        code: "CODOLIO_GITHUB_MISMATCH",
+        message:
+          "Your Codolio profile must link the same GitHub account you used to sign in to LockedIn.",
         status: 403,
       };
     }
