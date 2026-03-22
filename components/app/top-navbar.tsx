@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Bell, Shield, FileCheck, Menu, X, Search, Settings, LogOut, User, Bookmark } from "lucide-react";
+import { Home, Compass, Bell, Shield, FileCheck, Menu, X, Settings, LogOut, User, Bookmark } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import { LockedInMark } from "@/components/brand/locked-in-mark";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { NavbarProfileSearch } from "@/components/app/navbar-profile-search";
 
 export function TopNavbar() {
   const pathname = usePathname();
@@ -88,15 +89,7 @@ export function TopNavbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Search */}
-            <div className="relative hidden lg:block">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-fg-muted" />
-              <input
-                type="text"
-                placeholder="Search LockedIn..."
-                className="neo-field h-9 w-[200px] rounded-full bg-app-input pl-9 pr-4 text-[13px] text-app-fg placeholder:text-app-fg-muted outline-none transition-all focus:w-[260px]"
-              />
-            </div>
+            <NavbarProfileSearch />
 
             {/* User avatar with dropdown */}
             {user && (
