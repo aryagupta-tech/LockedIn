@@ -7,6 +7,7 @@ import Link from "next/link";
 import { api, type Post, type Comment } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import { DeletePostDialog } from "@/components/app/delete-post-dialog";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils";
 import { formatPostAbsoluteDateTime, formatRelativeTime } from "@/lib/utc-time";
@@ -27,6 +28,9 @@ export default function PostDetailPage() {
   const [likes, setLikes] = useState(0);
   const [saved, setSaved] = useState(false);
   const [shareHint, setShareHint] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const postId = params.id as string;
 
@@ -103,10 +107,13 @@ export default function PostDetailPage() {
       summary: post.content,
     });
     if (result === "copied") {
+      setShareError(null);
       setShareHint("Copied link");
       window.setTimeout(() => setShareHint(null), 2200);
     } else if (result === "failed") {
-      window.alert("Could not share or copy this link. Try copying the address from your browser.");
+      setShareHint(null);
+      setShareError("Couldn't copy — copy URL from the bar");
+      window.setTimeout(() => setShareError(null), 4500);
     }
   };
 
@@ -139,19 +146,18 @@ export default function PostDetailPage() {
     setSubmitting(false);
   };
 
-  const handleDelete = async () => {
+  const confirmDeletePost = async () => {
     if (!post) return;
-    if (
-      !window.confirm(
-        "Delete this post? This cannot be undone.",
-      )
-    ) {
-      return;
-    }
+    setDeleteBusy(true);
     try {
       await api.del(`/posts/${post.id}`);
+      setDeleteOpen(false);
       router.push("/feed");
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    } finally {
+      setDeleteBusy(false);
+    }
   };
 
   if (!postLoading && !post) {
@@ -254,7 +260,7 @@ export default function PostDetailPage() {
               {isAuthor && (
                 <button
                   type="button"
-                  onClick={handleDelete}
+                  onClick={() => setDeleteOpen(true)}
                   aria-label="Delete post"
                   title="Delete post"
                   className="rounded-lg border border-red-500/35 bg-red-500/10 p-2 text-red-400 transition-colors hover:border-red-400/50 hover:bg-red-500/20 hover:text-red-300"
@@ -332,12 +338,24 @@ export default function PostDetailPage() {
           </a>
           <button
             type="button"
-            title={shareHint ?? "Share post"}
+            title={
+              shareError
+                ? "Could not share or copy this link. Try copying the address from your browser."
+                : (shareHint ?? "Share post")
+            }
             aria-label="Share post"
+            aria-live="polite"
             onClick={() => void handleShare()}
-            className="flex min-w-[5.5rem] items-center justify-center gap-2 rounded-full px-4 py-2 text-[14px] text-zinc-500 transition-colors hover:text-green-400"
+            className={cn(
+              "flex min-w-[5.5rem] max-w-[11rem] items-center justify-center gap-2 rounded-full px-3 py-2 text-[14px] transition-colors",
+              shareError
+                ? "text-amber-400/90 hover:text-amber-300"
+                : "text-zinc-500 hover:text-green-400",
+            )}
           >
-            {shareHint ? (
+            {shareError ? (
+              <span className="text-center text-[11px] font-medium leading-snug">{shareError}</span>
+            ) : shareHint ? (
               <span className="text-[12px] font-medium text-emerald-400">{shareHint}</span>
             ) : (
               <Share2 className="h-5 w-5" />
@@ -411,6 +429,13 @@ export default function PostDetailPage() {
           <p className="text-[15px] text-zinc-500">No comments yet. Be the first to reply!</p>
         </div>
       )}
+
+      <DeletePostDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onConfirm={confirmDeletePost}
+        busy={deleteBusy}
+      />
     </div>
   );
 }

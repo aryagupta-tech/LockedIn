@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utc-time";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { sharePost } from "@/lib/share-post";
+import { DeletePostDialog } from "@/components/app/delete-post-dialog";
 
 function formatCount(n: number): string {
   if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
@@ -30,6 +31,9 @@ export function PostCard({
   const [likes, setLikes] = useState(post.likesCount);
   const [saved, setSaved] = useState(post.hasBookmarked ?? false);
   const [shareHint, setShareHint] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const isAuthor = user?.id === post.author.id;
   useEffect(() => {
@@ -80,25 +84,27 @@ export function PostCard({
       summary: post.content,
     });
     if (result === "copied") {
+      setShareError(null);
       setShareHint("Copied link");
       window.setTimeout(() => setShareHint(null), 2200);
     } else if (result === "failed") {
-      window.alert("Could not share or copy this link. Try copying the address from your browser.");
+      setShareHint(null);
+      setShareError("Couldn't copy — use address bar");
+      window.setTimeout(() => setShareError(null), 4500);
     }
   };
 
-  const handleDelete = async () => {
-    if (
-      !window.confirm(
-        "Delete this post? This cannot be undone.",
-      )
-    ) {
-      return;
-    }
+  const confirmDeletePost = async () => {
+    setDeleteBusy(true);
     try {
       await api.del(`/posts/${post.id}`);
+      setDeleteOpen(false);
       onDelete?.(post.id);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    } finally {
+      setDeleteBusy(false);
+    }
   };
 
   return (
@@ -123,7 +129,7 @@ export function PostCard({
           {isAuthor && (
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => setDeleteOpen(true)}
               aria-label="Delete post"
               title="Delete post"
               className="rounded-full p-1.5 text-red-400 transition-colors hover:bg-red-500/15 hover:text-red-300"
@@ -200,12 +206,22 @@ export function PostCard({
 
           <button
             type="button"
-            title={shareHint ?? "Share post"}
+            title={
+              shareError
+                ? "Could not share or copy this link. Try copying the address from your browser."
+                : (shareHint ?? "Share post")
+            }
             aria-label="Share post"
+            aria-live="polite"
             onClick={(e) => void handleShare(e)}
-            className="text-app-fg-muted transition-colors hover:text-emerald-400"
+            className={cn(
+              "text-app-fg-muted transition-colors",
+              shareError ? "text-amber-400/90 hover:text-amber-300" : "hover:text-emerald-400",
+            )}
           >
-            {shareHint ? (
+            {shareError ? (
+              <span className="max-w-[9rem] text-center text-[10px] font-medium leading-tight">{shareError}</span>
+            ) : shareHint ? (
               <span className="text-[11px] font-medium text-emerald-400">{shareHint}</span>
             ) : (
               <Share2 className="h-[18px] w-[18px]" />
@@ -227,6 +243,13 @@ export function PostCard({
           />
         </button>
       </div>
+
+      <DeletePostDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onConfirm={confirmDeletePost}
+        busy={deleteBusy}
+      />
     </div>
   );
 }
