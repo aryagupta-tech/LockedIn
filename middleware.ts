@@ -4,7 +4,14 @@ import type { NextRequest } from "next/server";
 const authOnlyPaths = ["/login", "/register"];
 
 function publicPathsForEnv(): string[] {
-  return ["/", "/login", "/register", "/auth"];
+  return [
+    "/",
+    "/login",
+    "/register",
+    "/auth",
+    "/opengraph-image",
+    "/twitter-image",
+  ];
 }
 
 export function middleware(request: NextRequest) {

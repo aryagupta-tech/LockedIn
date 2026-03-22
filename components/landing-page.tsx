@@ -17,7 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LockedInMark } from "@/components/brand/locked-in-mark";
+import { BrandLogoCircle } from "@/components/brand/brand-logo-circle";
 
 const gateSteps = [
   { label: "Link GitHub + handles", icon: Github, desc: "Connect GitHub and add Codeforces / LeetCode / Codolio" },
@@ -237,10 +237,10 @@ function Navbar() {
       <div className="section-shell flex h-16 items-center justify-between gap-3">
         <a
           href="#"
-          className="group flex items-center gap-2.5 font-[var(--font-geist)] text-lg font-bold transition-colors text-app-fg"
+          className="group flex items-center gap-3 font-[var(--font-geist)] text-lg font-bold text-app-fg transition-colors"
         >
-          <LockedInMark size={24} className="transition-transform duration-200 group-hover:scale-105" />{" "}
-          <span className="text-brand-logo">LockedIn</span>
+          <BrandLogoCircle size="sm" withHover />
+          <span className="text-brand-logo leading-none">LockedIn</span>
         </a>
         <div className="flex items-center gap-2 sm:gap-3">
           <a
@@ -365,9 +365,9 @@ function Footer() {
   return (
     <footer className="border-t border-app-border py-12">
       <div className="section-shell flex flex-col items-start justify-between gap-6 text-sm text-app-fg-muted sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2.5 text-app-fg-secondary">
-          <LockedInMark size={24} />{" "}
-          <span className="text-brand-logo font-[var(--font-geist)] font-bold">LockedIn</span>
+        <div className="flex items-center gap-3 text-app-fg-secondary">
+          <BrandLogoCircle size="sm" />
+          <span className="text-brand-logo font-[var(--font-geist)] font-bold leading-none">LockedIn</span>
         </div>
         <div className="flex flex-wrap items-center gap-6">
           {links.map((link) => (

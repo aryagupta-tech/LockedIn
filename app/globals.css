@@ -200,23 +200,6 @@ body {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.78));
 }
 
-/* Raster wordmark beside “LockedIn”: same gradient as .text-brand-logo, shape from PNG alpha */
-.brand-wordmark-mask {
-  display: inline-block;
-  flex-shrink: 0;
-  vertical-align: -0.14em;
-  box-sizing: border-box;
-  background: linear-gradient(180deg, #fff6e4 0%, #e9a85a 42%, #9d6a2e 100%);
-  -webkit-mask-image: url("/brand/lockedin-wordmark.png");
-  mask-image: url("/brand/lockedin-wordmark.png");
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.78));
-}
 
 /* Feed / post surfaces — leather panel */
 .post-card {

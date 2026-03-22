@@ -44,14 +44,25 @@ export const metadata: Metadata = {
     url: "http://localhost:3000",
     siteName: "LockedIn",
     type: "website",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "LockedIn",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "LockedIn",
     description: "Only the locked-in get in.",
+    images: ["/twitter-image"],
   },
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    shortcut: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
   },
 };
 

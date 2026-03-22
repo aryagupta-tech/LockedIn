@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Github, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { LockedInMark } from "@/components/brand/locked-in-mark";
+import { BrandLogoCircle } from "@/components/brand/brand-logo-circle";
 import { useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
@@ -43,10 +43,10 @@ export default function LoginPage() {
         <header className="mb-8 text-center sm:mb-10">
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2.5 font-[var(--font-geist)] text-2xl font-semibold text-app-fg"
+            className="group inline-flex items-center justify-center gap-3 font-[var(--font-geist)] text-2xl font-semibold text-app-fg"
           >
-            <LockedInMark size={28} />
-            <span className="text-brand-logo font-[var(--font-geist)] font-semibold">LockedIn</span>
+            <BrandLogoCircle size="lg" withHover />
+            <span className="text-brand-logo font-[var(--font-geist)] font-semibold leading-none">LockedIn</span>
           </Link>
           <p className="mt-3 text-sm text-app-fg-muted">Sign in with GitHub to continue</p>
         </header>
