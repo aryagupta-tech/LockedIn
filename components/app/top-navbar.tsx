@@ -7,7 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNotifications } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
-import { LockedInMark } from "@/components/brand/locked-in-mark";
+import { LockedInAppIcon } from "@/components/brand/locked-in-app-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { NavbarProfileSearch } from "@/components/app/navbar-profile-search";
 
@@ -59,15 +59,11 @@ export function TopNavbar() {
             {/* Same 36×36 circle + ring as profile avatar so left mark aligns with right control */}
             <span
               className={cn(
-                "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ring-2 transition-all",
-                "bg-gradient-to-br from-[#2a1e18]/95 to-[#140e0c]/98 ring-app-border-strong",
-                "group-hover:ring-neon/40",
+                "flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 transition-all",
+                "ring-app-border-strong group-hover:ring-neon/40",
               )}
             >
-              <LockedInMark
-                size={24}
-                className="transition-transform duration-200 group-hover:scale-105"
-              />
+              <LockedInAppIcon className="h-full w-full transition-transform duration-200 group-hover:scale-105" />
             </span>
             <span className="text-brand-logo font-[var(--font-geist)] text-[19px] font-bold leading-none tracking-tight">
               LockedIn
