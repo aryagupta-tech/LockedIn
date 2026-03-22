@@ -31,11 +31,14 @@ CREATE INDEX IF NOT EXISTS idx_notifications_unread ON public.notifications(user
 
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
+-- Re-runnable: drop first so CREATE POLICY does not error if policies already exist.
+DROP POLICY IF EXISTS "Users can read own notifications" ON public.notifications;
 CREATE POLICY "Users can read own notifications"
   ON public.notifications FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can mark own notifications as read" ON public.notifications;
 CREATE POLICY "Users can mark own notifications as read"
   ON public.notifications FOR UPDATE
   TO authenticated
@@ -208,5 +211,18 @@ CREATE TRIGGER trg_notify_post_deleted
 ALTER TABLE public.notifications REPLICA IDENTITY FULL;
 
 -- ─── 6. Enable realtime on notifications table ──────────────────────────────
+-- Idempotent: skip if already in publication (re-running the script is safe).
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'notifications'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+  END IF;
+END;
+$$;

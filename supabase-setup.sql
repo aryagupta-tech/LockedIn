@@ -27,6 +27,8 @@ VALUES ('avatars', 'avatars', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Storage policies: allow authenticated users to upload their own avatars
+-- (DROP IF EXISTS so re-running this script after a partial run does not error.)
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
 CREATE POLICY "Users can upload their own avatar"
   ON storage.objects FOR INSERT
   TO authenticated
@@ -35,6 +37,7 @@ CREATE POLICY "Users can upload their own avatar"
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
 CREATE POLICY "Users can update their own avatar"
   ON storage.objects FOR UPDATE
   TO authenticated
@@ -43,6 +46,7 @@ CREATE POLICY "Users can update their own avatar"
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
+DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
 CREATE POLICY "Anyone can view avatars"
   ON storage.objects FOR SELECT
   TO public
