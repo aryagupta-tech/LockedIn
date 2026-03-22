@@ -297,9 +297,14 @@ body {
   border-color: rgba(215, 165, 110, 0.48);
 }
 
-.app-panel > * {
+/* Keep content above the dashed ::before; exclude floated controls (e.g. dialog close). */
+.app-panel > *:not(.app-panel-float) {
   position: relative;
   z-index: 1;
+}
+
+.app-panel > .app-panel-float {
+  z-index: 10;
 }
 
 /* Rotating accent border replaces leather fill — hide dashed inset so it doesn’t clash */

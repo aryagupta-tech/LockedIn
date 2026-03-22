@@ -162,12 +162,20 @@ export default function ProfilePage() {
                 <span className="text-[14px] text-app-fg-muted">
                   <strong className="font-semibold text-app-fg">{profile.postsCount}</strong> posts
                 </span>
-                <span className="text-[14px] text-app-fg-muted">
+                <Link
+                  href={`/u/${profile.username}/following`}
+                  prefetch
+                  className="text-[14px] text-app-fg-muted underline-offset-2 transition-colors hover:text-app-fg hover:underline"
+                >
                   <strong className="font-semibold text-app-fg">{profile.followingCount}</strong> following
-                </span>
-                <span className="text-[14px] text-app-fg-muted">
+                </Link>
+                <Link
+                  href={`/u/${profile.username}/followers`}
+                  prefetch
+                  className="text-[14px] text-app-fg-muted underline-offset-2 transition-colors hover:text-app-fg hover:underline"
+                >
                   <strong className="font-semibold text-app-fg">{profile.followersCount}</strong> followers
-                </span>
+                </Link>
               </div>
 
               <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[13px] text-app-fg-muted sm:justify-start">
