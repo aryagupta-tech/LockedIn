@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/utils";
 import { formatPostAbsoluteDateTime, formatRelativeTime } from "@/lib/utc-time";
+import { sharePost } from "@/lib/share-post";
 
 export default function PostDetailPage() {
   const params = useParams();
@@ -25,6 +26,7 @@ export default function PostDetailPage() {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [shareHint, setShareHint] = useState<string | null>(null);
 
   const postId = params.id as string;
 
@@ -91,6 +93,21 @@ export default function PostDetailPage() {
         setLikes((c) => Math.max(0, c + (next ? -1 : 1)));
       }
     })();
+  };
+
+  const handleShare = async () => {
+    if (!post) return;
+    const result = await sharePost({
+      postId: post.id,
+      authorDisplayName: post.author.displayName,
+      summary: post.content,
+    });
+    if (result === "copied") {
+      setShareHint("Copied link");
+      window.setTimeout(() => setShareHint(null), 2200);
+    } else if (result === "failed") {
+      window.alert("Could not share or copy this link. Try copying the address from your browser.");
+    }
   };
 
   const toggleBookmark = () => {
@@ -315,9 +332,16 @@ export default function PostDetailPage() {
           </a>
           <button
             type="button"
-            className="flex items-center gap-2 rounded-full px-4 py-2 text-[14px] text-zinc-500 transition-colors hover:text-green-400"
+            title={shareHint ?? "Share post"}
+            aria-label="Share post"
+            onClick={() => void handleShare()}
+            className="flex min-w-[5.5rem] items-center justify-center gap-2 rounded-full px-4 py-2 text-[14px] text-zinc-500 transition-colors hover:text-green-400"
           >
-            <Share2 className="h-5 w-5" />
+            {shareHint ? (
+              <span className="text-[12px] font-medium text-emerald-400">{shareHint}</span>
+            ) : (
+              <Share2 className="h-5 w-5" />
+            )}
           </button>
           <button
             type="button"

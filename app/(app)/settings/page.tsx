@@ -38,11 +38,6 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Avatar must be under 2MB");
-      return;
-    }
-
     setUploading(true);
     setError("");
     try {
@@ -113,7 +108,7 @@ export default function SettingsPage() {
                 <input
                   ref={fileRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
                   onChange={handleAvatarUpload}
                   className="hidden"
                 />
@@ -128,7 +123,7 @@ export default function SettingsPage() {
                   {uploading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-2 h-3.5 w-3.5" />}
                   {uploading ? "Uploading..." : "Change Avatar"}
                 </Button>
-                <p className="mt-1.5 text-xs text-app-fg-muted">JPG, PNG under 2MB</p>
+                <p className="mt-1.5 text-xs text-app-fg-muted">JPEG, PNG, WebP, or GIF</p>
               </div>
             </div>
 

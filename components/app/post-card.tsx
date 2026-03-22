@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utc-time";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { sharePost } from "@/lib/share-post";
 
 function formatCount(n: number): string {
   if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
@@ -28,6 +29,7 @@ export function PostCard({
   const [liked, setLiked] = useState(post.hasLiked ?? false);
   const [likes, setLikes] = useState(post.likesCount);
   const [saved, setSaved] = useState(post.hasBookmarked ?? false);
+  const [shareHint, setShareHint] = useState<string | null>(null);
 
   const isAuthor = user?.id === post.author.id;
   useEffect(() => {
@@ -67,6 +69,22 @@ export function PostCard({
         setSaved(!next);
       }
     })();
+  };
+
+  const handleShare = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const result = await sharePost({
+      postId: post.id,
+      authorDisplayName: post.author.displayName,
+      summary: post.content,
+    });
+    if (result === "copied") {
+      setShareHint("Copied link");
+      window.setTimeout(() => setShareHint(null), 2200);
+    } else if (result === "failed") {
+      window.alert("Could not share or copy this link. Try copying the address from your browser.");
+    }
   };
 
   const handleDelete = async () => {
@@ -180,8 +198,18 @@ export function PostCard({
             {post.commentsCount > 0 && <span className="text-[13px]">{formatCount(post.commentsCount)}</span>}
           </Link>
 
-          <button className="text-app-fg-muted transition-colors hover:text-emerald-400">
-            <Share2 className="h-[18px] w-[18px]" />
+          <button
+            type="button"
+            title={shareHint ?? "Share post"}
+            aria-label="Share post"
+            onClick={(e) => void handleShare(e)}
+            className="text-app-fg-muted transition-colors hover:text-emerald-400"
+          >
+            {shareHint ? (
+              <span className="text-[11px] font-medium text-emerald-400">{shareHint}</span>
+            ) : (
+              <Share2 className="h-[18px] w-[18px]" />
+            )}
           </button>
         </div>
 

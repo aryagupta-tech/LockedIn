@@ -71,6 +71,9 @@ const POST_IMAGE_TYPES = new Set([
 
 export const POST_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
+/** Avatars are compressed client-side to fit under this before upload. */
+export const AVATAR_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+
 export function isAllowedPostImageType(contentType: string): boolean {
   return POST_IMAGE_TYPES.has(contentType);
 }
