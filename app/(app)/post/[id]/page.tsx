@@ -124,6 +124,13 @@ export default function PostDetailPage() {
 
   const handleDelete = async () => {
     if (!post) return;
+    if (
+      !window.confirm(
+        "Delete this post? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
     try {
       await api.del(`/posts/${post.id}`);
       router.push("/feed");

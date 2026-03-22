@@ -1,8 +1,7 @@
 "use client";
 
-import { useAuth } from "@/lib/auth-context";
 import { useNotifications, type Notification } from "@/lib/notifications";
-import { Heart, MessageCircle, UserPlus, CheckCircle, XCircle, Bell, Check } from "lucide-react";
+import { Heart, MessageCircle, UserPlus, CheckCircle, XCircle, Bell } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +31,14 @@ function timeAgo(dateStr: string) {
   return new Date(dateStr).toLocaleDateString();
 }
 
-function NotifItem({ n, onRead }: { n: Notification; onRead: (id: string) => void }) {
+function NotifItem({
+  n,
+  onInteract,
+}: {
+  n: Notification;
+  /** Mark every notification read when the user engages with one (open target or tap). */
+  onInteract: () => void;
+}) {
   const config = ICON_MAP[n.type] || ICON_MAP.like;
   const Icon = config.icon;
   const href = getNotifHref(n);
@@ -43,7 +49,6 @@ function NotifItem({ n, onRead }: { n: Notification; onRead: (id: string) => voi
         "flex items-start gap-3 rounded-app-md px-4 py-3.5 transition-colors",
         !n.read ? "bg-app-surface-2/50" : "bg-transparent hover:bg-app-surface-2/40",
       )}
-      onClick={() => !n.read && onRead(n.id)}
     >
       <div className={cn("mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full", config.bg)}>
         <Icon className={cn("h-[18px] w-[18px]", config.color)} />
@@ -59,21 +64,31 @@ function NotifItem({ n, onRead }: { n: Notification; onRead: (id: string) => voi
 
   if (href) {
     return (
-      <Link href={href} className="block">
+      <Link href={href} className="block" onClick={() => onInteract()}>
         {inner}
       </Link>
     );
   }
-  return inner;
+  return (
+    <button
+      type="button"
+      className="block w-full cursor-pointer text-left"
+      onClick={() => onInteract()}
+    >
+      {inner}
+    </button>
+  );
 }
 
 export default function NotificationsPage() {
-  const { user } = useAuth();
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications(user?.id);
+  const { notifications, unreadCount, loading, markAllAsRead } = useNotifications();
+
+  const handleInteract = () => {
+    if (unreadCount > 0) void markAllAsRead();
+  };
 
   return (
     <div className="pb-10">
-      {/* Header */}
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-bold text-app-fg">Notifications</h1>
@@ -81,18 +96,8 @@ export default function NotificationsPage() {
             <p className="mt-0.5 text-[13px] text-app-fg-muted">{unreadCount} unread</p>
           )}
         </div>
-        {unreadCount > 0 && (
-          <button
-            onClick={markAllAsRead}
-            className="flex items-center gap-1.5 rounded-full border border-app-border px-3.5 py-1.5 text-[13px] font-medium text-app-fg-muted transition-colors hover:border-app-border-strong hover:text-[var(--app-accent)]"
-          >
-            <Check className="h-3.5 w-3.5" />
-            Mark all read
-          </button>
-        )}
       </div>
 
-      {/* List */}
       <div className="post-card divide-y divide-app-border/40">
         {loading ? (
           <div className="px-4 py-12 text-center text-[14px] text-app-fg-muted">Loading...</div>
@@ -107,7 +112,7 @@ export default function NotificationsPage() {
             </p>
           </div>
         ) : (
-          notifications.map((n) => <NotifItem key={n.id} n={n} onRead={markAsRead} />)
+          notifications.map((n) => <NotifItem key={n.id} n={n} onInteract={handleInteract} />)
         )}
       </div>
     </div>

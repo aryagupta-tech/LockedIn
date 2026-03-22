@@ -154,8 +154,8 @@ export function LandingPage() {
             <motion.div variants={fadeUp}>
               <FeatureCard
                 icon={Award}
-                title="Builder levels & badges"
-                desc="Level up from real activity: posts, code snippets, comments, follows, and showing up week after week—visible on your profile."
+                title="Profile badges"
+                desc="Earn badges for concrete milestones—first post, code snippets, comments, followers, and consistency—shown on your profile."
               />
             </motion.div>
             <motion.div variants={fadeUp}>
@@ -190,7 +190,7 @@ export function LandingPage() {
               {
                 icon: Sparkles,
                 title: "Signal is status",
-                desc: "Builder level, XP, and badges reflect what you actually ship—posts with code, threads you join, and consistency over time.",
+                desc: "Badges reflect what you actually ship—posts with code, threads you join, and consistency over time.",
                 gradient: "from-neon/20 to-neon/5"
               }
             ].map((item) => (

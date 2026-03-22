@@ -70,6 +70,13 @@ export function PostCard({
   };
 
   const handleDelete = async () => {
+    if (
+      !window.confirm(
+        "Delete this post? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
     try {
       await api.del(`/posts/${post.id}`);
       onDelete?.(post.id);

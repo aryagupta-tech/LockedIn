@@ -13,7 +13,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 export function TopNavbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { unreadCount } = useNotifications(user?.id);
+  const { unreadCount } = useNotifications();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

@@ -1,6 +1,6 @@
 /**
- * Builder levels & badges — derived from real activity (posts, code, comments, network).
- * All values are computed on read; no separate gamification table required.
+ * Builder badges — derived from real activity (posts, code, comments, network).
+ * Computed on read; no separate gamification table.
  */
 
 export type BadgeTier = "bronze" | "silver" | "gold";
@@ -93,21 +93,10 @@ export interface EarnedBadge {
 }
 
 export interface BuilderProgress {
-  level: number;
-  /** Total XP (used for level math) */
-  totalXp: number;
-  /** XP accumulated within current level (0–99) */
-  xpInLevel: number;
-  /** XP needed to finish current level (100 - xpInLevel, or 0 at max) */
-  xpToNext: number;
-  maxLevel: number;
   badges: EarnedBadge[];
-  /** Short copy for empty states */
+  /** Short copy for next badge / habit milestones */
   nextMilestoneHint: string | null;
 }
-
-const MAX_LEVEL = 20;
-const XP_PER_LEVEL = 100;
 
 function isoWeekKey(d: Date): string {
   const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -129,32 +118,6 @@ export function distinctWeeksFromPostDates(dates: string[]): number {
   return set.size;
 }
 
-export function computeXp(m: BuilderMetrics): number {
-  let xp = 0;
-  if (m.status === "APPROVED") xp += 85;
-  xp += m.postsCount * 18;
-  xp += m.postsWithCodeCount * 14;
-  xp += m.commentsCount * 4;
-  xp += Math.min(m.followersCount * 2, 40);
-  xp += Math.min(m.followingCount, 30);
-  const streak = Math.max(0, m.distinctWeeksWithPosts - 1);
-  xp += Math.min(streak * 12, 72);
-  return xp;
-}
-
-function levelFromTotalXp(total: number): { level: number; xpInLevel: number; xpToNext: number } {
-  if (total <= 0) {
-    return { level: 1, xpInLevel: 0, xpToNext: XP_PER_LEVEL };
-  }
-  const rawLevel = 1 + Math.floor(total / XP_PER_LEVEL);
-  const level = Math.min(MAX_LEVEL, rawLevel);
-  const xpInLevel = total % XP_PER_LEVEL;
-  if (level >= MAX_LEVEL) {
-    return { level: MAX_LEVEL, xpInLevel: xpInLevel === 0 ? XP_PER_LEVEL : xpInLevel, xpToNext: 0 };
-  }
-  return { level, xpInLevel, xpToNext: XP_PER_LEVEL - xpInLevel };
-}
-
 function nextMilestoneHint(m: BuilderMetrics, earned: Set<BadgeId>): string | null {
   if (!earned.has("first_ship") && m.postsCount < 1) return "Share your first post to unlock First ship.";
   if (m.postsCount < 5) return `${5 - m.postsCount} more post${5 - m.postsCount === 1 ? "" : "s"} until Shipping habit.`;
@@ -167,9 +130,6 @@ function nextMilestoneHint(m: BuilderMetrics, earned: Set<BadgeId>): string | nu
 }
 
 export function computeBuilderProgress(m: BuilderMetrics): BuilderProgress {
-  const totalXp = computeXp(m);
-  const { level, xpInLevel, xpToNext } = levelFromTotalXp(totalXp);
-
   const earned = new Set<BadgeId>();
   if (m.status === "APPROVED") earned.add("verified");
   if (m.postsCount >= 1) earned.add("first_ship");
@@ -198,11 +158,6 @@ export function computeBuilderProgress(m: BuilderMetrics): BuilderProgress {
   });
 
   return {
-    level,
-    totalXp,
-    xpInLevel,
-    xpToNext,
-    maxLevel: MAX_LEVEL,
     badges,
     nextMilestoneHint: nextMilestoneHint(m, earned),
   };

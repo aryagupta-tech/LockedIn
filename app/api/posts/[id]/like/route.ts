@@ -64,13 +64,17 @@ export async function DELETE(
       .eq("id", postId)
       .single();
     if (postRow?.authorId) {
-      await supabase
+      const rid = String(postId).trim();
+      const { error: notifErr } = await supabase
         .from("notifications")
         .delete()
         .eq("type", "like")
         .eq("user_id", postRow.authorId)
         .eq("actor_id", auth.user.id)
-        .eq("resource_id", postId);
+        .eq("resource_id", rid);
+      if (notifErr) {
+        console.error("Unlike: failed to remove like notification:", notifErr);
+      }
     }
 
     await bumpPostLikes(supabase, postId, -1, () => syncLikeCount(supabase, postId));
