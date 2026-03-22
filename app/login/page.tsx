@@ -36,7 +36,7 @@ export default function LoginPage() {
             className="inline-flex items-center justify-center gap-2.5 font-[var(--font-geist)] text-2xl font-semibold text-app-fg"
           >
             <LockedInMark size={28} />
-            LockedIn
+            <span className="text-brand-logo font-[var(--font-geist)] font-semibold">LockedIn</span>
           </Link>
           <p className="mt-3 text-sm text-app-fg-muted">Sign in with GitHub to continue</p>
         </header>
