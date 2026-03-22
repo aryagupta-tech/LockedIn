@@ -35,6 +35,10 @@ tsconfig.tsbuildinfo
 .DS_Store
 *.swp
 
+# Accidental editor / screenshot drops (never commit as site assets)
+Pasted image.png
+**/Pasted image.png
+
 # Keys / local secrets (extra safety)
 *.pem
 *.p12
