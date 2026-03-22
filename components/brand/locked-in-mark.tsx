@@ -12,8 +12,9 @@ export type LockedInMarkProps = {
 };
 
 const LOGO_SRC = "/brand/lockedin-logo.png";
-const LOGO_WIDTH = 799;
-const LOGO_HEIGHT = 277;
+/** Cropped from brand master; intrinsic size of `public/brand/lockedin-logo.png`. */
+const LOGO_WIDTH = 433;
+const LOGO_HEIGHT = 93;
 
 /** LockedIn logo (wordmark + mark) from brand asset. */
 export function LockedInMark({ size = 28, className, decorative = true }: LockedInMarkProps) {
