@@ -159,25 +159,18 @@ CREATE TRIGGER trg_notify_follow
 -- ─── 5b. Remove like notification when the like row is deleted ───────────────
 -- Keeps the panel accurate even if an API path misses cleanup; pairs with DELETE /posts/:id/like.
 
+-- Unlike cleanup: match by actor + post only (works even if the post row is already gone).
 CREATE OR REPLACE FUNCTION public.notify_remove_on_unlike()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE
-  post_author_id uuid;
 BEGIN
-  SELECT "authorId" INTO post_author_id FROM public.posts WHERE id = OLD."postId";
-  IF post_author_id IS NULL THEN
-    RETURN OLD;
-  END IF;
-
   DELETE FROM public.notifications
   WHERE type = 'like'
-    AND user_id = post_author_id
     AND actor_id = OLD."userId"
-    AND resource_id = OLD."postId";
+    AND resource_id = OLD."postId"::text;
 
   RETURN OLD;
 END;
@@ -188,6 +181,28 @@ CREATE TRIGGER trg_notify_unlike
   AFTER DELETE ON public.post_likes
   FOR EACH ROW
   EXECUTE FUNCTION public.notify_remove_on_unlike();
+
+-- Remove like/comment notifications when a post is deleted (likes may CASCADE after post is gone).
+CREATE OR REPLACE FUNCTION public.notify_cleanup_post_deleted()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  DELETE FROM public.notifications
+  WHERE type IN ('like', 'comment')
+    AND resource_id = OLD.id::text;
+
+  RETURN OLD;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_notify_post_deleted ON public.posts;
+CREATE TRIGGER trg_notify_post_deleted
+  AFTER DELETE ON public.posts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.notify_cleanup_post_deleted();
 
 -- Optional: include non-PK columns on DELETE for logical-replication filters / tooling.
 ALTER TABLE public.notifications REPLICA IDENTITY FULL;

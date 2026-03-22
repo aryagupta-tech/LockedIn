@@ -111,6 +111,13 @@ export async function DELETE(
       return errorResponse("Insufficient permissions", "FORBIDDEN", 403);
     }
 
+    const postIdKey = String(id).trim();
+    await supabase
+      .from("notifications")
+      .delete()
+      .in("type", ["like", "comment"])
+      .eq("resource_id", postIdKey);
+
     await supabase.from("posts").delete().eq("id", id);
     return NextResponse.json({ deleted: true });
   } catch (e) {
