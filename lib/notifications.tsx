@@ -12,6 +12,7 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import { supabase } from "./supabase";
+import { api } from "./api";
 
 export interface Notification {
   id: string;
@@ -57,16 +58,14 @@ export function NotificationsProvider({
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
 
-    const { data, error } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (!error && data) {
-      setNotifications(data as Notification[]);
-      setUnreadCount(data.filter((n: Notification) => !n.read).length);
+    try {
+      const res = await api.get<{ notifications: Notification[] }>("/notifications/me");
+      const list = Array.isArray(res.notifications) ? res.notifications : [];
+      setNotifications(list);
+      setUnreadCount(list.filter((n) => !n.read).length);
+    } catch {
+      setNotifications([]);
+      setUnreadCount(0);
     }
     setLoading(false);
   }, [userId]);
@@ -101,6 +100,7 @@ export function NotificationsProvider({
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [userId, fetchNotifications]);
 
+  /** Realtime still uses the Supabase client (JWT); RLS must restrict postgres_changes to own rows. */
   useEffect(() => {
     if (!userId) return;
 
@@ -158,11 +158,13 @@ export function NotificationsProvider({
   }, [userId, fetchNotifications]);
 
   const markAsRead = useCallback(async (id: string) => {
-    await supabase.from("notifications").update({ read: true }).eq("id", id);
+    try {
+      await api.patch(`/notifications/${id}`, { read: true });
+    } catch {
+      return;
+    }
 
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     setUnreadCount((c) => Math.max(0, c - 1));
   }, []);
 
@@ -172,12 +174,12 @@ export function NotificationsProvider({
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
 
-    await supabase
-      .from("notifications")
-      .update({ read: true })
-      .eq("user_id", userId)
-      .eq("read", false);
-  }, [userId]);
+    try {
+      await api.post("/notifications/read-all", {});
+    } catch {
+      void fetchNotifications();
+    }
+  }, [userId, fetchNotifications]);
 
   const value = useMemo(
     () => ({
