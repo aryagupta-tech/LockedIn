@@ -196,8 +196,17 @@ interface LeetCodeGithubResponse {
   errors?: Array<{ message: string }>;
 }
 
+const QUERY_MATCHED_USER_GITHUB = `
+  query userLeetCodeGithub($username: String!) {
+    matchedUser(username: $username) {
+      githubUrl
+    }
+  }
+`;
+
 /**
  * Public GraphQL field — used to prove LeetCode account ↔ GitHub identity.
+ * Same `$username` variable shape as {@link fetchLeetCodeAcStatsGraphQL}.
  */
 export async function fetchLeetCodeGithubUrl(
   username: string,
@@ -205,25 +214,48 @@ export async function fetchLeetCodeGithubUrl(
   const handle = username.trim();
   if (!handle) throw new Error("LeetCode username is empty");
 
-  const query = `query ($u: String!) { matchedUser(username: $u) { githubUrl } }`;
+  const csrftoken = await getLeetCodeCsrfToken();
+  const requestHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    "User-Agent": USER_AGENT,
+    Referer: `${LEETCODE_ORIGIN}/`,
+    Origin: LEETCODE_ORIGIN,
+    "X-Requested-With": "XMLHttpRequest",
+  };
+  if (csrftoken) {
+    requestHeaders.Cookie = `csrftoken=${csrftoken}`;
+    requestHeaders["x-csrftoken"] = csrftoken;
+  }
 
   const res = await fetch(`${LEETCODE_ORIGIN}/graphql`, {
     cache: "no-store",
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "User-Agent": USER_AGENT,
-      Referer: `${LEETCODE_ORIGIN}/`,
-      "X-Requested-With": "XMLHttpRequest",
-    },
-    body: JSON.stringify({ query, variables: { username: handle } }),
+    headers: requestHeaders,
+    body: JSON.stringify({
+      query: QUERY_MATCHED_USER_GITHUB,
+      variables: { username: handle },
+    }),
   });
 
+  const text = await res.text();
+
   if (!res.ok) {
-    throw new Error(`LeetCode API returned ${res.status}`);
+    let detail = "";
+    try {
+      const errJson = JSON.parse(text) as {
+        errors?: Array<{ message: string }>;
+      };
+      if (errJson.errors?.length) {
+        detail = `: ${errJson.errors.map((e) => e.message).join("; ")}`;
+      }
+    } catch {
+      if (text && !text.startsWith("<!DOCTYPE") && !text.startsWith("<html")) {
+        detail = `: ${text.slice(0, 200)}`;
+      }
+    }
+    throw new Error(`LeetCode API returned ${res.status}${detail}`);
   }
 
-  const text = await res.text();
   if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
     throw new Error(
       "LeetCode blocked the request. Try again later or set LEETCODE_CSRF_TOKEN.",
