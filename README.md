@@ -152,4 +152,6 @@ All secrets are loaded from `.env` and are **never** committed to version contro
 
 ## License
 
-All rights reserved.
+Licensed under the [MIT License](LICENSE).
+
+Copyright (c) 2026 Arya Gupta. Third-party dependencies retain their respective licenses.
